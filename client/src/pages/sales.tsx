@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
@@ -92,6 +92,11 @@ export default function Sales() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [activeProductTab, setActiveProductTab] = useState("all"); // "all" hoặc "featured"
   const [showCameraScanner, setShowCameraScanner] = useState(false);
+  
+  // Pagination states
+  const [allProductsPage, setAllProductsPage] = useState(1);
+  const [featuredProductsPage, setFeaturedProductsPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 10;
 
   // Auto-focus barcode input on keypress
   useEffect(() => {
@@ -814,6 +819,108 @@ export default function Sales() {
     return productNameNormalized.includes(searchNormalized) ||
            productBarcodeNormalized.includes(searchNormalized);
   });
+
+  // Pagination logic for all products
+  const totalAllProductsPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const startAllProductsIndex = (allProductsPage - 1) * PRODUCTS_PER_PAGE;
+  const endAllProductsIndex = startAllProductsIndex + PRODUCTS_PER_PAGE;
+  const paginatedAllProducts = filteredProducts.slice(startAllProductsIndex, endAllProductsIndex);
+
+  // Pagination logic for featured products
+  const totalFeaturedProductsPages = Math.ceil((featuredProducts || []).length / PRODUCTS_PER_PAGE);
+  const startFeaturedProductsIndex = (featuredProductsPage - 1) * PRODUCTS_PER_PAGE;
+  const endFeaturedProductsIndex = startFeaturedProductsIndex + PRODUCTS_PER_PAGE;
+  const paginatedFeaturedProducts = (featuredProducts || []).slice(startFeaturedProductsIndex, endFeaturedProductsIndex);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setAllProductsPage(1);
+  }, [searchTerm]);
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    if (activeProductTab === 'all') {
+      setAllProductsPage(1);
+    } else {
+      setFeaturedProductsPage(1);
+    }
+  }, [activeProductTab]);
+
+  // Pagination Component
+  const PaginationComponent = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange,
+    totalItems,
+    itemsPerPage 
+  }: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+    totalItems: number;
+    itemsPerPage: number;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+    return (
+      <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center text-xs text-gray-600">
+            <span>
+              {startItem}-{endItem}/{totalItems}
+            </span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+            
+            {/* Show page numbers */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              if (totalPages <= 5 || 
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)) {
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange(page)}
+                    className="h-7 w-7 p-0 text-xs"
+                  >
+                    {page}
+                  </Button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="px-1 text-gray-400 text-xs">...</span>;
+              }
+              return null;
+            })}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Lấy thông tin thuế VAT từ API
   const { data: taxConfig } = useQuery<any>({
@@ -1669,176 +1776,204 @@ export default function Sales() {
                   <TabsTrigger value="featured">Sản phẩm hay bán</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="all" className="mt-4 flex-1 min-h-0">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 h-full overflow-y-auto">
-                    {filteredProducts.map((product) => {
-                      const stockQty = product.stockQuantity || 0;
-                      const minStock = product.minStockLevel || 0;
-                      
-                      let stockStatus = { label: '', color: '' };
-                      if (stockQty === 0) {
-                        stockStatus = { label: 'Hết hàng', color: 'bg-red-500' };
-                      } else if (stockQty <= minStock) {
-                        stockStatus = { label: 'Sắp hết', color: 'bg-orange-500' };
-                      } else {
-                        stockStatus = { label: 'Còn hàng', color: 'bg-green-500' };
-                      }
-                      const key = product.productId;
-                      const isOutOfStock = stockQty <= 0;
-                      
-                      return (
-                        <div
-                          key={key}
-                          className={cn(
-                            "cursor-pointer hover:shadow-md transition-shadow",
-                            isOutOfStock && "opacity-60 cursor-not-allowed"
-                          )}
-                          onClick={() => {
-                            if (!isOutOfStock) {
-                              addToCart(product);
-                            }
-                          }}
-                          data-testid={`product-card-${key}`}
-                        >
-                          <Card>
-                            <CardContent className="p-4">
-                              <div className="relative">
-                                <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
-                                  <img
-                                    src={
-                                      product.imageUrl && product.imageUrl !== ""
-                                        ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
-                                        : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
-                                    }
-                                    alt={product.name || 'Sản phẩm'}
-                                    className="max-w-full max-h-full object-contain"
-                                    style={{ width: '100%', height: '100%' }}
-                                  />
-                                  <Badge
-                                    className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
-                                    data-testid={`stock-status-${key}`}
+                <TabsContent value="all" className="mt-4 flex-1 min-h-0 relative">
+                  <div className="absolute inset-0 flex flex-col">
+                    <div className="flex-1 overflow-y-auto pb-16">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
+                        {paginatedAllProducts.map((product) => {
+                          const stockQty = product.stockQuantity || 0;
+                          const minStock = product.minStockLevel || 0;
+                          
+                          let stockStatus = { label: '', color: '' };
+                          if (stockQty === 0) {
+                            stockStatus = { label: 'Hết hàng', color: 'bg-red-500' };
+                          } else if (stockQty <= minStock) {
+                            stockStatus = { label: 'Sắp hết', color: 'bg-orange-500' };
+                          } else {
+                            stockStatus = { label: 'Còn hàng', color: 'bg-green-500' };
+                          }
+                          const key = product.productId;
+                          const isOutOfStock = stockQty <= 0;
+                          
+                          return (
+                            <div
+                              key={key}
+                              className={cn(
+                                "cursor-pointer hover:shadow-md transition-shadow",
+                                isOutOfStock && "opacity-60 cursor-not-allowed"
+                              )}
+                              onClick={() => {
+                                if (!isOutOfStock) {
+                                  addToCart(product);
+                                }
+                              }}
+                              data-testid={`product-card-${key}`}
+                            >
+                              <Card>
+                                <CardContent className="p-4">
+                                  <div className="relative">
+                                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
+                                      <img
+                                        src={
+                                          product.imageUrl && product.imageUrl !== ""
+                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
+                                            : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
+                                        }
+                                        alt={product.name || 'Sản phẩm'}
+                                        className="max-w-full max-h-full object-contain"
+                                        style={{ width: '100%', height: '100%' }}
+                                      />
+                                      <Badge
+                                        className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
+                                        data-testid={`stock-status-${key}`}
+                                      >
+                                        {stockStatus.label}
+                                      </Badge>
+                                      {stockQty <= minStock && (
+                                        <AlertTriangle className="absolute top-2 left-2 w-5 h-5 text-orange-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
+                                  <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
+                                  <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
+                                  <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
+                                  <Button
+                                    className="w-full mt-2"
+                                    size="sm"
+                                    disabled={isOutOfStock}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isOutOfStock) {
+                                        addToCart(product);
+                                      }
+                                    }}
                                   >
-                                    {stockStatus.label}
-                                  </Badge>
-                                  {stockQty <= minStock && (
-                                    <AlertTriangle className="absolute top-2 left-2 w-5 h-5 text-orange-500" />
-                                  )}
-                                </div>
-                              </div>
-                              <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
-                              <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
-                              <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
-                              <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
-                              <Button
-                                className="w-full mt-2"
-                                size="sm"
-                                disabled={isOutOfStock}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isOutOfStock) {
-                                    addToCart(product);
-                                  }
-                                }}
-                              >
-                                <Plus className="w-4 h-4 mr-1" />
-                                {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    {/* Pagination for all products */}
+                    <PaginationComponent
+                      currentPage={allProductsPage}
+                      totalPages={totalAllProductsPages}
+                      onPageChange={setAllProductsPage}
+                      totalItems={filteredProducts.length}
+                      itemsPerPage={PRODUCTS_PER_PAGE}
+                    />
                   </div>
                 </TabsContent>
 
-                <TabsContent value="featured" className="mt-4 flex-1 min-h-0">
+                <TabsContent value="featured" className="mt-4 flex-1 min-h-0 relative">
                   {featuredLoading && (
                     <div className="flex justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 h-full overflow-y-auto">
-                    {Array.isArray(featuredProducts) && featuredProducts.map((product: Product) => {
-                      const stockQty = product.stockQuantity || 0;
-                      const minStock = product.minStockLevel || 0;
-                      
-                      let stockStatus = { label: '', color: '' };
-                      if (stockQty === 0) {
-                        stockStatus = { label: 'Hết hàng', color: 'bg-red-500' };
-                      } else if (stockQty <= minStock) {
-                        stockStatus = { label: 'Sắp hết', color: 'bg-orange-500' };
-                      } else {
-                        stockStatus = { label: 'Còn hàng', color: 'bg-green-500' };
-                      }
-                      const key = product.productId;
-                      const isOutOfStock = stockQty <= 0;
-                      
-                      return (
-                        <div
-                          key={key}
-                          className={cn(
-                            "cursor-pointer hover:shadow-md transition-shadow",
-                            isOutOfStock && "opacity-60 cursor-not-allowed"
-                          )}
-                          onClick={() => {
-                            if (!isOutOfStock) {
-                              addToCart(product);
-                            }
-                          }}
-                          data-testid={`featured-product-card-${key}`}
-                        >
-                          <Card className="border-yellow-200 bg-yellow-50">
-                            <CardContent className="p-4">
-                              <div className="relative">
-                                <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
-                                  <img
-                                    src={
-                                      product.imageUrl && product.imageUrl !== ""
-                                        ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
-                                        : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
-                                    }
-                                    alt={product.name || 'Sản phẩm'}
-                                    className="max-w-full max-h-full object-contain"
-                                    style={{ width: '100%', height: '100%' }}
-                                  />
-                                  <Badge className="absolute top-2 left-2 bg-yellow-500 text-yellow-900">
-                                    ⭐ Hay bán
-                                  </Badge>
-                                  <Badge
-                                    className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
-                                    data-testid={`stock-status-${key}`}
+                  <div className="absolute inset-0 flex flex-col">
+                    <div className="flex-1 overflow-y-auto pb-16">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
+                        {paginatedFeaturedProducts.map((product: Product) => {
+                          const stockQty = product.stockQuantity || 0;
+                          const minStock = product.minStockLevel || 0;
+                          
+                          let stockStatus = { label: '', color: '' };
+                          if (stockQty === 0) {
+                            stockStatus = { label: 'Hết hàng', color: 'bg-red-500' };
+                          } else if (stockQty <= minStock) {
+                            stockStatus = { label: 'Sắp hết', color: 'bg-orange-500' };
+                          } else {
+                            stockStatus = { label: 'Còn hàng', color: 'bg-green-500' };
+                          }
+                          const key = product.productId;
+                          const isOutOfStock = stockQty <= 0;
+                          
+                          return (
+                            <div
+                              key={key}
+                              className={cn(
+                                "cursor-pointer hover:shadow-md transition-shadow",
+                                isOutOfStock && "opacity-60 cursor-not-allowed"
+                              )}
+                              onClick={() => {
+                                if (!isOutOfStock) {
+                                  addToCart(product);
+                                }
+                              }}
+                              data-testid={`featured-product-card-${key}`}
+                            >
+                              <Card className="border-yellow-200 bg-yellow-50">
+                                <CardContent className="p-4">
+                                  <div className="relative">
+                                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
+                                      <img
+                                        src={
+                                          product.imageUrl && product.imageUrl !== ""
+                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
+                                            : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
+                                        }
+                                        alt={product.name || 'Sản phẩm'}
+                                        className="max-w-full max-h-full object-contain"
+                                        style={{ width: '100%', height: '100%' }}
+                                      />
+                                      <Badge className="absolute top-2 left-2 bg-yellow-500 text-yellow-900">
+                                        ⭐ Hay bán
+                                      </Badge>
+                                      <Badge
+                                        className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
+                                        data-testid={`stock-status-${key}`}
+                                      >
+                                        {stockStatus.label}
+                                      </Badge>
+                                      {stockQty <= minStock && (
+                                        <AlertTriangle className="absolute top-12 left-2 w-5 h-5 text-orange-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
+                                  <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
+                                  <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
+                                  <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
+                                  <Button
+                                    className="w-full mt-2"
+                                    size="sm"
+                                    disabled={isOutOfStock}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!isOutOfStock) {
+                                        addToCart(product);
+                                      }
+                                    }}
                                   >
-                                    {stockStatus.label}
-                                  </Badge>
-                                  {stockQty <= minStock && (
-                                    <AlertTriangle className="absolute top-12 left-2 w-5 h-5 text-orange-500" />
-                                  )}
-                                </div>
-                              </div>
-                              <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
-                              <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
-                              <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
-                              <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
-                              <Button
-                                className="w-full mt-2"
-                                size="sm"
-                                disabled={isOutOfStock}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!isOutOfStock) {
-                                    addToCart(product);
-                                  }
-                                }}
-                              >
-                                <Plus className="w-4 h-4 mr-1" />
-                                {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Show pagination only if there are featured products */}
+                    {(featuredProducts || []).length > 0 && (
+                      <PaginationComponent
+                        currentPage={featuredProductsPage}
+                        totalPages={totalFeaturedProductsPages}
+                        onPageChange={setFeaturedProductsPage}
+                        totalItems={(featuredProducts || []).length}
+                        itemsPerPage={PRODUCTS_PER_PAGE}
+                      />
+                    )}
                   </div>
 
                   {(featuredProducts || []).length === 0 && !featuredLoading && (
