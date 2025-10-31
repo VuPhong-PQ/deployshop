@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DS9208 Fix Configuration</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            text-align: center;
+            background: #f8f9fa;
+        }
+        .urgent { 
+            background: #dc3545; 
+            color: white; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .config-step { 
+            margin: 30px 0; 
+            padding: 25px; 
+            border: 3px solid #007bff; 
+            border-radius: 10px; 
+            background: white;
+        }
+        .step-number {
+            background: #007bff;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .barcode-title { 
+            font-size: 20px; 
+            color: #dc3545; 
+            margin: 15px 0; 
+            font-weight: bold;
+        }
+        .instruction { 
+            background: #fff3cd; 
+            padding: 15px; 
+            margin: 15px 0; 
+            border-left: 5px solid #ffc107;
+            text-align: left;
+        }
+        .barcode-container {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+    <div class="urgent">
+        🚨 DS9208 EMERGENCY FIX - PHẢI THỰC HIỆN ĐÚNG THỨ TỰ
+    </div>
+
+    <div class="instruction">
+        <strong>⚠️ QUAN TRỌNG:</strong>
+        <ul>
+            <li>In trang này ra giấy A4 trước khi bắt đầu</li>
+            <li>Quét từng barcode theo đúng thứ tự từ 1 → 6</li>
+            <li>Đợi tiếng beep xác nhận sau mỗi lần quét</li>
+            <li>Nếu không có tiếng beep → quét lại</li>
+        </ul>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">1</div>
+        <div class="barcode-title">FACTORY RESET</div>
+        <div class="barcode-container">
+            <svg id="reset"></svg>
+        </div>
+        <div>Reset tất cả về cài đặt gốc của nhà máy</div>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">2</div>
+        <div class="barcode-title">SET USB HID KEYBOARD</div>
+        <div class="barcode-container">
+            <svg id="hidMode"></svg>
+        </div>
+        <div>Cấu hình máy hoạt động như bàn phím USB</div>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">3</div>
+        <div class="barcode-title">ENABLE DATA TRANSMISSION</div>
+        <div class="barcode-container">
+            <svg id="enableData"></svg>
+        </div>
+        <div>Bật chức năng truyền dữ liệu</div>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">4</div>
+        <div class="barcode-title">SET CARRIAGE RETURN</div>
+        <div class="barcode-container">
+            <svg id="carriageReturn"></svg>
+        </div>
+        <div>Thêm Enter sau mỗi lần quét</div>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">5</div>
+        <div class="barcode-title">ENABLE BEEPER</div>
+        <div class="barcode-container">
+            <svg id="beeper"></svg>
+        </div>
+        <div>Bật tiếng beep xác nhận</div>
+    </div>
+
+    <div class="config-step">
+        <div class="step-number">6</div>
+        <div class="barcode-title">SAVE CONFIGURATION</div>
+        <div class="barcode-container">
+            <svg id="save"></svg>
+        </div>
+        <div>Lưu tất cả cài đặt vào bộ nhớ</div>
+    </div>
+
+    <div class="config-step" style="border-color: #28a745;">
+        <div class="step-number" style="background: #28a745;">✓</div>
+        <div class="barcode-title">TEST BARCODE</div>
+        <div class="barcode-container">
+            <svg id="test"></svg>
+        </div>
+        <div>Test: Mở Notepad và quét → phải xuất hiện "TEST123"</div>
+    </div>
+
+    <script>
+        // Standard Symbol DS9208 configuration codes
+        const configs = {
+            reset: "DEFALT",           // Factory default
+            hidMode: "USBHID",         // USB HID keyboard mode
+            enableData: "DTRENA",      // Enable data transmission
+            carriageReturn: "SUF13",   // Carriage return suffix
+            beeper: "BEPENA",          // Enable beeper
+            save: "SAVSET",            // Save settings
+            test: "TEST123"            // Test barcode
+        };
+
+        // Generate barcodes
+        Object.keys(configs).forEach(id => {
+            JsBarcode(`#${id}`, configs[id], {
+                format: "CODE128",
+                width: 4,
+                height: 120,
+                displayValue: true,
+                fontSize: 24,
+                margin: 20,
+                background: "#ffffff",
+                lineColor: "#000000"
+            });
+        });
+    </script>
+
+    <div style="margin-top: 40px; padding: 25px; background: #d1ecf1; border: 2px solid #bee5eb; border-radius: 10px;">
+        <h3>📋 HƯỚNG DẪN CHI TIẾT:</h3>
+        <ol style="text-align: left; max-width: 600px; margin: 0 auto; font-size: 16px;">
+            <li><strong>Ngắt USB</strong> của DS9208 khỏi máy tính</li>
+            <li><strong>Cắm lại USB</strong> và đợi Windows nhận dạng (có tiếng notification)</li>
+            <li><strong>In trang này</strong> ra giấy A4</li>
+            <li><strong>Quét từng barcode theo thứ tự 1→6</strong></li>
+            <li><strong>Sau mỗi lần quét đợi tiếng beep</strong> (quan trọng!)</li>
+            <li><strong>Quét test barcode</strong> trong Notepad để kiểm tra</li>
+        </ol>
+    </div>
+
+    <div style="margin-top: 20px; padding: 20px; background: #f8d7da; border: 2px solid #f5c6cb; border-radius: 10px;">
+        <strong>🔴 SAU KHI HOÀN THÀNH:</strong><br>
+        <ul style="text-align: left; max-width: 500px; margin: 10px auto;">
+            <li>Mở Notepad và quét test barcode → phải thấy "TEST123"</li>
+            <li>Kiểm tra Device Manager → phải có "HID Keyboard Device"</li>
+            <li>Quay lại RetailPoint và test quét barcode sản phẩm</li>
+        </ul>
+    </div>
+</body>
+</html>

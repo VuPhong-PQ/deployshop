@@ -1,0 +1,58 @@
+# Dependencies
+node_modules
+*/node_modules/
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.bak
+*.mdf
+*.ldf
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+bin/
+obj/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.tar.gz
+server/public
+vite.config.ts.*
+
+# Backend build
+backend-deploy/
+Backend/RetailPointBackend/bin/
+Backend/RetailPointBackend/obj/
+Backend/RetailPointBackend/Properties/launchSettings.json
+
+# Uploads
+uploads/
+wwwroot/uploads/
+
+# Cache
+.cache/

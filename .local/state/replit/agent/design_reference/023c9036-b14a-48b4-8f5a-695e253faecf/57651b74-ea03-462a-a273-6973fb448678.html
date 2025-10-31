@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System - Professional Point of Sale</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1976D2',
+                        secondary: '#424242',
+                        success: '#388E3C',
+                        warning: '#F57C00',
+                        error: '#D32F2F'
+                    },
+                    fontFamily: {
+                        'roboto': ['Roboto', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-roboto">
+    <!-- @COMPONENT: AppLayout [Main layout with sidebar and content area] -->
+    <div class="flex h-screen bg-gray-50">
+        <!-- @COMPONENT: Sidebar [Navigation menu] -->
+        <aside class="w-64 bg-white shadow-lg border-r border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cash-register text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">PinkWish Shop</h1>
+                        <p class="text-sm text-gray-500" data-bind="store.name">PinkWish Shop</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- @STATE: activeTab:string = 'dashboard' -->
+            <nav class="p-4 space-y-2">
+                <div class="space-y-1">
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-primary bg-blue-50 rounded-lg font-medium" data-event="click:setActiveTab('dashboard')">
+                        <i class="fas fa-tachometer-alt w-5"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('sales')">
+                        <i class="fas fa-shopping-cart w-5"></i>
+                        <span>Bán hàng</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('products')">
+                        <i class="fas fa-box w-5"></i>
+                        <span>Sản phẩm</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('customers')">
+                        <i class="fas fa-users w-5"></i>
+                        <span>Khách hàng</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('inventory')">
+                        <i class="fas fa-warehouse w-5"></i>
+                        <span>Kho hàng</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('reports')">
+                        <i class="fas fa-chart-line w-5"></i>
+                        <span>Báo cáo</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('staff')">
+                        <i class="fas fa-user-tie w-5"></i>
+                        <span>Nhân viên</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg font-medium" data-event="click:setActiveTab('settings')">
+                        <i class="fas fa-cog w-5"></i>
+                        <span>Cài đặt</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <!-- User Profile -->
+            <div class="absolute bottom-0 w-64 p-4 border-t border-gray-200 bg-white">
+                <div class="flex items-center space-x-3">
+                    <!-- Profile picture of a professional cashier -->
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=150&h=150" alt="User profile" class="w-10 h-10 rounded-full object-cover" data-bind="user.avatar">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate" data-bind="user.name">Nguyễn Thu Hương</p>
+                        <p class="text-xs text-gray-500 truncate" data-bind="user.role">Quản lý</p>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600" data-event="click:logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [Main content area with header and dynamic content] -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- @COMPONENT: Header [Top bar with search and notifications] -->
+            <header class="bg-white shadow-sm border-b border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <h2 class="text-2xl font-bold text-gray-900">Dashboard</h2>
+                        <div class="flex items-center space-x-2 text-sm text-gray-500">
+                            <span data-bind="currentDate">12/12/2024</span>
+                            <span>•</span>
+                            <span data-bind="currentTime">14:30:25</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Search Bar -->
+                        <div class="relative">
+                            <input type="text" placeholder="Tìm kiếm sản phẩm, đơn hàng..." class="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" data-mock="true">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <button class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg" data-event="click:toggleNotifications">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span class="absolute -top-1 -right-1 bg-error text-white text-xs rounded-full w-5 h-5 flex items-center justify-center" data-bind="notifications.unreadCount">3</span>
+                        </button>
+                        
+                        <!-- Quick Actions -->
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium" data-event="click:quickSale">
+                            <i class="fas fa-plus mr-2"></i>
+                            Bán hàng nhanh
+                        </button>
+                    </div>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: Header -->
+
+            <!-- @COMPONENT: DashboardContent [Dashboard overview with metrics and charts] -->
+            <div class="flex-1 overflow-auto p-6">
+                <!-- Metrics Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- @MAP: metrics.map(metric => ( -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Doanh thu hôm nay</p>
+                                <p class="text-3xl font-bold text-gray-900 mt-2" data-bind="metrics.todayRevenue">12,450,000₫</p>
+                                <div class="flex items-center mt-2">
+                                    <i class="fas fa-arrow-up text-success text-sm mr-1"></i>
+                                    <span class="text-sm text-success font-medium" data-bind="metrics.todayGrowth">+12.5%</span>
+                                    <span class="text-sm text-gray-500 ml-1">so với hôm qua</span>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-chart-line text-primary text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Đơn hàng</p>
+                                <p class="text-3xl font-bold text-gray-900 mt-2" data-bind="metrics.ordersCount">156</p>
+                                <div class="flex items-center mt-2">
+                                    <i class="fas fa-arrow-up text-success text-sm mr-1"></i>
+                                    <span class="text-sm text-success font-medium" data-bind="metrics.ordersGrowth">+8.2%</span>
+                                    <span class="text-sm text-gray-500 ml-1">so với hôm qua</span>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-shopping-cart text-success text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Khách hàng mới</p>
+                                <p class="text-3xl font-bold text-gray-900 mt-2" data-bind="metrics.newCustomers">23</p>
+                                <div class="flex items-center mt-2">
+                                    <i class="fas fa-arrow-up text-success text-sm mr-1"></i>
+                                    <span class="text-sm text-success font-medium" data-bind="metrics.customersGrowth">+15.3%</span>
+                                    <span class="text-sm text-gray-500 ml-1">so với hôm qua</span>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-users text-purple-600 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Sản phẩm sắp hết</p>
+                                <p class="text-3xl font-bold text-gray-900 mt-2" data-bind="metrics.lowStockItems">7</p>
+                                <div class="flex items-center mt-2">
+                                    <i class="fas fa-exclamation-triangle text-warning text-sm mr-1"></i>
+                                    <span class="text-sm text-warning font-medium">Cần bổ sung</span>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-box text-warning text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+
+                <!-- Charts and Analytics -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Revenue Chart -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Doanh thu 7 ngày qua</h3>
+                            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent" data-mock="true">
+                                <option>7 ngày qua</option>
+                                <option>30 ngày qua</option>
+                                <option>3 tháng qua</option>
+                            </select>
+                        </div>
+                        <!-- @FUNCTIONALITY: This should implement a real-time revenue chart using Chart.js or similar -->
+                        <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300" data-implementation="Revenue chart component">
+                            <div class="text-center">
+                                <i class="fas fa-chart-area text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500">Biểu đồ doanh thu real-time</p>
+                                <p class="text-sm text-gray-400">Chart.js integration required</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Products -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-6">Sản phẩm bán chạy</h3>
+                        <div class="space-y-4">
+                            <!-- @MAP: topProducts.map(product => ( -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of coffee beans for a coffee product -->
+                                    <img src="https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Cà phê rang xay" class="w-10 h-10 rounded-lg object-cover" data-bind="product.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="product.name">Cà phê rang xay</p>
+                                        <p class="text-sm text-gray-500" data-bind="product.soldCount">Đã bán: 145</p>
+                                    </div>
+                                </div>
+                                <p class="font-semibold text-gray-900" data-bind="product.revenue">2,900,000₫</p>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of fresh croissants -->
+                                    <img src="https://pixabay.com/get/g7839b9393ae576ed1e1b3fbf275ab34fafdca2bf04a1c9a775a78e05f015296240960ae81e0b75e771a3da13e296f6862d96dbe37f441ebc66386f133a58d8bb_1280.jpg" alt="Bánh croissant" class="w-10 h-10 rounded-lg object-cover" data-bind="product.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="product.name">Bánh croissant</p>
+                                        <p class="text-sm text-gray-500" data-bind="product.soldCount">Đã bán: 89</p>
+                                    </div>
+                                </div>
+                                <p class="font-semibold text-gray-900" data-bind="product.revenue">1,780,000₫</p>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of fresh fruit smoothie -->
+                                    <img src="https://images.unsplash.com/photo-1610970881699-44a5587cabec?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Sinh tố trái cây" class="w-10 h-10 rounded-lg object-cover" data-bind="product.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="product.name">Sinh tố trái cây</p>
+                                        <p class="text-sm text-gray-500" data-bind="product.soldCount">Đã bán: 76</p>
+                                    </div>
+                                </div>
+                                <p class="font-semibold text-gray-900" data-bind="product.revenue">1,520,000₫</p>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of sandwich -->
+                                    <img src="https://pixabay.com/get/g5b9c8ee00ec009b9023f154252860bdd5eafb3761287a46e4ade524a997fde6e4dc6a0032dee74d192a38b50acd915e75ac8a69557a0ec95da346aa68bce5f0d_1280.jpg" alt="Bánh mì sandwich" class="w-10 h-10 rounded-lg object-cover" data-bind="product.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="product.name">Bánh mì sandwich</p>
+                                        <p class="text-sm text-gray-500" data-bind="product.soldCount">Đã bán: 62</p>
+                                    </div>
+                                </div>
+                                <p class="font-semibold text-gray-900" data-bind="product.revenue">1,240,000₫</p>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities and Inventory Alerts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Recent Orders -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h3>
+                            <button class="text-primary text-sm font-medium hover:underline" data-event="click:viewAllOrders">
+                                Xem tất cả
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- @MAP: recentOrders.map(order => ( -->
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-semibold" data-bind="order.id">
+                                        #156
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="order.customer">Nguyễn Văn A</p>
+                                        <p class="text-sm text-gray-500" data-bind="order.time">2 phút trước</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-900" data-bind="order.total">285,000₫</p>
+                                    <p class="text-sm text-success" data-bind="order.status">Hoàn thành</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-semibold" data-bind="order.id">
+                                        #155
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="order.customer">Trần Thị B</p>
+                                        <p class="text-sm text-gray-500" data-bind="order.time">5 phút trước</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-900" data-bind="order.total">150,000₫</p>
+                                    <p class="text-sm text-warning" data-bind="order.status">Đang xử lý</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-semibold" data-bind="order.id">
+                                        #154
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="order.customer">Lê Minh C</p>
+                                        <p class="text-sm text-gray-500" data-bind="order.time">8 phút trước</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-semibold text-gray-900" data-bind="order.total">420,000₫</p>
+                                    <p class="text-sm text-success" data-bind="order.status">Hoàn thành</p>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alerts -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">Cảnh báo tồn kho</h3>
+                            <button class="text-primary text-sm font-medium hover:underline" data-event="click:viewInventory">
+                                Xem kho hàng
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- @MAP: lowStockItems.map(item => ( -->
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of espresso beans -->
+                                    <img src="https://images.unsplash.com/photo-1550681560-af9bc1cb339e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Hạt cà phê Espresso" class="w-10 h-10 rounded-lg object-cover" data-bind="item.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="item.name">Hạt cà phê Espresso</p>
+                                        <p class="text-sm text-error font-medium" data-bind="item.stock">Còn lại: 3 kg</p>
+                                    </div>
+                                </div>
+                                <button class="bg-error text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-700" data-event="click:reorderItem(item.id)">
+                                    Đặt hàng
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of milk containers -->
+                                    <img src="https://images.unsplash.com/photo-1563636619-e9143da7973b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Sữa tươi" class="w-10 h-10 rounded-lg object-cover" data-bind="item.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="item.name">Sữa tươi</p>
+                                        <p class="text-sm text-warning font-medium" data-bind="item.stock">Còn lại: 8 lít</p>
+                                    </div>
+                                </div>
+                                <button class="bg-warning text-white px-3 py-1 rounded text-sm font-medium hover:bg-orange-600" data-event="click:reorderItem(item.id)">
+                                    Đặt hàng
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                <div class="flex items-center space-x-3">
+                                    <!-- Image of sugar packets -->
+                                    <img src="https://pixabay.com/get/gf6b86ed7bc2c0611aa1265493bee063ad7a2b341bcb4c3d55ac6e38f9771d34a1dd273213dd28c77b26971b311421e33f3b4e219943c79f5bd7862206a114997_1280.jpg" alt="Đường trắng" class="w-10 h-10 rounded-lg object-cover" data-bind="item.image" data-mock-image="true">
+                                    <div>
+                                        <p class="font-medium text-gray-900" data-bind="item.name">Đường trắng</p>
+                                        <p class="text-sm text-warning font-medium" data-bind="item.stock">Còn lại: 5 kg</p>
+                                    </div>
+                                </div>
+                                <button class="bg-warning text-white px-3 py-1 rounded text-sm font-medium hover:bg-orange-600" data-event="click:reorderItem(item.id)">
+                                    Đặt hàng
+                                </button>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: DashboardContent -->
+        </main>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: AppLayout -->
+
+    <!-- @COMPONENT: NotificationModal [Modal for notifications] -->
+    <!-- @STATE: showNotifications:boolean = false -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" id="notificationModal" data-implementation="Toggle visibility based on showNotifications state">
+        <div class="fixed right-4 top-16 w-96 bg-white rounded-lg shadow-xl border border-gray-200 max-h-96 overflow-y-auto">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-900">Thông báo</h3>
+                    <button class="text-gray-400 hover:text-gray-600" data-event="click:closeNotifications">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 space-y-3">
+                <!-- @MAP: notifications.map(notification => ( -->
+                <div class="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg" data-bind="notification.type">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <i class="fas fa-info text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900" data-bind="notification.title">Đơn hàng mới</p>
+                        <p class="text-sm text-gray-600" data-bind="notification.message">Khách hàng Nguyễn Văn A vừa đặt đơn hàng #156</p>
+                        <p class="text-xs text-gray-500 mt-1" data-bind="notification.time">2 phút trước</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg" data-bind="notification.type">
+                    <div class="w-8 h-8 bg-warning rounded-full flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900" data-bind="notification.title">Cảnh báo tồn kho</p>
+                        <p class="text-sm text-gray-600" data-bind="notification.message">Hạt cà phê Espresso sắp hết hàng</p>
+                        <p class="text-xs text-gray-500 mt-1" data-bind="notification.time">15 phút trước</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg" data-bind="notification.type">
+                    <div class="w-8 h-8 bg-success rounded-full flex items-center justify-center">
+                        <i class="fas fa-check text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900" data-bind="notification.title">Thanh toán thành công</p>
+                        <p class="text-sm text-gray-600" data-bind="notification.message">Đơn hàng #155 đã được thanh toán</p>
+                        <p class="text-xs text-gray-500 mt-1" data-bind="notification.time">30 phút trước</p>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NotificationModal -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            // Real-time clock update
+            function updateClock() {
+                const now = new Date();
+                const timeElement = document.querySelector('[data-bind="currentTime"]');
+                const dateElement = document.querySelector('[data-bind="currentDate"]');
+                
+                if (timeElement) {
+                    timeElement.textContent = now.toLocaleTimeString('vi-VN');
+                }
+                if (dateElement) {
+                    dateElement.textContent = now.toLocaleDateString('vi-VN');
+                }
+            }
+            
+            // Update clock every second
+            setInterval(updateClock, 1000);
+            updateClock(); // Initial call
+            
+            // Notification modal toggle
+            const notificationButton = document.querySelector('[data-event="click:toggleNotifications"]');
+            const notificationModal = document.getElementById('notificationModal');
+            const closeNotificationButton = document.querySelector('[data-event="click:closeNotifications"]');
+            
+            if (notificationButton && notificationModal) {
+                notificationButton.addEventListener('click', () => {
+                    notificationModal.classList.toggle('hidden');
+                });
+            }
+            
+            if (closeNotificationButton && notificationModal) {
+                closeNotificationButton.addEventListener('click', () => {
+                    notificationModal.classList.add('hidden');
+                });
+            }
+            
+            // Close modal when clicking outside
+            if (notificationModal) {
+                notificationModal.addEventListener('click', (e) => {
+                    if (e.target === notificationModal) {
+                        notificationModal.classList.add('hidden');
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

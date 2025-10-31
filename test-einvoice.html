@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test E-Invoice API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .debug-btn {
+            background-color: #28a745;
+        }
+        .debug-btn:hover {
+            background-color: #1e7e34;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        pre {
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test E-Invoice API</h1>
+    
+    <div class="form-group">
+        <label for="orderId">Order ID:</label>
+        <input type="number" id="orderId" value="32">
+    </div>
+    
+    <div class="form-group">
+        <label for="buyerName">Tên khách hàng:</label>
+        <input type="text" id="buyerName" value="Khách hàng test">
+    </div>
+    
+    <div class="form-group">
+        <label for="buyerTaxCode">Mã số thuế (tùy chọn):</label>
+        <input type="text" id="buyerTaxCode" value="">
+    </div>
+    
+    <div class="form-group">
+        <label for="buyerAddress">Địa chỉ (tùy chọn):</label>
+        <input type="text" id="buyerAddress" value="">
+    </div>
+    
+    <div class="form-group">
+        <label for="buyerPhone">Số điện thoại (tùy chọn):</label>
+        <input type="text" id="buyerPhone" value="">
+    </div>
+    
+    <div class="form-group">
+        <label for="buyerEmail">Email (tùy chọn):</label>
+        <input type="email" id="buyerEmail" value="">
+    </div>
+    
+    <div class="form-group">
+        <label for="notes">Ghi chú (tùy chọn):</label>
+        <textarea id="notes" rows="3"></textarea>
+    </div>
+    
+    <button onclick="debugOrder()">Debug Order</button>
+    <button onclick="createEInvoice()">Tạo E-Invoice</button>
+    <button onclick="getEInvoices()">Xem danh sách E-Invoice</button>
+    
+    <div id="result" class="result" style="display: none;">
+        <h3>Kết quả:</h3>
+        <pre id="resultContent"></pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5173/api';
+        
+        function showResult(data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + (isError ? 'error' : 'success');
+            resultContent.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        async function debugOrder() {
+            const orderId = document.getElementById('orderId').value;
+            
+            try {
+                console.log(`Calling: ${API_BASE}/EInvoice/debug/order/${orderId}`);
+                const response = await fetch(`${API_BASE}/EInvoice/debug/order/${orderId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult({
+                        message: 'Debug order thành công',
+                        data: data
+                    });
+                } else {
+                    showResult({
+                        message: 'Lỗi debug order',
+                        error: data
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult({
+                    message: 'Lỗi kết nối',
+                    error: error.message
+                }, true);
+            }
+        }
+        
+        async function createEInvoice() {
+            const requestData = {
+                orderId: parseInt(document.getElementById('orderId').value),
+                buyerName: document.getElementById('buyerName').value,
+                buyerTaxCode: document.getElementById('buyerTaxCode').value || null,
+                buyerAddress: document.getElementById('buyerAddress').value || null,
+                buyerPhone: document.getElementById('buyerPhone').value || null,
+                buyerEmail: document.getElementById('buyerEmail').value || null,
+                notes: document.getElementById('notes').value || null
+            };
+            
+            try {
+                console.log(`Calling: ${API_BASE}/EInvoice/create-from-order`);
+                console.log('Request data:', requestData);
+                
+                const response = await fetch(`${API_BASE}/EInvoice/create-from-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult({
+                        message: 'Tạo e-invoice thành công',
+                        data: data
+                    });
+                } else {
+                    showResult({
+                        message: 'Lỗi tạo e-invoice',
+                        error: data
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult({
+                    message: 'Lỗi kết nối',
+                    error: error.message
+                }, true);
+            }
+        }
+        
+        async function getEInvoices() {
+            try {
+                console.log(`Calling: ${API_BASE}/EInvoice`);
+                const response = await fetch(`${API_BASE}/EInvoice`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult({
+                        message: 'Lấy danh sách e-invoice thành công',
+                        data: data
+                    });
+                } else {
+                    showResult({
+                        message: 'Lỗi lấy danh sách e-invoice',
+                        error: data
+                    }, true);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult({
+                    message: 'Lỗi kết nối',
+                    error: error.message
+                }, true);
+            }
+        }
+    </script>
+</body>
+</html>

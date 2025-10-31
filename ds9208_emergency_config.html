@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DS9208 Emergency Config</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+        .barcode-section { margin: 30px 0; padding: 20px; border: 3px solid #e74c3c; }
+        .barcode-title { font-size: 24px; color: #e74c3c; margin: 15px 0; }
+        .instruction { background: #fff3cd; padding: 15px; margin: 10px 0; border-left: 5px solid #ffc107; }
+        .step { font-size: 18px; margin: 10px 0; }
+        .barcode-img { margin: 20px 0; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+    <h1>🚨 DS9208 Emergency Configuration</h1>
+    
+    <div class="instruction">
+        <strong>⚠️ QUAN TRỌNG:</strong> Quét ĐÚNG THỨ TỰ từ trên xuống. Chờ tiếng "beep" sau mỗi lần quét.
+    </div>
+
+    <div class="barcode-section">
+        <div class="step">BƯỚC 1: FACTORY RESET</div>
+        <div class="barcode-title">Factory Default</div>
+        <svg id="factoryDefault" class="barcode-img"></svg>
+        <div>Reset tất cả về cài đặt gốc</div>
+    </div>
+
+    <div class="barcode-section">
+        <div class="step">BƯỚC 2: USB HID KEYBOARD</div>
+        <div class="barcode-title">USB HID Keyboard</div>
+        <svg id="usbHidKeyboard" class="barcode-img"></svg>
+        <div>Cấu hình như bàn phím USB</div>
+    </div>
+
+    <div class="barcode-section">
+        <div class="step">BƯỚC 3: ENABLE SUFFIX</div>
+        <div class="barcode-title">Enable Suffix</div>
+        <svg id="enableSuffix" class="barcode-img"></svg>
+        <div>Bật chức năng thêm ký tự cuối</div>
+    </div>
+
+    <div class="barcode-section">
+        <div class="step">BƯỚC 4: CR LF SUFFIX</div>
+        <div class="barcode-title">CR LF Suffix</div>
+        <svg id="crLfSuffix" class="barcode-img"></svg>
+        <div>Thêm Enter sau mỗi lần quét</div>
+    </div>
+
+    <div class="barcode-section">
+        <div class="step">BƯỚC 5: SAVE SETTINGS</div>
+        <div class="barcode-title">Save Settings</div>
+        <svg id="saveSettings" class="barcode-img"></svg>
+        <div>Lưu tất cả cài đặt</div>
+    </div>
+
+    <div class="barcode-section" style="border-color: #27ae60;">
+        <div class="step">🧪 TEST BARCODE</div>
+        <div class="barcode-title">Test: 123456789</div>
+        <svg id="testBarcode" class="barcode-img"></svg>
+        <div>Quét để test - phải xuất hiện "123456789" + Enter</div>
+    </div>
+
+    <script>
+        // Generate configuration barcodes
+        const configs = {
+            // Motorola/Zebra Symbol standard config codes
+            factoryDefault: "*DEFALT#",      // Factory default
+            usbHidKeyboard: "*USBHID#",      // USB HID Keyboard mode
+            enableSuffix: "*SUFENA#",        // Enable suffix
+            crLfSuffix: "*SUF13#*SUF10#",    // CR + LF suffix (Enter)
+            saveSettings: "*SAVSET#",        // Save settings
+            testBarcode: "123456789"         // Test barcode
+        };
+
+        // Generate all barcodes
+        Object.keys(configs).forEach(id => {
+            JsBarcode(`#${id}`, configs[id], {
+                format: "CODE128",
+                width: 3,
+                height: 100,
+                displayValue: true,
+                fontSize: 20,
+                margin: 15,
+                background: "#ffffff",
+                lineColor: "#000000"
+            });
+        });
+    </script>
+
+    <div style="margin-top: 40px; padding: 20px; background: #d1ecf1; border: 1px solid #bee5eb;">
+        <h3>📋 HƯỚNG DẪN CHI TIẾT:</h3>
+        <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+            <li><strong>In trang này</strong> ra giấy A4</li>
+            <li><strong>Ngắt USB</strong> của DS9208</li>
+            <li><strong>Cắm lại USB</strong> và đợi Windows nhận dạng</li>
+            <li><strong>Quét từng barcode theo thứ tự</strong> từ trên xuống</li>
+            <li><strong>Chờ tiếng beep</strong> sau mỗi lần quét</li>
+            <li><strong>Mở Notepad</strong> và quét test barcode</li>
+            <li><strong>Phải thấy "123456789"</strong> xuất hiện + Enter</li>
+        </ol>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #f8d7da; border: 1px solid #f5c6cb;">
+        <strong>🔴 NẾU VẪN KHÔNG HOẠT ĐỘNG:</strong><br>
+        - Kiểm tra Device Manager có "HID Keyboard Device" không<br>
+        - Thử cổng USB khác<br>
+        - Restart máy tính<br>
+        - Liên hệ hỗ trợ kỹ thuật Symbol/Zebra
+    </div>
+</body>
+</html>
