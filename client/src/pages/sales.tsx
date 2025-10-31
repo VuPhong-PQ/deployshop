@@ -645,7 +645,8 @@ export default function Sales() {
           productName: item.name,
           quantity: item.quantity,
           price: item.price,
-          totalPrice: item.totalPrice
+          totalPrice: item.totalPrice,
+          unit: item.unit || ''
         })),
         taxAmount: taxAmount,
         paymentMethod: availablePaymentMethods.find(m => m.id === selectedPayment)?.name || selectedPayment,
@@ -775,7 +776,8 @@ export default function Sales() {
           productName: item.name,
           quantity: item.quantity,
           price: item.price,
-          totalPrice: item.totalPrice
+          totalPrice: item.totalPrice,
+          unit: item.unit || ''
         })),
         taxAmount: taxAmount,
         paymentMethod: availablePaymentMethods.find(m => m.id === selectedPayment)?.name || selectedPayment,
@@ -2904,22 +2906,26 @@ export default function Sales() {
             <div className="print:text-xs print:pl-4">Thu Ngân: <b>{orderDetailData.cashierName || "Admin"}</b></div>
             
             <div className="mt-4 print:no-break">
-              <table className="w-full border print:no-break">
+              <table className="w-full border print:no-break text-sm print:text-xs">
                 <thead>
-                  <tr>
-                    <th className="border px-2 py-1">Sản phẩm</th>
-                    <th className="border px-2 py-1">SL</th>
-                    <th className="border px-2 py-1">Đơn giá</th>
-                    <th className="border px-2 py-1">Thành tiền</th>
+                  <tr className="bg-gray-50 print:bg-white">
+                    <th className="border px-1 py-1 text-center print:px-1 print:py-0.5 w-8">STT</th>
+                    <th className="border px-2 py-1 print:px-1 print:py-0.5">Tên hàng</th>
+                    <th className="border px-1 py-1 text-center print:px-1 print:py-0.5 w-12">ĐVT</th>
+                    <th className="border px-1 py-1 text-center print:px-1 print:py-0.5 w-12">SL</th>
+                    <th className="border px-2 py-1 text-center print:px-1 print:py-0.5">Đơn giá</th>
+                    <th className="border px-2 py-1 text-center print:px-1 print:py-0.5">Thành tiền</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orderDetailData.items?.map((item: any, idx: number) => (
                     <tr key={idx}>
-                      <td className="border px-2 py-1">{item.productName}</td>
-                      <td className="border px-2 py-1 text-center">{item.quantity}</td>
-                      <td className="border px-2 py-1 text-right">{Number(item.price).toLocaleString('vi-VN')}₫</td>
-                      <td className="border px-2 py-1 text-right">{Number(item.totalPrice).toLocaleString('vi-VN')}₫</td>
+                      <td className="border px-1 py-1 text-center print:px-1 print:py-0.5">{idx + 1}</td>
+                      <td className="border px-2 py-1 print:px-1 print:py-0.5">{item.productName}</td>
+                      <td className="border px-1 py-1 text-center print:px-1 print:py-0.5">{item.unit || '-'}</td>
+                      <td className="border px-1 py-1 text-center print:px-1 print:py-0.5">{item.quantity}</td>
+                      <td className="border px-2 py-1 text-right print:px-1 print:py-0.5">{Number(item.price).toLocaleString('vi-VN')}₫</td>
+                      <td className="border px-2 py-1 text-right print:px-1 print:py-0.5">{Number(item.totalPrice).toLocaleString('vi-VN')}₫</td>
                     </tr>
                   ))}
                 </tbody>
