@@ -102,6 +102,16 @@ export default function Sales() {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
+  // State for quick customer creation
+  const [showQuickCustomerForm, setShowQuickCustomerForm] = useState(false);
+  const [quickCustomerData, setQuickCustomerData] = useState({
+    hoTen: "",
+    soDienThoai: "",
+    email: "",
+    diaChi: "",
+    hangKhachHang: "Bronze"
+  });
+
   // Auto-focus barcode input on keypress
   useEffect(() => {
     const handleGlobalKeyPress = (e: KeyboardEvent) => {
@@ -823,6 +833,67 @@ export default function Sales() {
       toast({
         title: "Lỗi tạo QR",
         description: error.message || "Không thể tạo mã QR. Vui lòng kiểm tra cấu hình trong Settings > QR Code.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Create customer mutation
+  const createCustomerMutation = useMutation({
+    mutationFn: async (customerData: any) => {
+      const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
+      return await apiRequest(`/api/customers${storeParam}`, { 
+        method: 'POST', 
+        body: JSON.stringify(customerData),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+    },
+    onSuccess: (response) => {
+      // Map the response to the expected format
+      const newCustomer = {
+        customerId: response.customerId,
+        hoTen: response.hoTen || quickCustomerData.hoTen,
+        soDienThoai: response.soDienThoai || quickCustomerData.soDienThoai,
+        email: response.email || quickCustomerData.email,
+        diaChi: response.diaChi || quickCustomerData.diaChi,
+        hangKhachHang: response.hangKhachHang || quickCustomerData.hangKhachHang,
+        // Mapped fields for compatibility
+        id: response.customerId?.toString(),
+        name: response.hoTen || quickCustomerData.hoTen,
+        phone: response.soDienThoai || quickCustomerData.soDienThoai,
+        address: response.diaChi || quickCustomerData.diaChi,
+        customerType: response.hangKhachHang || quickCustomerData.hangKhachHang,
+      };
+
+      // Set as selected customer
+      setSelectedCustomer(newCustomer);
+      setCustomerSearchTerm(newCustomer.name);
+      
+      // Clear form and close
+      setQuickCustomerData({
+        hoTen: "",
+        soDienThoai: "",
+        email: "",
+        diaChi: "",
+        hangKhachHang: "Bronze"
+      });
+      setShowQuickCustomerForm(false);
+      setShowCustomerDropdown(false);
+      
+      // Refresh customers list
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      
+      toast({
+        title: "Thành công! 🎉",
+        description: `Đã tạo khách hàng ${newCustomer.name} và chọn làm khách hàng cho đơn hàng này`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Lỗi tạo khách hàng",
+        description: error.message || "Không thể tạo khách hàng mới. Vui lòng thử lại.",
         variant: "destructive",
       });
     }
@@ -2230,20 +2301,11 @@ export default function Sales() {
                         <div
                           className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b bg-blue-25"
                           onClick={() => {
-                            const newCustomer = {
-                              id: `new-${Date.now()}`,
-                              customerId: 0,
-                              name: customerSearchTerm,
-                              phone: '',
-                              email: '',
-                              address: '',
-                              hoTen: customerSearchTerm,
-                              soDienThoai: '',
-                              diaChi: '',
-                              hangKhachHang: '',
-                              customerType: ''
-                            };
-                            setSelectedCustomer(newCustomer);
+                            setQuickCustomerData({
+                              ...quickCustomerData,
+                              hoTen: customerSearchTerm
+                            });
+                            setShowQuickCustomerForm(true);
                             setShowCustomerDropdown(false);
                           }}
                         >
@@ -2251,6 +2313,18 @@ export default function Sales() {
                           <div className="text-sm text-blue-500">Tạo khách hàng mới với tên này</div>
                         </div>
                       )}
+                      
+                      {/* Quick create button */}
+                      <div
+                        className="px-4 py-2 hover:bg-green-50 cursor-pointer border-b bg-green-25"
+                        onClick={() => {
+                          setShowQuickCustomerForm(true);
+                          setShowCustomerDropdown(false);
+                        }}
+                      >
+                        <div className="font-medium text-green-600">➕ Tạo khách hàng mới</div>
+                        <div className="text-sm text-green-500">Điền thông tin đầy đủ để tích điểm</div>
+                      </div>
                       
                       {/* Existing customers */}
                       {filteredCustomers.map((customer) => (
@@ -2293,6 +2367,146 @@ export default function Sales() {
                   </div>
                 )}
               </div>
+
+              {/* Quick Customer Creation Form */}
+              {showQuickCustomerForm && (
+                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-green-800">Tạo khách hàng mới</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowQuickCustomerForm(false);
+                        setQuickCustomerData({
+                          hoTen: "",
+                          soDienThoai: "",
+                          email: "",
+                          diaChi: "",
+                          hangKhachHang: "Bronze"
+                        });
+                      }}
+                      className="h-6 w-6 p-0 text-green-600"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Tên khách hàng *
+                      </label>
+                      <Input
+                        value={quickCustomerData.hoTen}
+                        onChange={(e) => setQuickCustomerData({...quickCustomerData, hoTen: e.target.value})}
+                        placeholder="Nhập tên khách hàng"
+                        className="text-sm"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Số điện thoại *
+                      </label>
+                      <Input
+                        value={quickCustomerData.soDienThoai}
+                        onChange={(e) => setQuickCustomerData({...quickCustomerData, soDienThoai: e.target.value})}
+                        placeholder="Nhập số điện thoại"
+                        className="text-sm"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-green-700 mb-1">
+                          Email
+                        </label>
+                        <Input
+                          type="email"
+                          value={quickCustomerData.email}
+                          onChange={(e) => setQuickCustomerData({...quickCustomerData, email: e.target.value})}
+                          placeholder="Nhập email"
+                          className="text-sm"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-green-700 mb-1">
+                          Hạng khách hàng
+                        </label>
+                        <Select
+                          value={quickCustomerData.hangKhachHang}
+                          onValueChange={(value) => setQuickCustomerData({...quickCustomerData, hangKhachHang: value})}
+                        >
+                          <SelectTrigger className="text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Bronze">Bronze</SelectItem>
+                            <SelectItem value="Silver">Silver</SelectItem>
+                            <SelectItem value="Gold">Gold</SelectItem>
+                            <SelectItem value="Platinum">Platinum</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-green-700 mb-1">
+                        Địa chỉ
+                      </label>
+                      <Input
+                        value={quickCustomerData.diaChi}
+                        onChange={(e) => setQuickCustomerData({...quickCustomerData, diaChi: e.target.value})}
+                        placeholder="Nhập địa chỉ"
+                        className="text-sm"
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        onClick={() => {
+                          if (!quickCustomerData.hoTen.trim() || !quickCustomerData.soDienThoai.trim()) {
+                            toast({
+                              title: "Thiếu thông tin",
+                              description: "Vui lòng nhập tên và số điện thoại khách hàng",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          createCustomerMutation.mutate(quickCustomerData);
+                        }}
+                        disabled={createCustomerMutation.isPending}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        {createCustomerMutation.isPending ? "Đang tạo..." : "Tạo & Chọn khách hàng"}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowQuickCustomerForm(false);
+                          setQuickCustomerData({
+                            hoTen: "",
+                            soDienThoai: "",
+                            email: "",
+                            diaChi: "",
+                            hangKhachHang: "Bronze"
+                          });
+                        }}
+                        className="px-4"
+                        size="sm"
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Cart Items */}
               <div className="space-y-3" style={{visibility: 'visible', display: 'block'}}>

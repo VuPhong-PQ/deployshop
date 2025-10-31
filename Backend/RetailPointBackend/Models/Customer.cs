@@ -6,9 +6,10 @@ namespace RetailPointBackend.Models
 {
     public enum CustomerRank
     {
-        Thuong,
-        Premium,
-        VIP
+        Thuong = 0,    // 0 - Bronze equivalent
+        Premium = 1,   // 1 - Silver equivalent  
+        VIP = 2,       // 2 - Gold equivalent
+        Platinum = 3   // 3 - Platinum
     }
 
     public class Customer
