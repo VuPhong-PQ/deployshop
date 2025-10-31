@@ -1799,9 +1799,9 @@ export default function Sales() {
 
   return (
     <AppLayout title="Bán hàng">
-      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_384px] lg:gap-4 lg:h-[calc(100vh-64px)]" data-testid="sales-page">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_384px] lg:gap-4" data-testid="sales-page">
         {/* Products Section */}
-        <div className="order-1 lg:order-1 min-h-[60vh] lg:min-h-0">
+        <div className="order-1 lg:order-1 min-h-[60vh] lg:min-h-[calc(100vh-120px)]">
           <Card className="h-full">
             <CardContent className="p-4 lg:p-6 flex flex-col h-full overflow-hidden">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-4 lg:mb-6 gap-4 flex-shrink-0">
@@ -1892,15 +1892,16 @@ export default function Sales() {
               </div>
 
               <Tabs value={activeProductTab} onValueChange={setActiveProductTab} className="w-full flex flex-col flex-1 min-h-0">
-                <TabsList className="grid w-full grid-cols-2 flex-shrink-0 mb-2">
+                <TabsList className="grid w-full grid-cols-2 flex-shrink-0 mb-3">
                   <TabsTrigger value="all" className="text-sm">Tất cả sản phẩm</TabsTrigger>
                   <TabsTrigger value="featured" className="text-sm">Sản phẩm hay bán</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="all" className="mt-0 flex-1 min-h-0 flex flex-col">
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-2 pb-4">
-                      {paginatedAllProducts.map((product) => {
+                <TabsContent value="all" className="flex-1 overflow-hidden">
+                  <div className="h-full flex flex-col">
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-3">
+                        {paginatedAllProducts.map((product) => {
                           const stockQty = product.stockQuantity || 0;
                           const minStock = product.minStockLevel || 0;
                           
@@ -1983,31 +1984,33 @@ export default function Sales() {
                             </div>
                           );
                         })}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Pagination for all products */}
-                  <div className="flex-shrink-0">
-                    <PaginationComponent
-                      currentPage={allProductsPage}
-                      totalPages={totalAllProductsPages}
-                      onPageChange={setAllProductsPage}
-                      totalItems={filteredProducts.length}
-                      itemsPerPage={PRODUCTS_PER_PAGE}
-                    />
+                    
+                    {/* Pagination for all products */}
+                    <div className="flex-shrink-0 p-3">
+                      <PaginationComponent
+                        currentPage={allProductsPage}
+                        totalPages={totalAllProductsPages}
+                        onPageChange={setAllProductsPage}
+                        totalItems={filteredProducts.length}
+                        itemsPerPage={PRODUCTS_PER_PAGE}
+                      />
+                    </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="featured" className="mt-0 flex-1 min-h-0 flex flex-col">
-                  {featuredLoading && (
-                    <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                    </div>
-                  )}
+                <TabsContent value="featured" className="flex-1 overflow-hidden">
+                  <div className="h-full flex flex-col">
+                    {featuredLoading && (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                      </div>
+                    )}
 
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-2 pb-4">
-                      {paginatedFeaturedProducts.map((product: Product) => {
+                    <div className="flex-1 overflow-y-auto">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-3">
+                        {paginatedFeaturedProducts.map((product: Product) => {
                           const stockQty = product.stockQuantity || 0;
                           const minStock = product.minStockLevel || 0;
                           
@@ -2093,35 +2096,36 @@ export default function Sales() {
                             </div>
                           );
                         })}
-                    </div>
-                  </div>
-
-                  {/* Show pagination only if there are featured products */}
-                  <div className="flex-shrink-0">
-                    {(featuredProducts || []).length > 0 && (
-                      <PaginationComponent
-                        currentPage={featuredProductsPage}
-                        totalPages={totalFeaturedProductsPages}
-                        onPageChange={setFeaturedProductsPage}
-                        totalItems={(featuredProducts || []).length}
-                        itemsPerPage={PRODUCTS_PER_PAGE}
-                      />
-                    )}
-                  </div>
-
-                  {(featuredProducts || []).length === 0 && !featuredLoading && (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="text-center py-12 text-gray-500">
-                        <div className="text-lg mb-2">📦</div>
-                        <div className="text-sm">
-                          Chưa có sản phẩm hay bán nào được chọn.
-                        </div>
-                        <div className="text-xs mt-1">
-                          Hãy vào trang Sản phẩm để đánh dấu các sản phẩm hay bán.
-                        </div>
                       </div>
                     </div>
-                  )}
+
+                    {/* Show pagination only if there are featured products */}
+                    <div className="flex-shrink-0 p-3">
+                      {(featuredProducts || []).length > 0 && (
+                        <PaginationComponent
+                          currentPage={featuredProductsPage}
+                          totalPages={totalFeaturedProductsPages}
+                          onPageChange={setFeaturedProductsPage}
+                          totalItems={(featuredProducts || []).length}
+                          itemsPerPage={PRODUCTS_PER_PAGE}
+                        />
+                      )}
+                    </div>
+
+                    {(featuredProducts || []).length === 0 && !featuredLoading && (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center py-12 text-gray-500">
+                          <div className="text-lg mb-2">📦</div>
+                          <div className="text-sm">
+                            Chưa có sản phẩm hay bán nào được chọn.
+                          </div>
+                          <div className="text-xs mt-1">
+                            Hãy vào trang Sản phẩm để đánh dấu các sản phẩm hay bán.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -2129,8 +2133,8 @@ export default function Sales() {
         </div>
 
         {/* Cart Section */}
-        <div className="order-2 lg:order-2 min-h-[40vh] lg:min-h-0">
-          <Card className="h-full lg:sticky lg:top-0 lg:max-h-screen">
+        <div className="order-2 lg:order-2 min-h-[40vh] lg:min-h-[calc(100vh-120px)]">
+          <Card className="h-full lg:sticky lg:top-0 lg:max-h-[calc(100vh-120px)]">
             <CardContent className="p-4 lg:p-6 flex flex-col h-full overflow-hidden">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-lg lg:text-xl font-semibold flex items-center">
