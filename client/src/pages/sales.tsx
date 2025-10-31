@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
@@ -97,6 +97,10 @@ export default function Sales() {
   const [allProductsPage, setAllProductsPage] = useState(1);
   const [featuredProductsPage, setFeaturedProductsPage] = useState(1);
   const PRODUCTS_PER_PAGE = 10;
+  
+  // Customer search state
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   // Auto-focus barcode input on keypress
   useEffect(() => {
@@ -688,10 +692,23 @@ export default function Sales() {
       return await apiRequest('/api/orders', { method: 'POST', body: formData });
     },
     onSuccess: () => {
-      // Thông báo ngay lập tức
+      // Thông báo ngay lập tức với thông tin chi tiết hơn
+      const customerName = selectedCustomer?.name || "Khách vãng lai";
+      const orderTotal = total.toLocaleString('vi-VN');
+      
       toast({
-        title: "Đã lưu đơn hàng chờ thanh toán! 🔔",
-        description: `Đơn hàng của ${selectedCustomer?.name || "khách vãng lai"} đã được lưu để thanh toán sau`,
+        title: "📋 Đơn hàng đã được lưu!",
+        description: (
+          <div>
+            <p>Khách hàng: <strong>{customerName}</strong></p>
+            <p>Tổng tiền: <strong>{orderTotal}₫</strong></p>
+            <p>Trạng thái: <em>Chờ thanh toán</em></p>
+            <p className="text-xs mt-1 text-blue-600">
+              💡 Có thể thanh toán sau từ trang "Lịch sử hóa đơn"
+            </p>
+          </div>
+        ),
+        duration: 5000,
       });
       
       // Phát âm thanh thông báo
@@ -700,6 +717,7 @@ export default function Sales() {
       // Clear cart và navigate
       setCart([]);
       setSelectedCustomer(null);
+      setCustomerSearchTerm("");
       setShowPayment(false);
       
       // Refetch danh sách đơn hàng và notifications
@@ -846,6 +864,31 @@ export default function Sales() {
     }
   }, [activeProductTab]);
 
+  // Close customer dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.customer-search-container')) {
+        setShowCustomerDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter customers based on search term
+  const filteredCustomers = (customers || []).filter(customer => {
+    const searchNormalized = normalizeSearchText(customerSearchTerm);
+    const nameNormalized = normalizeSearchText(customer.name || '');
+    const phoneNormalized = normalizeSearchText(customer.phone || '');
+    
+    return nameNormalized.includes(searchNormalized) ||
+           phoneNormalized.includes(searchNormalized);
+  });
+
   // Pagination Component
   const PaginationComponent = ({ 
     currentPage, 
@@ -866,11 +909,14 @@ export default function Sales() {
     const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
     return (
-      <div className="sticky bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 shadow-lg z-10">
+      <div className="bg-white border-t border-gray-200 px-2 lg:px-4 py-2 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center text-xs text-gray-600">
-            <span>
+            <span className="hidden sm:inline">
               {startItem}-{endItem}/{totalItems}
+            </span>
+            <span className="sm:hidden">
+              {currentPage}/{totalPages}
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -884,28 +930,86 @@ export default function Sales() {
               <ChevronLeft className="h-3 w-3" />
             </Button>
             
-            {/* Show page numbers */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-              if (totalPages <= 5 || 
-                  page === 1 || 
-                  page === totalPages || 
-                  (page >= currentPage - 1 && page <= currentPage + 1)) {
-                return (
+            {/* Show page numbers - simplified for mobile */}
+            {totalPages <= 5 ? (
+              // Show all pages if 5 or fewer
+              Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(page)}
+                  className="h-7 w-7 p-0 text-xs"
+                >
+                  {page}
+                </Button>
+              ))
+            ) : (
+              // Show simplified pagination for many pages
+              <>
+                {currentPage > 2 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onPageChange(1)}
+                      className="h-7 w-7 p-0 text-xs"
+                    >
+                      1
+                    </Button>
+                    {currentPage > 3 && (
+                      <span className="px-1 text-gray-400 text-xs">...</span>
+                    )}
+                  </>
+                )}
+                
+                {currentPage > 1 && (
                   <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
+                    variant="outline"
                     size="sm"
-                    onClick={() => onPageChange(page)}
+                    onClick={() => onPageChange(currentPage - 1)}
                     className="h-7 w-7 p-0 text-xs"
                   >
-                    {page}
+                    {currentPage - 1}
                   </Button>
-                );
-              } else if (page === currentPage - 2 || page === currentPage + 2) {
-                return <span key={page} className="px-1 text-gray-400 text-xs">...</span>;
-              }
-              return null;
-            })}
+                )}
+                
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-xs"
+                >
+                  {currentPage}
+                </Button>
+                
+                {currentPage < totalPages && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    className="h-7 w-7 p-0 text-xs"
+                  >
+                    {currentPage + 1}
+                  </Button>
+                )}
+                
+                {currentPage < totalPages - 1 && (
+                  <>
+                    {currentPage < totalPages - 2 && (
+                      <span className="px-1 text-gray-400 text-xs">...</span>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onPageChange(totalPages)}
+                      className="h-7 w-7 p-0 text-xs"
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
             
             <Button
               variant="outline"
@@ -1645,11 +1749,16 @@ export default function Sales() {
     if (cart.length === 0) {
       toast({
         title: "Giỏ hàng trống",
-        description: "Vui lòng thêm sản phẩm vào giỏ hàng",
+        description: "Vui lòng thêm sản phẩm vào giỏ hàng trước khi lưu",
         variant: "destructive",
       });
       return;
     }
+
+    // Show confirmation for better UX
+    const customerName = selectedCustomer?.name || "Khách vãng lai";
+    const orderTotal = total.toLocaleString('vi-VN');
+    
     // Tạo form-data cho đơn hàng chờ thanh toán
     const formData = new FormData();
     formData.append('orderNumber', `PENDING${Date.now()}`);
@@ -1659,11 +1768,13 @@ export default function Sales() {
     formData.append('staffId', user?.staffId?.toString() || "1");
     formData.append('subtotal', subtotal.toString());
     formData.append('taxAmount', taxAmount.toString());
-    formData.append('discountAmount', "0");
+    formData.append('discountAmount', totalDiscountAmount.toString());
     formData.append('total', total.toString());
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', "pending");
     formData.append('status', "pending");
+    formData.append('notes', `Đơn hàng chờ thanh toán cho ${customerName} - Tổng: ${orderTotal}₫`);
+    
     // Gửi từng item
     cart.forEach((item, idx) => {
       const productId = item.productId?.toString() || "";
@@ -1675,49 +1786,58 @@ export default function Sales() {
     });
     
     console.log('FormData đơn hàng chờ:', Array.from(formData.entries()));
+    
+    // Show loading toast
+    toast({
+      title: "Đang lưu đơn hàng...",
+      description: `Lưu đơn hàng ${orderTotal}₫ cho ${customerName}`,
+      duration: 2000,
+    });
+    
     saveOrderForLaterMutation.mutate(formData);
   };
 
   return (
     <AppLayout title="Bán hàng">
-      <div className="lg:grid lg:grid-cols-[1fr_384px] lg:gap-2 flex flex-col gap-4 h-screen" data-testid="sales-page">
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_384px] lg:gap-4 lg:h-[calc(100vh-64px)]" data-testid="sales-page">
         {/* Products Section */}
-        <div className="order-1 lg:order-1 h-full">
-          <Card className="h-full lg:sticky lg:top-0 lg:max-h-screen">
-            <CardContent className="p-6 flex flex-col h-full overflow-hidden">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 gap-4 flex-shrink-0">
+        <div className="order-1 lg:order-1 min-h-[60vh] lg:min-h-0">
+          <Card className="h-full">
+            <CardContent className="p-4 lg:p-6 flex flex-col h-full overflow-hidden">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-4 lg:mb-6 gap-4 flex-shrink-0">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-semibold">Sản phẩm</h2>
+                  <h2 className="text-lg lg:text-xl font-semibold">Sản phẩm</h2>
                   <Button
                     variant="outline"
                     onClick={() => navigate('/orders')}
-                    className="text-sm"
+                    className="text-xs lg:text-sm"
+                    size="sm"
                   >
                     Xem lịch sử hóa đơn
                   </Button>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-                  <div className="relative w-full sm:w-80">
+                <div className="flex flex-col gap-2 w-full lg:w-auto">
+                  <div className="relative w-full">
                     <Input
                       placeholder="Tìm kiếm sản phẩm (có thể gõ không dấu)..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       data-testid="input-product-search"
                     />
                     <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   </div>
                   
                   {/* Barcode Scanner Input */}
-                  <div className="relative w-full sm:w-80">
+                  <div className="relative w-full">
                     <Input
                       ref={setBarcodeInputRef}
                       placeholder="Quét mã vạch hoặc nhập mã vạch..."
                       value={barcodeInput}
                       onChange={handleBarcodeChange}
                       onKeyDown={handleBarcodeKeyDown}
-                      className="pl-10 pr-24 bg-yellow-50 border-yellow-200 focus:border-yellow-400"
+                      className="pl-10 pr-20 bg-yellow-50 border-yellow-200 focus:border-yellow-400 text-sm"
                       data-testid="input-barcode-scanner"
                       autoComplete="off"
                       title="Quét mã vạch để tự động thêm sản phẩm vào giỏ hàng"
@@ -1728,7 +1848,7 @@ export default function Sales() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="absolute right-16 top-1 h-8 p-1 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-100"
+                      className="absolute right-12 top-1 h-8 p-1 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-100"
                       onClick={() => setShowCameraScanner(true)}
                       title="Mở camera để quét mã vạch"
                     >
@@ -1738,15 +1858,16 @@ export default function Sales() {
                     {barcodeInput && (
                       <Button
                         size="sm"
-                        className="absolute right-1 top-1 h-8"
+                        className="absolute right-1 top-1 h-8 text-xs px-2"
                         onClick={() => handleBarcodeSubmit(barcodeInput)}
                       >
                         Quét
                       </Button>
                     )}
-                    <div className="text-xs text-yellow-600 mt-1 text-center">
-                      📱 Quét mã vạch tự động thêm vào giỏ hàng
-                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-yellow-600 text-center lg:hidden">
+                    📱 Quét mã vạch tự động thêm vào giỏ hàng
                   </div>
                   
                   {/* Refresh Products Button */}
@@ -1762,7 +1883,7 @@ export default function Sales() {
                         duration: 2000,
                       });
                     }}
-                    className="self-start mt-0 h-10"
+                    className="self-start h-8 lg:h-10 text-xs"
                     title="Tải lại danh sách sản phẩm nếu vừa thêm sản phẩm mới"
                   >
                     🔄 Refresh
@@ -1771,16 +1892,15 @@ export default function Sales() {
               </div>
 
               <Tabs value={activeProductTab} onValueChange={setActiveProductTab} className="w-full flex flex-col flex-1 min-h-0">
-                <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                  <TabsTrigger value="all">Tất cả sản phẩm</TabsTrigger>
-                  <TabsTrigger value="featured">Sản phẩm hay bán</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 flex-shrink-0 mb-2">
+                  <TabsTrigger value="all" className="text-sm">Tất cả sản phẩm</TabsTrigger>
+                  <TabsTrigger value="featured" className="text-sm">Sản phẩm hay bán</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="all" className="mt-4 flex-1 min-h-0 relative">
-                  <div className="absolute inset-0 flex flex-col">
-                    <div className="flex-1 overflow-y-auto pb-16">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
-                        {paginatedAllProducts.map((product) => {
+                <TabsContent value="all" className="mt-0 flex-1 min-h-0 flex flex-col">
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-2 pb-4">
+                      {paginatedAllProducts.map((product) => {
                           const stockQty = product.stockQuantity || 0;
                           const minStock = product.minStockLevel || 0;
                           
@@ -1809,10 +1929,10 @@ export default function Sales() {
                               }}
                               data-testid={`product-card-${key}`}
                             >
-                              <Card>
-                                <CardContent className="p-4">
-                                  <div className="relative">
-                                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
+                              <Card className="h-full">
+                                <CardContent className="p-3 lg:p-4 h-full flex flex-col">
+                                  <div className="relative mb-3">
+                                    <div className="w-full h-24 sm:h-28 lg:h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg">
                                       <img
                                         src={
                                           product.imageUrl && product.imageUrl !== ""
@@ -1824,43 +1944,50 @@ export default function Sales() {
                                         style={{ width: '100%', height: '100%' }}
                                       />
                                       <Badge
-                                        className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
+                                        className={`absolute top-1 right-1 text-white text-xs ${stockStatus.color}`}
                                         data-testid={`stock-status-${key}`}
                                       >
                                         {stockStatus.label}
                                       </Badge>
                                       {stockQty <= minStock && (
-                                        <AlertTriangle className="absolute top-2 left-2 w-5 h-5 text-orange-500" />
+                                        <AlertTriangle className="absolute top-1 left-1 w-4 h-4 text-orange-500" />
                                       )}
                                     </div>
                                   </div>
-                                  <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
-                                  <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
-                                  <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
-                                  <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
-                                  <Button
-                                    className="w-full mt-2"
-                                    size="sm"
-                                    disabled={isOutOfStock}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!isOutOfStock) {
-                                        addToCart(product);
-                                      }
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
-                                  </Button>
+                                  <div className="flex-1 flex flex-col justify-between">
+                                    <div className="mb-2">
+                                      <h3 className="font-medium text-xs sm:text-sm mb-1 line-clamp-2 leading-tight">{product.name || 'Tên sản phẩm'}</h3>
+                                      <p className="text-sm sm:text-base lg:text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
+                                      <div className="text-xs text-gray-500 space-y-0.5">
+                                        <p>Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
+                                        <p>Tối thiểu: {product.minStockLevel || 0}</p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      className="w-full mt-1 h-8 text-xs"
+                                      size="sm"
+                                      disabled={isOutOfStock}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!isOutOfStock) {
+                                          addToCart(product);
+                                        }
+                                      }}
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
+                                    </Button>
+                                  </div>
                                 </CardContent>
                               </Card>
                             </div>
                           );
                         })}
-                      </div>
                     </div>
-                    
-                    {/* Pagination for all products */}
+                  </div>
+                  
+                  {/* Pagination for all products */}
+                  <div className="flex-shrink-0">
                     <PaginationComponent
                       currentPage={allProductsPage}
                       totalPages={totalAllProductsPages}
@@ -1871,17 +1998,16 @@ export default function Sales() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="featured" className="mt-4 flex-1 min-h-0 relative">
+                <TabsContent value="featured" className="mt-0 flex-1 min-h-0 flex flex-col">
                   {featuredLoading && (
                     <div className="flex justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                     </div>
                   )}
 
-                  <div className="absolute inset-0 flex flex-col">
-                    <div className="flex-1 overflow-y-auto pb-16">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
-                        {paginatedFeaturedProducts.map((product: Product) => {
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-2 pb-4">
+                      {paginatedFeaturedProducts.map((product: Product) => {
                           const stockQty = product.stockQuantity || 0;
                           const minStock = product.minStockLevel || 0;
                           
@@ -1910,10 +2036,10 @@ export default function Sales() {
                               }}
                               data-testid={`featured-product-card-${key}`}
                             >
-                              <Card className="border-yellow-200 bg-yellow-50">
-                                <CardContent className="p-4">
-                                  <div className="relative">
-                                    <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg mb-3">
+                              <Card className="border-yellow-200 bg-yellow-50 h-full">
+                                <CardContent className="p-3 lg:p-4 h-full flex flex-col">
+                                  <div className="relative mb-3">
+                                    <div className="w-full h-24 sm:h-28 lg:h-32 bg-gray-100 flex items-center justify-center overflow-hidden rounded-lg">
                                       <img
                                         src={
                                           product.imageUrl && product.imageUrl !== ""
@@ -1924,47 +2050,54 @@ export default function Sales() {
                                         className="max-w-full max-h-full object-contain"
                                         style={{ width: '100%', height: '100%' }}
                                       />
-                                      <Badge className="absolute top-2 left-2 bg-yellow-500 text-yellow-900">
+                                      <Badge className="absolute top-1 left-1 bg-yellow-500 text-yellow-900 text-xs">
                                         ⭐ Hay bán
                                       </Badge>
                                       <Badge
-                                        className={`absolute top-2 right-2 text-white ${stockStatus.color}`}
+                                        className={`absolute top-1 right-1 text-white text-xs ${stockStatus.color}`}
                                         data-testid={`stock-status-${key}`}
                                       >
                                         {stockStatus.label}
                                       </Badge>
                                       {stockQty <= minStock && (
-                                        <AlertTriangle className="absolute top-12 left-2 w-5 h-5 text-orange-500" />
+                                        <AlertTriangle className="absolute top-8 left-1 w-4 h-4 text-orange-500" />
                                       )}
                                     </div>
                                   </div>
-                                  <h3 className="font-medium text-sm mb-1 line-clamp-2">{product.name || 'Tên sản phẩm'}</h3>
-                                  <p className="text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
-                                  <p className="text-xs text-gray-500">Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
-                                  <p className="text-xs text-gray-500">Tối thiểu: {product.minStockLevel || 0}</p>
-                                  <Button
-                                    className="w-full mt-2"
-                                    size="sm"
-                                    disabled={isOutOfStock}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!isOutOfStock) {
-                                        addToCart(product);
-                                      }
-                                    }}
-                                  >
-                                    <Plus className="w-4 h-4 mr-1" />
-                                    {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
-                                  </Button>
+                                  <div className="flex-1 flex flex-col justify-between">
+                                    <div className="mb-2">
+                                      <h3 className="font-medium text-xs sm:text-sm mb-1 line-clamp-2 leading-tight">{product.name || 'Tên sản phẩm'}</h3>
+                                      <p className="text-sm sm:text-base lg:text-lg font-bold text-primary">{Number(product.price || 0).toLocaleString('vi-VN')}₫</p>
+                                      <div className="text-xs text-gray-500 space-y-0.5">
+                                        <p>Tồn: {product.stockQuantity || 0} {product.unit || ''}</p>
+                                        <p>Tối thiểu: {product.minStockLevel || 0}</p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      className="w-full mt-1 h-8 text-xs"
+                                      size="sm"
+                                      disabled={isOutOfStock}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!isOutOfStock) {
+                                          addToCart(product);
+                                        }
+                                      }}
+                                    >
+                                      <Plus className="w-3 h-3 mr-1" />
+                                      {isOutOfStock ? "Hết hàng" : "Thêm vào hóa đơn"}
+                                    </Button>
+                                  </div>
                                 </CardContent>
                               </Card>
                             </div>
                           );
                         })}
-                      </div>
                     </div>
+                  </div>
 
-                    {/* Show pagination only if there are featured products */}
+                  {/* Show pagination only if there are featured products */}
+                  <div className="flex-shrink-0">
                     {(featuredProducts || []).length > 0 && (
                       <PaginationComponent
                         currentPage={featuredProductsPage}
@@ -1977,13 +2110,15 @@ export default function Sales() {
                   </div>
 
                   {(featuredProducts || []).length === 0 && !featuredLoading && (
-                    <div className="text-center py-12 text-gray-500">
-                      <div className="text-lg mb-2">📦</div>
-                      <div className="text-sm">
-                        Chưa có sản phẩm hay bán nào được chọn.
-                      </div>
-                      <div className="text-xs mt-1">
-                        Hãy vào trang Sản phẩm để đánh dấu các sản phẩm hay bán.
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center py-12 text-gray-500">
+                        <div className="text-lg mb-2">📦</div>
+                        <div className="text-sm">
+                          Chưa có sản phẩm hay bán nào được chọn.
+                        </div>
+                        <div className="text-xs mt-1">
+                          Hãy vào trang Sản phẩm để đánh dấu các sản phẩm hay bán.
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1994,12 +2129,12 @@ export default function Sales() {
         </div>
 
         {/* Cart Section */}
-        <div className="order-2 lg:order-2 h-full">
+        <div className="order-2 lg:order-2 min-h-[40vh] lg:min-h-0">
           <Card className="h-full lg:sticky lg:top-0 lg:max-h-screen">
-            <CardContent className="p-6 flex flex-col h-full overflow-hidden">
+            <CardContent className="p-4 lg:p-6 flex flex-col h-full overflow-hidden">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <ShoppingCart className="w-5 h-5 mr-2" />
+                <h2 className="text-lg lg:text-xl font-semibold flex items-center">
+                  <ShoppingCart className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />
                   Giỏ hàng ({cart.length})
                 </h2>
                 {cart.length > 0 && (
@@ -2047,27 +2182,112 @@ export default function Sales() {
                 </div>
               )}
 
-              {/* Customer Selection */}
-              <div className="mb-4">
-                <Select 
-                  value={selectedCustomer?.id || ""} 
-                  onValueChange={(value) => {
-                    const customer = Array.isArray(customers) ? customers.find((c: any) => c.id === value) : null;
-                    setSelectedCustomer(customer || null);
-                  }}
-                >
-                  <SelectTrigger data-testid="select-customer">
-                    <SelectValue placeholder="Chọn khách hàng (tùy chọn)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="walk-in">Khách vãng lai</SelectItem>
-                    {Array.isArray(customers) && customers.map((customer: any) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.phone}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Customer Selection with Search */}
+              <div className="mb-4 relative customer-search-container">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Khách hàng
+                </label>
+                <div className="relative">
+                  <Input
+                    placeholder="Tìm kiếm khách hàng hoặc nhập tên mới..."
+                    value={customerSearchTerm}
+                    onChange={(e) => {
+                      setCustomerSearchTerm(e.target.value);
+                      setShowCustomerDropdown(true);
+                      // If search is cleared, also clear selected customer
+                      if (!e.target.value) {
+                        setSelectedCustomer(null);
+                      }
+                    }}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                    className="w-full"
+                  />
+                  <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                  
+                  {/* Customer Dropdown */}
+                  {showCustomerDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {/* Walk-in customer option */}
+                      <div
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b"
+                        onClick={() => {
+                          setSelectedCustomer(null);
+                          setCustomerSearchTerm("Khách vãng lai");
+                          setShowCustomerDropdown(false);
+                        }}
+                      >
+                        <div className="font-medium text-gray-900">Khách vãng lai</div>
+                        <div className="text-sm text-gray-500">Không cần thông tin khách hàng</div>
+                      </div>
+                      
+                      {/* Create new customer option */}
+                      {customerSearchTerm && customerSearchTerm !== "Khách vãng lai" && 
+                       !filteredCustomers.some(c => c.name?.toLowerCase() === customerSearchTerm.toLowerCase()) && (
+                        <div
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b bg-blue-25"
+                          onClick={() => {
+                            const newCustomer = {
+                              id: `new-${Date.now()}`,
+                              customerId: 0,
+                              name: customerSearchTerm,
+                              phone: '',
+                              email: '',
+                              address: '',
+                              hoTen: customerSearchTerm,
+                              soDienThoai: '',
+                              diaChi: '',
+                              hangKhachHang: '',
+                              customerType: ''
+                            };
+                            setSelectedCustomer(newCustomer);
+                            setShowCustomerDropdown(false);
+                          }}
+                        >
+                          <div className="font-medium text-blue-600">+ Tạo khách hàng mới: "{customerSearchTerm}"</div>
+                          <div className="text-sm text-blue-500">Tạo khách hàng mới với tên này</div>
+                        </div>
+                      )}
+                      
+                      {/* Existing customers */}
+                      {filteredCustomers.map((customer) => (
+                        <div
+                          key={customer.id}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setCustomerSearchTerm(customer.name || '');
+                            setShowCustomerDropdown(false);
+                          }}
+                        >
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {customer.phone} {customer.address && `• ${customer.address}`}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* No results */}
+                      {filteredCustomers.length === 0 && customerSearchTerm && customerSearchTerm !== "Khách vãng lai" && (
+                        <div className="px-4 py-2 text-gray-500 text-sm">
+                          Không tìm thấy khách hàng nào
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Selected customer info */}
+                {selectedCustomer && selectedCustomer.id !== 'walk-in' && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded-md text-sm">
+                    <div className="font-medium text-blue-900">{selectedCustomer.name}</div>
+                    {selectedCustomer.phone && (
+                      <div className="text-blue-700">📞 {selectedCustomer.phone}</div>
+                    )}
+                    {selectedCustomer.address && (
+                      <div className="text-blue-700">📍 {selectedCustomer.address}</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Cart Items */}
@@ -2079,44 +2299,76 @@ export default function Sales() {
                   </div>
                 ) : (
                   <>
+                    {/* Header cho giỏ hàng */}
+                    <div className="flex items-center p-2 bg-gray-50 rounded-lg border text-xs font-medium text-gray-700">
+                      <div className="w-8 text-center">STT</div>
+                      <div className="flex-1 px-2">Tên hàng</div>
+                      <div className="w-12 text-center">ĐVT</div>
+                      <div className="w-16 text-center">Số lượng</div>
+                      <div className="w-8"></div> {/* Space cho nút xóa */}
+                    </div>
+                    
                     {console.log('Rendering cart items:', cart)}
-                    {cart.map((item) => (
+                    {cart.map((item, index) => (
                       <div 
                         key={item.cartItemId} 
-                        className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-blue-200 mb-2" 
+                        className="flex items-center p-3 bg-white rounded-lg border-2 border-blue-200 mb-2" 
                         data-testid={`cart-item-${item.productId}`}
                         style={{visibility: 'visible', display: 'flex', minHeight: '60px', opacity: '1'}}
                       >
-                        <div className="flex-1 min-w-0">
+                        {/* Cột STT */}
+                        <div className="w-8 text-center">
+                          <span className="text-sm font-medium text-gray-600">{index + 1}</span>
+                        </div>
+                        
+                        {/* Tên hàng và giá */}
+                        <div className="flex-1 min-w-0 px-2">
                           <p className="font-medium text-sm truncate">{item.name || 'Tên sản phẩm không xác định'}</p>
                           <p className="text-primary font-semibold text-sm lg:text-base">{Number(item.price || 0).toLocaleString('vi-VN')}₫</p>
                         </div>
-                        <div className="flex items-center space-x-1 lg:space-x-2 ml-2">
+                        
+                        {/* Đơn vị tính */}
+                        <div className="w-12 text-center">
+                          {item.unit ? (
+                            <span className="text-xs text-gray-600 bg-gray-100 px-1 py-1 rounded text-center block">
+                              {item.unit}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </div>
+                        
+                        {/* Số lượng */}
+                        <div className="w-16 flex items-center justify-center space-x-1">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                             data-testid={`button-decrease-${item.productId}`}
-                            className="h-8 w-8 p-0"
+                            className="h-6 w-6 p-0"
                           >
                             <Minus className="w-3 h-3" />
                           </Button>
-                          <span className="w-6 lg:w-8 text-center text-sm font-medium" data-testid={`quantity-${item.productId}`}>{item.quantity}</span>
+                          <span className="w-6 text-center text-sm font-medium" data-testid={`quantity-${item.productId}`}>{item.quantity}</span>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                             data-testid={`button-increase-${item.productId}`}
-                            className="h-8 w-8 p-0"
+                            className="h-6 w-6 p-0"
                           >
                             <Plus className="w-3 h-3" />
                           </Button>
+                        </div>
+                        
+                        {/* Nút xóa */}
+                        <div className="w-8 flex justify-center">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => removeFromCart(item.cartItemId)}
                             data-testid={`button-remove-${item.productId}`}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -2330,14 +2582,14 @@ export default function Sales() {
               )}
 
               {/* Action Buttons */}
-              <div className="space-y-2 mt-4">
+              <div className="space-y-3 mt-4">
                 <Button
-                  className="w-full h-12 text-lg"
+                  className="w-full h-12 text-lg font-semibold"
                   onClick={processPayment}
                   disabled={cart.length === 0 || createOrderMutation.isPending}
                   data-testid="button-process-payment"
                 >
-                  {createOrderMutation.isPending ? "Đang xử lý..." : "Thanh toán"}
+                  {createOrderMutation.isPending ? "Đang xử lý..." : "💳 Thanh toán ngay"}
                 </Button>
                 
                 <Button
@@ -2350,15 +2602,27 @@ export default function Sales() {
                   {createOrderMutation.isPending || createEInvoiceMutation.isPending ? "Đang xử lý..." : "Xuất hóa đơn"}
                 </Button>
                 
-                <Button
-                  variant="outline"
-                  className="w-full h-10 text-sm"
-                  onClick={saveOrderForLater}
-                  disabled={cart.length === 0 || saveOrderForLaterMutation.isPending || createOrderMutation.isPending}
-                  data-testid="button-save-for-later"
-                >
-                  {saveOrderForLaterMutation.isPending ? "Đang lưu..." : "Thanh toán sau"}
-                </Button>
+                {/* Save for later section */}
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs text-gray-600 mb-2 text-center">
+                    Hoặc lưu đơn hàng để thanh toán sau
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300"
+                    onClick={saveOrderForLater}
+                    disabled={cart.length === 0 || saveOrderForLaterMutation.isPending || createOrderMutation.isPending}
+                    data-testid="button-save-for-later"
+                  >
+                    <Clock className="w-4 h-4 mr-2" />
+                    {saveOrderForLaterMutation.isPending ? "Đang lưu..." : "💾 Lưu đơn hàng"}
+                  </Button>
+                  {cart.length > 0 && (
+                    <div className="text-xs text-gray-500 mt-1 text-center">
+                      Đơn hàng sẽ được lưu với trạng thái "Chờ thanh toán"
+                    </div>
+                  )}
+                </div>
               </div>
               </div> {/* Close scrollable content container */}
             </CardContent>
