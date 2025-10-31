@@ -1799,7 +1799,7 @@ export default function Sales() {
 
   return (
     <AppLayout title="Bán hàng">
-      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_384px] lg:gap-4" data-testid="sales-page">
+      <div className="flex flex-col lg:grid lg:grid-cols-[70%_30%] lg:gap-4" data-testid="sales-page">
         {/* Products Section */}
         <div className="order-1 lg:order-1 min-h-[60vh] lg:min-h-[calc(100vh-120px)]">
           <Card className="h-full">
@@ -2134,7 +2134,7 @@ export default function Sales() {
 
         {/* Cart Section */}
         <div className="order-2 lg:order-2 min-h-[40vh] lg:min-h-[calc(100vh-120px)]">
-          <Card className="h-full lg:sticky lg:top-0 lg:max-h-[calc(100vh-120px)]">
+          <Card className="h-full lg:sticky lg:top-0 lg:max-h-[calc(100vh-120px)] lg:max-w-[480px]">
             <CardContent className="p-4 lg:p-6 flex flex-col h-full overflow-hidden">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-lg lg:text-xl font-semibold flex items-center">
@@ -2306,9 +2306,10 @@ export default function Sales() {
                     {/* Header cho giỏ hàng */}
                     <div className="flex items-center p-2 bg-gray-50 rounded-lg border text-xs font-medium text-gray-700">
                       <div className="w-8 text-center">STT</div>
-                      <div className="flex-1 px-2">Tên hàng</div>
-                      <div className="w-12 text-center">ĐVT</div>
-                      <div className="w-16 text-center">Số lượng</div>
+                      <div className="flex-1 px-2 min-w-0">Tên hàng</div>
+                      <div className="w-10 text-center text-xs">ĐVT</div>
+                      <div className="w-20 text-center">Số lượng</div>
+                      <div className="w-16 text-center text-xs">Thành tiền</div>
                       <div className="w-8"></div> {/* Space cho nút xóa */}
                     </div>
                     
@@ -2316,25 +2317,31 @@ export default function Sales() {
                     {cart.map((item, index) => (
                       <div 
                         key={item.cartItemId} 
-                        className="flex items-center p-3 bg-white rounded-lg border-2 border-blue-200 mb-2" 
+                        className="flex items-start p-3 bg-white rounded-lg border-2 border-blue-200 mb-2" 
                         data-testid={`cart-item-${item.productId}`}
-                        style={{visibility: 'visible', display: 'flex', minHeight: '60px', opacity: '1'}}
+                        style={{visibility: 'visible', display: 'flex', minHeight: '80px', opacity: '1'}}
                       >
                         {/* Cột STT */}
-                        <div className="w-8 text-center">
+                        <div className="w-8 text-center flex items-start pt-1">
                           <span className="text-sm font-medium text-gray-600">{index + 1}</span>
                         </div>
                         
                         {/* Tên hàng và giá */}
                         <div className="flex-1 min-w-0 px-2">
-                          <p className="font-medium text-sm truncate">{item.name || 'Tên sản phẩm không xác định'}</p>
-                          <p className="text-primary font-semibold text-sm lg:text-base">{Number(item.price || 0).toLocaleString('vi-VN')}₫</p>
+                          <p className="font-medium text-sm break-words leading-tight" style={{ 
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
+                            hyphens: 'auto'
+                          }}>
+                            {item.name || 'Tên sản phẩm không xác định'}
+                          </p>
+                          <p className="text-primary font-semibold text-xs mt-1">{Number(item.price || 0).toLocaleString('vi-VN')}₫</p>
                         </div>
                         
                         {/* Đơn vị tính */}
-                        <div className="w-12 text-center">
+                        <div className="w-10 text-center flex items-start pt-1">
                           {item.unit ? (
-                            <span className="text-xs text-gray-600 bg-gray-100 px-1 py-1 rounded text-center block">
+                            <span className="text-xs text-gray-600 bg-gray-100 px-1 py-0.5 rounded text-center block">
                               {item.unit}
                             </span>
                           ) : (
@@ -2343,7 +2350,7 @@ export default function Sales() {
                         </div>
                         
                         {/* Số lượng */}
-                        <div className="w-16 flex items-center justify-center space-x-1">
+                        <div className="w-20 flex items-start justify-center space-x-1 pt-1">
                           <Button
                             variant="outline"
                             size="sm"
@@ -2365,8 +2372,15 @@ export default function Sales() {
                           </Button>
                         </div>
                         
+                        {/* Thành tiền */}
+                        <div className="w-16 text-center flex items-start pt-1">
+                          <span className="text-xs font-semibold text-primary w-full" data-testid={`item-total-${item.productId}`}>
+                            {Number(item.totalPrice).toLocaleString('vi-VN')}₫
+                          </span>
+                        </div>
+                        
                         {/* Nút xóa */}
-                        <div className="w-8 flex justify-center">
+                        <div className="w-8 flex justify-center items-start pt-1">
                           <Button
                             variant="ghost"
                             size="sm"
