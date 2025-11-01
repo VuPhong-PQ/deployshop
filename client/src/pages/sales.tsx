@@ -109,7 +109,7 @@ export default function Sales() {
     soDienThoai: "",
     email: "",
     diaChi: "",
-    hangKhachHang: "Bronze"
+    hangKhachHang: "Thuong"
   });
 
   // Auto-focus barcode input on keypress
@@ -524,7 +524,8 @@ export default function Sales() {
       name: c.hoTen || '',
       phone: c.soDienThoai || '',
       address: c.diaChi || '',
-      customerType: c.hangKhachHang || '',
+      customerType: c.hangKhachHang === 'VIP' ? 'vip' : 
+                   c.hangKhachHang === 'Premium' ? 'premium' : 'regular',
     })),
     enabled: !!currentStore?.storeId,
   });
@@ -844,9 +845,24 @@ export default function Sales() {
   const createCustomerMutation = useMutation({
     mutationFn: async (customerData: any) => {
       const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
+      
+      // Format data to match backend API expectations
+      const requestData = {
+        hoTen: customerData.hoTen,
+        soDienThoai: customerData.soDienThoai,
+        email: customerData.email || '',
+        diaChi: customerData.diaChi || '',
+        hangKhachHang: customerData.hangKhachHang,
+        storeId: currentStore?.storeId || 'store-1',
+        customerType: customerData.hangKhachHang === 'VIP' ? 'vip' : 
+                     customerData.hangKhachHang === 'Premium' ? 'premium' : 'regular'
+      };
+      
+      console.log('Creating customer with data:', requestData);
+      
       return await apiRequest(`/api/customers${storeParam}`, { 
         method: 'POST', 
-        body: JSON.stringify(customerData),
+        body: JSON.stringify(requestData),
         headers: {
           'Content-Type': 'application/json'
         }
@@ -866,7 +882,8 @@ export default function Sales() {
         name: response.hoTen || quickCustomerData.hoTen,
         phone: response.soDienThoai || quickCustomerData.soDienThoai,
         address: response.diaChi || quickCustomerData.diaChi,
-        customerType: response.hangKhachHang || quickCustomerData.hangKhachHang,
+        customerType: (response.hangKhachHang || quickCustomerData.hangKhachHang) === 'VIP' ? 'vip' : 
+                     (response.hangKhachHang || quickCustomerData.hangKhachHang) === 'Premium' ? 'premium' : 'regular',
       };
 
       // Set as selected customer
@@ -879,7 +896,7 @@ export default function Sales() {
         soDienThoai: "",
         email: "",
         diaChi: "",
-        hangKhachHang: "Bronze"
+        hangKhachHang: "Thuong"
       });
       setShowQuickCustomerForm(false);
       setShowCustomerDropdown(false);
@@ -2385,7 +2402,7 @@ export default function Sales() {
                           soDienThoai: "",
                           email: "",
                           diaChi: "",
-                          hangKhachHang: "Bronze"
+                          hangKhachHang: "Thuong"
                         });
                       }}
                       className="h-6 w-6 p-0 text-green-600"
@@ -2447,10 +2464,9 @@ export default function Sales() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Bronze">Bronze</SelectItem>
-                            <SelectItem value="Silver">Silver</SelectItem>
-                            <SelectItem value="Gold">Gold</SelectItem>
-                            <SelectItem value="Platinum">Platinum</SelectItem>
+                            <SelectItem value="Thuong">Thường</SelectItem>
+                            <SelectItem value="Premium">Premium</SelectItem>
+                            <SelectItem value="VIP">VIP</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -2497,7 +2513,7 @@ export default function Sales() {
                             soDienThoai: "",
                             email: "",
                             diaChi: "",
-                            hangKhachHang: "Bronze"
+                            hangKhachHang: "Thuong"
                           });
                         }}
                         className="px-4"

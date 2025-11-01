@@ -31,18 +31,26 @@ export default function Customers() {
   // Add customer mutation
   const addCustomerMutation = useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
-      const formData = new URLSearchParams();
-      formData.append('hoTen', customerData.name);
-      formData.append('soDienThoai', customerData.phone);
-      formData.append('email', customerData.email || '');
-      formData.append('diaChi', customerData.address || '');
-      formData.append('hangKhachHang', customerData.hangKhachHang || 'Thuong');
-      formData.append('storeId', customerData.storeId || 'store-1');
-      formData.append('customerType', customerData.customerType || 'regular');
+      const requestData = {
+        hoTen: customerData.name,
+        soDienThoai: customerData.phone,
+        email: customerData.email || '',
+        diaChi: customerData.address || '',
+        hangKhachHang: customerData.customerType === 'vip' ? 'VIP' : 
+                      customerData.customerType === 'premium' ? 'Premium' : 'Thuong',
+        storeId: customerData.storeId || 'store-1',
+        customerType: customerData.customerType || 'regular'
+      };
+      
+      console.log('Sending add request for customer:', requestData);
+      
       return apiRequest('/api/customers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData.toString(),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData),
       });
     },
     onSuccess: () => {
@@ -50,12 +58,14 @@ export default function Customers() {
         title: "Thành công",
         description: "Khách hàng đã được thêm thành công",
       });
-  // Invalidate lại cache để react-query tự động refetch
-  queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      // Force reload data immediately from server
+      console.log('Customer added, refetching data...');
+      refetch();
       setIsAddDialogOpen(false);
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Add customer error:', error);
       toast({
         title: "Lỗi",
         description: "Không thể thêm khách hàng. Vui lòng thử lại.",
@@ -76,15 +86,27 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   // Fetch customers and orders
-  const { data: rawCustomers = [], isLoading } = useQuery<any[]>({
+  const { data: rawCustomers = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: ['/api/customers'],
+    queryFn: async () => {
+      console.log('Fetching customers from API...');
+      const response = await apiRequest('/api/customers', { method: 'GET' });
+      console.log('Raw API response:', response);
+      return response;
+    },
+    // Override global settings - force fresh data
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
   });
 
   // Debug: log dữ liệu gốc từ API
   console.log('rawCustomers:', rawCustomers);
   // Map dữ liệu từ API sang đúng định dạng frontend
   rawCustomers.forEach((c, i) => {
-    console.log(`Customer[${i}] hangKhachHang:`, c.hangKhachHang);
+    console.log(`Customer[${i}] hangKhachHang:`, c.hangKhachHang, 'type:', typeof c.hangKhachHang);
   });
   const customers: Customer[] = rawCustomers.map((c) => ({
     id: c.customerId?.toString(),
@@ -92,14 +114,11 @@ export default function Customers() {
     phone: c.soDienThoai || "",
     email: c.email || "",
     address: c.diaChi || "",
-  customerType: c.hangKhachHang === 3 ? 'vip'
-    : c.hangKhachHang === 2 ? 'premium'
-    : c.hangKhachHang === 1 ? 'regular'
-    : (typeof c.hangKhachHang === 'string' ?
-        (c.hangKhachHang.toLowerCase() === 'vip' ? 'vip'
-          : c.hangKhachHang.toLowerCase() === 'premium' ? 'premium'
-          : 'regular')
-        : 'regular'),
+    customerType: 
+      // Kiểm tra theo string trước
+      (typeof c.hangKhachHang === 'string' && c.hangKhachHang.toLowerCase() === 'vip') || c.hangKhachHang === 3 ? 'vip'
+      : (typeof c.hangKhachHang === 'string' && c.hangKhachHang.toLowerCase() === 'premium') || c.hangKhachHang === 2 ? 'premium'
+      : 'regular',
     loyaltyPoints: c.loyaltyPoints || 0,
     totalSpent: c.totalSpent || "0",
     storeId: c.storeId || "store-1",
@@ -135,20 +154,25 @@ export default function Customers() {
   // Edit customer mutation
   const editCustomerMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<CustomerFormData> }) => {
-      const form = new URLSearchParams();
-      form.append('hoTen', data.name || '');
-      form.append('soDienThoai', data.phone || '');
-      form.append('email', data.email || '');
-      form.append('diaChi', data.address || '');
-  let hangKhachHang = 1;
-  if (data.customerType === 'vip') hangKhachHang = 3;
-  else if (data.customerType === 'premium') hangKhachHang = 2;
-  form.append('hangKhachHang', hangKhachHang.toString());
-  form.append('customerType', data.customerType || 'regular');
+      const requestData = {
+        hoTen: data.name || '',
+        soDienThoai: data.phone || '',
+        email: data.email || '',
+        diaChi: data.address || '',
+        hangKhachHang: data.customerType === 'vip' ? 'VIP' : 
+                      data.customerType === 'premium' ? 'Premium' : 'Thuong',
+        customerType: data.customerType || 'regular'
+      };
+      
+      console.log('Sending update request for customer:', id, requestData);
+      
       return apiRequest(`/api/customers/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form.toString(),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestData),
       });
     },
     onSuccess: () => {
@@ -156,11 +180,14 @@ export default function Customers() {
         title: "Thành công",
         description: "Thông tin khách hàng đã được cập nhật",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      // Force reload data immediately from server
+      console.log('Customer updated, refetching data...');
+      refetch();
       setEditingCustomer(null);
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Update customer error:', error);
       toast({
         title: "Lỗi",
         description: "Không thể cập nhật thông tin khách hàng",
@@ -181,7 +208,8 @@ export default function Customers() {
         title: "Thành công",
         description: "Khách hàng đã được xóa",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      console.log('Customer deleted, refetching data...');
+      refetch();
     },
     onError: () => {
       toast({
@@ -292,6 +320,16 @@ export default function Customers() {
             </Select>
             <Button variant="outline" onClick={resetFilters} data-testid="button-reset-filters">
               Xóa bộ lọc
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                console.log('Force refreshing customers data...');
+                refetch();
+              }}
+              data-testid="button-refresh-data"
+            >
+              🔄 Refresh Data
             </Button>
           </div>
 
