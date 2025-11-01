@@ -436,43 +436,64 @@ export default function OrdersPage() {
       
       {/* Thống kê trạng thái */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedPaymentStatus("all");
+          setSelectedOrderStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-gray-600">Tổng đơn</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedPaymentStatus("paid");
+          setSelectedOrderStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-green-600 print:text-black">{stats.paid}</div>
             <div className="text-sm text-gray-600">Đã thanh toán</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedPaymentStatus("pending");
+          setSelectedOrderStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             <div className="text-sm text-gray-600">Chờ thanh toán</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedPaymentStatus("failed");
+          setSelectedOrderStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
             <div className="text-sm text-gray-600">Thanh toán thất bại</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedOrderStatus("completed");
+          setSelectedPaymentStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-blue-600">{stats.completed}</div>
             <div className="text-sm text-gray-600">Hoàn thành</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedOrderStatus("pending");
+          setSelectedPaymentStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-orange-600">{stats.processing}</div>
             <div className="text-sm text-gray-600">Đang xử lý</div>
           </CardContent>
         </Card>
-        <Card className="text-center">
+        <Card className="text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setSelectedOrderStatus("cancelled");
+          setSelectedPaymentStatus("all");
+        }}>
           <CardContent className="p-3">
             <div className="text-2xl font-bold text-gray-600">{stats.cancelled}</div>
             <div className="text-sm text-gray-600">Đã hủy</div>
