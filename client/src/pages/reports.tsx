@@ -471,13 +471,13 @@ export default function Reports() {
           </div>
         ) : (
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
-              <TabsTrigger value="overview">Tổng quan</TabsTrigger>
-              <TabsTrigger value="products">Sản phẩm</TabsTrigger>
-              <TabsTrigger value="payment">Thanh toán</TabsTrigger>
-              <TabsTrigger value="customers">Khách hàng</TabsTrigger>
-              <TabsTrigger value="profit">Lợi nhuận</TabsTrigger>
-              <TabsTrigger value="discounts">Giảm giá</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 grid-rows-3 sm:grid-cols-3 sm:grid-rows-2 lg:grid-cols-6 lg:grid-rows-1 gap-1 h-auto">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm">Tổng quan</TabsTrigger>
+              <TabsTrigger value="products" className="text-xs sm:text-sm">Sản phẩm</TabsTrigger>
+              <TabsTrigger value="payment" className="text-xs sm:text-sm">Thanh toán</TabsTrigger>
+              <TabsTrigger value="customers" className="text-xs sm:text-sm">Khách hàng</TabsTrigger>
+              <TabsTrigger value="profit" className="text-xs sm:text-sm">Lợi nhuận</TabsTrigger>
+              <TabsTrigger value="discounts" className="text-xs sm:text-sm">Giảm giá</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
