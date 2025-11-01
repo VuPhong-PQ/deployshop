@@ -115,9 +115,13 @@ export default function Customers() {
     email: c.email || "",
     address: c.diaChi || "",
     customerType: 
-      // Kiểm tra theo string trước
-      (typeof c.hangKhachHang === 'string' && c.hangKhachHang.toLowerCase() === 'vip') || c.hangKhachHang === 3 ? 'vip'
-      : (typeof c.hangKhachHang === 'string' && c.hangKhachHang.toLowerCase() === 'premium') || c.hangKhachHang === 2 ? 'premium'
+      // Kiểm tra theo string chính xác
+      c.hangKhachHang === 'VIP' ? 'vip'
+      : c.hangKhachHang === 'Premium' ? 'premium'
+      : c.hangKhachHang === 'Thuong' ? 'regular'
+      // Fallback cho các giá trị số cũ (nếu có)
+      : c.hangKhachHang === 3 ? 'vip'
+      : c.hangKhachHang === 2 ? 'premium'
       : 'regular',
     loyaltyPoints: c.loyaltyPoints || 0,
     totalSpent: c.totalSpent || "0",
@@ -270,6 +274,7 @@ export default function Customers() {
 
   // Handle edit customer
   const handleEditCustomer = (customer: Customer) => {
+    console.log('Editing customer:', customer);
     setEditingCustomer(customer);
     form.reset({
       name: customer.name,
@@ -280,6 +285,7 @@ export default function Customers() {
       customerType: customer.customerType,
       loyaltyPoints: customer.loyaltyPoints,
       totalSpent: customer.totalSpent,
+      hangKhachHang: customer.hangKhachHang,
     });
     setIsAddDialogOpen(true);
   };
