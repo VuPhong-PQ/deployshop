@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API</title>
+</head>
+<body>
+    <h1>Test API Orders</h1>
+    <button onclick="testCreateOrder()">Test Create Order</button>
+    <button onclick="testGetOrders()">Test Get Orders</button>
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:5271';
+        
+        async function testCreateOrder() {
+            console.log('Testing create order...');
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const formData = new FormData();
+                formData.append('customerId', '0');
+                formData.append('staffId', '1');
+                formData.append('storeId', '1');
+                formData.append('subtotal', '100000');
+                formData.append('taxAmount', '10000');
+                formData.append('discountAmount', '0');
+                formData.append('total', '110000');
+                formData.append('paymentMethod', 'cash');
+                formData.append('paymentStatus', 'paid');
+                formData.append('status', 'completed');
+                
+                // Add one test item
+                formData.append('items[0].productId', '1');
+                formData.append('items[0].productName', 'Test Product');
+                formData.append('items[0].quantity', '1');
+                formData.append('items[0].unitPrice', '100000');
+                formData.append('items[0].totalPrice', '100000');
+                
+                const response = await fetch(`${API_BASE}/api/orders`, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('Success result:', result);
+                resultDiv.innerHTML = `<pre>CREATE ORDER SUCCESS:\n${JSON.stringify(result, null, 2)}</pre>`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<pre style="color: red;">CREATE ORDER ERROR:\n${error.message}</pre>`;
+            }
+        }
+        
+        async function testGetOrders() {
+            console.log('Testing get orders...');
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/orders`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const result = await response.json();
+                console.log('Success result:', result);
+                resultDiv.innerHTML = `<pre>GET ORDERS SUCCESS:\n${JSON.stringify(result, null, 2)}</pre>`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<pre style="color: red;">GET ORDERS ERROR:\n${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
