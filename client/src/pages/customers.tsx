@@ -16,12 +16,20 @@ import { Plus, Search, Edit, Trash2, Users, Phone, Mail, MapPin, ShoppingBag, Ca
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertCustomerSchema } from "@shared/schema";
 import { z } from "zod";
-import type { Customer, Order } from "@shared/schema";
+import type { ApiCustomer, CustomerFormData, ApiStore, Customer } from "@/types/api";
 
-const customerFormSchema = insertCustomerSchema.extend({
+const customerFormSchema = z.object({
+  name: z.string().min(1, "Họ tên là bắt buộc"),
   phone: z.string().min(1, "Số điện thoại là bắt buộc"),
+  email: z.string().email().optional().or(z.literal("")),
+  address: z.string().optional(),
+  storeId: z.string().min(1, "Cửa hàng là bắt buộc"),
+  customerType: z.enum(["regular", "premium", "vip"]).optional().default("regular"),
+  dateOfBirth: z.date().optional(),
+  loyaltyPoints: z.number().optional().default(0),
+  totalSpent: z.string().optional().default("0"),
+  isActive: z.boolean().optional().default(true),
 });
 
 type CustomerFormData = z.infer<typeof customerFormSchema>;
@@ -34,12 +42,15 @@ export default function Customers() {
       const requestData = {
         hoTen: customerData.name,
         soDienThoai: customerData.phone,
-        email: customerData.email || '',
-        diaChi: customerData.address || '',
+        email: customerData.email || null,
+        diaChi: customerData.address || null,
         hangKhachHang: customerData.customerType === 'vip' ? 'VIP' : 
                       customerData.customerType === 'premium' ? 'Premium' : 'Thuong',
-        storeId: customerData.storeId || 'store-1',
-        customerType: customerData.customerType || 'regular'
+        storeId: customerData.storeId ? parseInt(customerData.storeId) : null,
+        loyaltyPoints: customerData.loyaltyPoints || 0,
+        totalSpent: parseFloat(customerData.totalSpent || "0"),
+        isActive: customerData.isActive !== undefined ? customerData.isActive : true,
+        dateOfBirth: customerData.dateOfBirth?.toISOString() || null,
       };
       
       console.log('Sending add request for customer:', requestData);
@@ -82,11 +93,11 @@ export default function Customers() {
     setSelectedTier("all");
   };
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<ApiCustomer | null>(null);
 
   // Fetch customers and orders
-  const { data: rawCustomers = [], isLoading, refetch } = useQuery<any[]>({
+  const { data: rawCustomers = [], isLoading, refetch } = useQuery<ApiCustomer[]>({
     queryKey: ['/api/customers'],
     queryFn: async () => {
       console.log('Fetching customers from API...');
@@ -141,23 +152,23 @@ export default function Customers() {
 
   // Form for adding/editing customers
   const form = useForm<CustomerFormData>({
-    // resolver: zodResolver(customerFormSchema), // Tạm thời bỏ validate để test submit
+    resolver: zodResolver(customerFormSchema),
     defaultValues: {
       name: "",
-      email: "",
       phone: "",
+      email: "",
       address: "",
-      storeId: "store-1",
+      storeId: "",
       customerType: "regular",
       loyaltyPoints: 0,
       totalSpent: "0",
-      hangKhachHang: "Thuong",
+      isActive: true,
     },
   });
 
   // Edit customer mutation
   const editCustomerMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CustomerFormData> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<CustomerFormData> }) => {
       const requestData = {
         hoTen: data.name || '',
         soDienThoai: data.phone || '',
@@ -165,7 +176,10 @@ export default function Customers() {
         diaChi: data.address || '',
         hangKhachHang: data.customerType === 'vip' ? 'VIP' : 
                       data.customerType === 'premium' ? 'Premium' : 'Thuong',
-        customerType: data.customerType || 'regular'
+        storeId: data.storeId ? parseInt(data.storeId) : null,
+        loyaltyPoints: data.loyaltyPoints || 0,
+        totalSpent: parseFloat(data.totalSpent || "0"),
+        isActive: data.isActive !== undefined ? data.isActive : true,
       };
       
       console.log('Sending update request for customer:', id, requestData);
@@ -236,25 +250,30 @@ export default function Customers() {
     const matchesSearch = customerNameNormalized.includes(searchNormalized) ||
                          customerPhoneNormalized.includes(searchNormalized) ||
                          customerEmailNormalized.includes(searchNormalized);
-    // Nếu không có trường customerType, luôn cho qua filter tier
-    const matchesTier = selectedTier === "all" || !customer.customerType || customer.customerType === selectedTier;
+    // Filter by tier using backend field
+    const matchesTier = selectedTier === "all" || 
+      (selectedTier === "vip" && customer.hangKhachHang === "VIP") ||
+      (selectedTier === "premium" && customer.hangKhachHang === "Premium") ||
+      (selectedTier === "regular" && customer.hangKhachHang === "Thuong") ||
+      (selectedTier === "platinum" && customer.hangKhachHang === "Platinum");
     return matchesSearch && matchesTier;
   });
 
   // Get customer orders
-  const getCustomerOrders = (customerId: string) => {
+  const getCustomerOrders = (customerId: number) => {
     return orders.filter(order => order.customerId === customerId);
   };
 
   // Get customer tier badge
-  const getTierBadge = (type: string) => {
-    switch (type) {
-      case 'vip':
+  const getTierBadge = (hangKhachHang: string) => {
+    switch (hangKhachHang) {
+      case 'VIP':
         return { label: 'VIP', color: 'bg-purple-500' };
-      case 'premium':
+      case 'Premium':
         return { label: 'Premium', color: 'bg-yellow-400 text-black' };
-      case 'regular':
-        return { label: 'Thường', color: 'bg-gray-500' };
+      case 'Platinum':
+        return { label: 'Platinum', color: 'bg-gray-800' };
+      case 'Thuong':
       default:
         return { label: 'Thường', color: 'bg-gray-500' };
     }
@@ -265,7 +284,7 @@ export default function Customers() {
     console.log('Submit customer data:', data);
     if (editingCustomer) {
       // Nếu đang chỉnh sửa, gọi mutation cập nhật
-      editCustomerMutation.mutate({ id: editingCustomer.id, data });
+      editCustomerMutation.mutate({ id: editingCustomer.customerId, data });
     } else {
       // Nếu thêm mới, gọi mutation thêm mới
       addCustomerMutation.mutate(data);
@@ -273,25 +292,26 @@ export default function Customers() {
   };
 
   // Handle edit customer
-  const handleEditCustomer = (customer: Customer) => {
+  const handleEditCustomer = (customer: ApiCustomer) => {
     console.log('Editing customer:', customer);
     setEditingCustomer(customer);
     form.reset({
-      name: customer.name,
+      name: customer.hoTen || "",
       email: customer.email || "",
-      phone: customer.phone,
-      address: customer.address || "",
-      storeId: customer.storeId,
-      customerType: customer.customerType,
-      loyaltyPoints: customer.loyaltyPoints,
-      totalSpent: customer.totalSpent,
-      hangKhachHang: customer.hangKhachHang,
+      phone: customer.soDienThoai || "",
+      address: customer.diaChi || "",
+      storeId: customer.storeId?.toString() || "",
+      customerType: customer.hangKhachHang === 'VIP' ? 'vip' : 
+                   customer.hangKhachHang === 'Premium' ? 'premium' : 'regular',
+      loyaltyPoints: customer.loyaltyPoints || 0,
+      totalSpent: customer.totalSpent.toString() || "0",
+      isActive: customer.isActive,
     });
     setIsAddDialogOpen(true);
   };
 
   // Handle delete customer
-  const handleDeleteCustomer = (id: string) => {
+  const handleDeleteCustomer = (id: number) => {
     if (confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
       deleteCustomerMutation.mutate(id);
     }
@@ -420,6 +440,31 @@ export default function Customers() {
 
                   <FormField
                     control={form.control}
+                    name="storeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cửa hàng *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-store">
+                              <SelectValue placeholder="Chọn cửa hàng" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {stores.map((store) => (
+                              <SelectItem key={store.storeId} value={store.storeId.toString()}>
+                                {store.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="customerType"
                     render={({ field }) => (
                       <FormItem>
@@ -497,7 +542,7 @@ export default function Customers() {
             </Card>
           ) : (
             filteredCustomers.map((customer) => {
-              const tierBadge = getTierBadge(customer.customerType);
+              const tierBadge = getTierBadge(customer.hangKhachHang);
               const customerOrders = getCustomerOrders(customer.id);
               const lastOrderDate = customerOrders.length > 0 
                 ? new Date(customerOrders[0].createdAt).toLocaleDateString('vi-VN')
@@ -505,16 +550,16 @@ export default function Customers() {
 
               return (
                 <Card 
-                  key={customer.id} 
+                  key={customer.customerId} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => setSelectedCustomer(customer)}
-                  data-testid={`customer-card-${customer.id}`}
+                  data-testid={`customer-card-${customer.customerId}`}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="font-semibold text-lg mb-1" data-testid={`customer-name-${customer.id}`}>
-                          {customer.name}
+                        <h3 className="font-semibold text-lg mb-1" data-testid={`customer-name-${customer.customerId}`}>
+                          {customer.hoTen}
                         </h3>
                         <Badge className={`text-white ${tierBadge.color}`}>
                           {tierBadge.label}
@@ -528,7 +573,7 @@ export default function Customers() {
                             e.stopPropagation();
                             handleEditCustomer(customer);
                           }}
-                          data-testid={`button-edit-${customer.id}`}
+                          data-testid={`button-edit-${customer.customerId}`}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -538,9 +583,9 @@ export default function Customers() {
                           className="text-red-600 hover:text-red-700"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCustomer(customer.id);
+                            handleDeleteCustomer(customer.customerId);
                           }}
-                          data-testid={`button-delete-${customer.id}`}
+                          data-testid={`button-delete-${customer.customerId}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -550,19 +595,19 @@ export default function Customers() {
                     <div className="space-y-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2" />
-                        <span data-testid={`customer-phone-${customer.id}`}>{customer.phone}</span>
+                        <span data-testid={`customer-phone-${customer.customerId}`}>{customer.soDienThoai}</span>
                       </div>
                       {customer.email && (
                         <div className="flex items-center">
                           <Mail className="w-4 h-4 mr-2" />
-                          <span data-testid={`customer-email-${customer.id}`}>{customer.email}</span>
+                          <span data-testid={`customer-email-${customer.customerId}`}>{customer.email}</span>
                         </div>
                       )}
-                      {customer.address && (
+                      {customer.diaChi && (
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2" />
-                          <span className="line-clamp-1" data-testid={`customer-address-${customer.id}`}>
-                            {customer.address}
+                          <span className="line-clamp-1" data-testid={`customer-address-${customer.customerId}`}>
+                            {customer.diaChi}
                           </span>
                         </div>
                       )}
@@ -615,16 +660,16 @@ export default function Customers() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
-                        <span>{selectedCustomer.name}</span>
-                        <Badge className={`text-white ${getTierBadge(selectedCustomer.customerType).color}`}>
-                          {getTierBadge(selectedCustomer.customerType).label}
+                        <span>{selectedCustomer.hoTen}</span>
+                        <Badge className={`text-white ${getTierBadge(selectedCustomer.hangKhachHang).color}`}>
+                          {getTierBadge(selectedCustomer.hangKhachHang).label}
                         </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                        <span>{selectedCustomer.phone}</span>
+                        <span>{selectedCustomer.soDienThoai}</span>
                       </div>
                       {selectedCustomer.email && (
                         <div className="flex items-center">
@@ -632,7 +677,7 @@ export default function Customers() {
                           <span>{selectedCustomer.email}</span>
                         </div>
                       )}
-                      {selectedCustomer.address && (
+                      {selectedCustomer.diaChi && (
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2 text-gray-500" />
                           <span>{selectedCustomer.address}</span>

@@ -47,6 +47,14 @@ namespace RetailPointBackend.Models
     // Discount tables
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<OrderDiscount> OrderDiscounts { get; set; }
+    
+    // Loyalty system tables
+    public DbSet<LoyaltyConfig> LoyaltyConfigs { get; set; }
+    public DbSet<CustomerTier> CustomerTiers { get; set; }
+    public DbSet<LoyaltyTransaction> LoyaltyTransactions { get; set; }
+    public DbSet<CategoryLoyaltyRule> CategoryLoyaltyRules { get; set; }
+    public DbSet<ProductLoyaltyRule> ProductLoyaltyRules { get; set; }
+    public DbSet<LoyaltyPromotion> LoyaltyPromotions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,6 +117,68 @@ namespace RetailPointBackend.Models
             .Property(tc => tc.EnvTaxRate)
             .HasPrecision(5, 2);
 
+        // Configure Customer decimal properties
+        modelBuilder.Entity<Customer>()
+            .Property(c => c.TotalSpent)
+            .HasPrecision(18, 2);
+
+        // Configure Loyalty System decimal properties
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.PointsPerCurrency)
+            .HasPrecision(10, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.MinOrderAmountForPoints)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.PointValue)
+            .HasPrecision(10, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.MaxRedemptionPercentage)
+            .HasPrecision(5, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.HappyHourMultiplier)
+            .HasPrecision(3, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.WeekendMultiplier)
+            .HasPrecision(3, 2);
+        
+        modelBuilder.Entity<LoyaltyConfig>()
+            .Property(lc => lc.BirthdayMultiplier)
+            .HasPrecision(3, 2);
+
+        modelBuilder.Entity<CustomerTier>()
+            .Property(ct => ct.MinSpent)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<CustomerTier>()
+            .Property(ct => ct.PointsMultiplier)
+            .HasPrecision(3, 2);
+        
+        modelBuilder.Entity<CustomerTier>()
+            .Property(ct => ct.DiscountPercentage)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<CategoryLoyaltyRule>()
+            .Property(clr => clr.PointsMultiplier)
+            .HasPrecision(3, 2);
+
+        modelBuilder.Entity<ProductLoyaltyRule>()
+            .Property(plr => plr.PointsMultiplier)
+            .HasPrecision(3, 2);
+
+        modelBuilder.Entity<LoyaltyPromotion>()
+            .Property(lp => lp.MinOrderAmount)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<LoyaltyPromotion>()
+            .Property(lp => lp.PointsMultiplier)
+            .HasPrecision(3, 2);
+
         // Seed default data
         SeedDefaultData(modelBuilder);
     }
@@ -143,6 +213,87 @@ namespace RetailPointBackend.Models
                 PrintLogo = false,
                 BillHeader = "RETAIL POINT STORE",
                 BillFooter = "Cảm ơn quý khách!"
+            }
+        );
+
+        // Seed default LoyaltyConfig
+        modelBuilder.Entity<LoyaltyConfig>().HasData(
+            new LoyaltyConfig
+            {
+                LoyaltyConfigId = 1,
+                IsEnabled = true,
+                PointsPerCurrency = 1000.0m,
+                MinOrderAmountForPoints = 50000,
+                PointExpiryDays = 365,
+                AllowPointRedemption = true,
+                PointValue = 1000.0m,
+                MaxRedemptionPercentage = 50.0m,
+                HappyHourEnabled = false,
+                HappyHourStartTime = new TimeSpan(17, 0, 0),
+                HappyHourEndTime = new TimeSpan(19, 0, 0),
+                HappyHourMultiplier = 2.0m,
+                WeekendBonusEnabled = false,
+                WeekendMultiplier = 1.5m,
+                BirthdayBonusEnabled = false,
+                BirthdayMultiplier = 3.0m,
+                BirthdayValidDays = 7,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed default CustomerTiers
+        modelBuilder.Entity<CustomerTier>().HasData(
+            new CustomerTier
+            {
+                TierId = 1,
+                TierName = "Đồng",
+                MinSpent = 0,
+                MinPoints = 0,
+                PointsMultiplier = 1.0m,
+                DiscountPercentage = 0,
+                Description = "Khách hàng mới",
+                TierColor = "#CD7F32",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new CustomerTier
+            {
+                TierId = 2,
+                TierName = "Bạc",
+                MinSpent = 5000000,
+                MinPoints = 500,
+                PointsMultiplier = 1.2m,
+                DiscountPercentage = 2,
+                Description = "Khách hàng thân thiết",
+                TierColor = "#C0C0C0",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new CustomerTier
+            {
+                TierId = 3,
+                TierName = "Vàng",
+                MinSpent = 20000000,
+                MinPoints = 2000,
+                PointsMultiplier = 1.5m,
+                DiscountPercentage = 5,
+                Description = "Khách hàng VIP",
+                TierColor = "#FFD700",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            },
+            new CustomerTier
+            {
+                TierId = 4,
+                TierName = "Kim cương",
+                MinSpent = 50000000,
+                MinPoints = 5000,
+                PointsMultiplier = 2.0m,
+                DiscountPercentage = 10,
+                Description = "Khách hàng VVIP",
+                TierColor = "#B9F2FF",
+                IsActive = true,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
             }
         );
     }

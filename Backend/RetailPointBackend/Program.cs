@@ -6,6 +6,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cấu hình server listen trên tất cả IP addresses - chỉ HTTP
+builder.WebHost.UseUrls("http://0.0.0.0:5273");
+
 // Cấu hình encoding UTF-8
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
@@ -96,6 +99,9 @@ builder.Services.AddScoped<IDiscountService, DiscountService>();
 // Đăng ký ImageSearchService
 builder.Services.AddHttpClient<IImageSearchService, ImageSearchService>();
 
+// Đăng ký LoyaltyService
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
+
 // Đăng ký Background Service cho backup tự động
 // Register BackupScheduleBackgroundService as singleton so controllers can access it
 builder.Services.AddSingleton<RetailPointBackend.BackgroundServices.BackupScheduleBackgroundService>();
@@ -140,8 +146,8 @@ app.UseCors();
 // Bật phục vụ file tĩnh (ảnh upload)
 app.UseStaticFiles();
 
-// HTTPS redirection after CORS
-app.UseHttpsRedirection();
+// HTTPS redirection after CORS - tạm thời comment để test
+// app.UseHttpsRedirection();
 
 // Thêm session middleware
 app.UseSession();

@@ -71,7 +71,14 @@ namespace RetailPointBackend.Controllers
                 email = c.Email,
                 diaChi = c.DiaChi,
                 hangKhachHang = MapCustomerRankToFrontend(c.HangKhachHang),
-                storeId = c.StoreId
+                storeId = c.StoreId,
+                loyaltyPoints = c.LoyaltyPoints,
+                totalSpent = c.TotalSpent,
+                tierId = c.TierId,
+                dateOfBirth = c.DateOfBirth,
+                isActive = c.IsActive,
+                createdAt = c.CreatedAt,
+                updatedAt = c.UpdatedAt
             });
             
             return Ok(result);
@@ -90,7 +97,14 @@ namespace RetailPointBackend.Controllers
                 email = customer.Email,
                 diaChi = customer.DiaChi,
                 hangKhachHang = MapCustomerRankToFrontend(customer.HangKhachHang),
-                storeId = customer.StoreId
+                storeId = customer.StoreId,
+                loyaltyPoints = customer.LoyaltyPoints,
+                totalSpent = customer.TotalSpent,
+                tierId = customer.TierId,
+                dateOfBirth = customer.DateOfBirth,
+                isActive = customer.IsActive,
+                createdAt = customer.CreatedAt,
+                updatedAt = customer.UpdatedAt
             };
             
             return Ok(result);

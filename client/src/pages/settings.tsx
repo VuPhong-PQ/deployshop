@@ -4,11 +4,12 @@ import { apiRequest } from "../lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/app-layout";
-import { Store, Printer, CreditCard, Calculator, QrCode, FileText } from "lucide-react";
+import { Store, Printer, CreditCard, Calculator, QrCode, FileText, Gift } from "lucide-react";
 import { TaxSettings } from "./tax-settings";
 import { PaymentSettings } from "./payment-settings";
 import { PrintSettings } from "./print-settings";
 import { QRSettings } from "./qr-settings";
+import { LoyaltySettings } from "./loyalty-settings";
 import { useLocation } from "wouter";
 
 type StoreInfo = {
@@ -84,40 +85,46 @@ export default function SettingsPage() {
         <p className="text-gray-500 mb-6">Quản lý cấu hình và tuỳ chỉnh hệ thống POS</p>
         <div className="flex mb-8 bg-gray-100 rounded-full overflow-hidden">
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "store" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "store" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("store")}
           >
-            <Store className="w-5 h-5" /> Cửa hàng
+            <Store className="w-4 h-4" /> Cửa hàng
           </button>
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "tax" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "tax" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("tax")}
           >
-            <Calculator className="w-5 h-5" /> Thuế
+            <Calculator className="w-4 h-4" /> Thuế
           </button>
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "payment" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "payment" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("payment")}
           >
-            <CreditCard className="w-5 h-5" /> Thanh toán
+            <CreditCard className="w-4 h-4" /> Thanh toán
           </button>
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "qr" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "loyalty" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            onClick={() => setTab("loyalty")}
+          >
+            <Gift className="w-4 h-4" /> Tích điểm
+          </button>
+          <button
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "qr" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("qr")}
           >
-            <QrCode className="w-5 h-5" /> QR Code
+            <QrCode className="w-4 h-4" /> QR Code
           </button>
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "einvoice" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "einvoice" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={handleEInvoiceTab}
           >
-            <FileText className="w-5 h-5" /> Hóa đơn điện tử
+            <FileText className="w-4 h-4" /> Hóa đơn điện tử
           </button>
           <button
-            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition ${tab === "print" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "print" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("print")}
           >
-            <Printer className="w-5 h-5" /> In ấn
+            <Printer className="w-4 h-4" /> In ấn
           </button>
         </div>
 
@@ -194,6 +201,9 @@ export default function SettingsPage() {
         )}
         {tab === "payment" && (
           <div className="max-w-4xl mx-auto"><PaymentSettings /></div>
+        )}
+        {tab === "loyalty" && (
+          <div className="max-w-6xl mx-auto"><LoyaltySettings /></div>
         )}
         {tab === "qr" && (
           <div className="max-w-4xl mx-auto"><QRSettings /></div>
