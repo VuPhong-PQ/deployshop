@@ -23,12 +23,11 @@ builder.Services.AddCors(options =>
             "http://101.53.9.76:3000",
             "http://101.53.9.76:8080",
             "https://101.53.9.76",
-            "https://101.53.9.76:443",
-            "*" // Temporarily allow all origins for debugging
+            "https://101.53.9.76:443"
         )
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Thêm dòng này!
+              .AllowCredentials();
     });
 });
 
@@ -106,25 +105,49 @@ builder.Services.AddHostedService<RetailPointBackend.BackgroundServices.BackupSc
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
-// Kích hoạt các route controller (api/...)
-app.MapControllers();
+// Add global exception handling
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        
+        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (error != null)
+        {
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(error.Error, "Unhandled exception occurred: {Message}", error.Error.Message);
+            
+            await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                error = "Internal server error",
+                message = app.Environment.IsDevelopment() ? error.Error.Message : "An error occurred",
+                details = app.Environment.IsDevelopment() ? error.Error.StackTrace : null
+            }));
+        }
+    });
+});
 
-
+// Bật CORS đầu tiên
+app.UseCors();
 
 // Bật phục vụ file tĩnh (ảnh upload)
 app.UseStaticFiles();
+
+// HTTPS redirection after CORS
 app.UseHttpsRedirection();
-// Bật CORS trước khi map controller
-app.UseCors();
 
 // Thêm session middleware
 app.UseSession();
+
+// Kích hoạt các route controller (api/...)
+app.MapControllers();
 
 var summaries = new[]
 {
