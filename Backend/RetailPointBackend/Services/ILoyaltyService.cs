@@ -11,6 +11,7 @@ namespace RetailPointBackend.Services
         Task<bool> RedeemPointsAsync(int customerId, int pointsToRedeem, int orderId, string reason);
         Task<bool> UpdateCustomerTierAsync(int customerId);
         Task<LoyaltyConfig> GetLoyaltyConfigAsync();
+        Task<LoyaltySettings?> GetLoyaltySettingsAsync();
         Task<object> GetCustomerLoyaltyStatusAsync(int customerId);
         Task<bool> CheckAndUpdateAllCustomerTiersAsync();
     }

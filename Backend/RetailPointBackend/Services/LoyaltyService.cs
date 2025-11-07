@@ -25,23 +25,46 @@ namespace RetailPointBackend.Services
                 };
         }
 
+        public async Task<LoyaltySettings?> GetLoyaltySettingsAsync()
+        {
+            return await _context.LoyaltySettings.FirstOrDefaultAsync() 
+                ?? new LoyaltySettings 
+                { 
+                    IsPointsEnabled = false, 
+                    PointsRate = 1000, 
+                    MinOrderAmount = 50000 
+                };
+        }
+
         public async Task<int> CalculatePointsForOrderAsync(int customerId, decimal orderAmount, int orderId)
         {
             try
             {
-                var config = await GetLoyaltyConfigAsync();
-                if (!config.IsEnabled || orderAmount < config.MinOrderAmountForPoints)
+                var settings = await GetLoyaltySettingsAsync();
+                if (!settings.IsPointsEnabled || orderAmount < settings.MinOrderAmount)
                     return 0;
 
                 var customer = await _context.Customers.FindAsync(customerId);
                 if (customer == null) return 0;
 
-                // Base points calculation
-                var basePoints = (int)(orderAmount / config.PointsPerCurrency);
+                // Base points calculation using LoyaltySettings
+                var basePoints = (int)(orderAmount / settings.PointsRate);
 
-                // Apply multipliers
+                // Apply customer tier multiplier
                 var multiplier = 1.0m;
+                var bonusPoints = 0;
+                var customerTier = await _context.CustomerTiers.FindAsync(customer.TierId);
+                if (customerTier != null)
+                {
+                    multiplier = customerTier.PointsMultiplier;
+                    
+                    // Bổ sung quyền lợi điểm thưởng theo hạng
+                    bonusPoints = CalculateTierBonusPoints(customerTier.TierName, orderAmount, basePoints);
+                }
 
+                // Fallback to old config for advanced features (happy hour, weekend, birthday)
+                var config = await GetLoyaltyConfigAsync();
+                
                 // Check happy hour
                 if (config.HappyHourEnabled)
                 {
@@ -71,12 +94,12 @@ namespace RetailPointBackend.Services
                     }
                 }
 
-                var finalPoints = (int)(basePoints * multiplier);
+                var finalPoints = (int)(basePoints * multiplier) + bonusPoints;
 
-                // Apply max points per order limit
-                if (config.MaxPointsPerOrder.HasValue && finalPoints > config.MaxPointsPerOrder.Value)
+                // Apply max points per order limit from settings
+                if (settings.MaxPointsPerOrder > 0 && finalPoints > settings.MaxPointsPerOrder)
                 {
-                    finalPoints = config.MaxPointsPerOrder.Value;
+                    finalPoints = settings.MaxPointsPerOrder;
                 }
 
                 return finalPoints;
@@ -114,6 +137,17 @@ namespace RetailPointBackend.Services
 
                 var points = await CalculatePointsForOrderAsync(order.CustomerId.Value, order.TotalAmount, orderId);
                 
+                // Áp dụng điểm thưởng ngày đặc biệt (sinh nhật, holiday)
+                if (!isRefund && points > 0)
+                {
+                    var specialBonus = await CalculateSpecialDayBonusAsync(order.Customer, points);
+                    if (specialBonus > 0)
+                    {
+                        points += specialBonus;
+                        _logger.LogInformation("Applied special day bonus: +{SpecialBonus} points for order {OrderId}", specialBonus, orderId);
+                    }
+                }
+                
                 if (points <= 0 && !isRefund)
                 {
                     _logger.LogInformation("No points to award for order {OrderId}", orderId);
@@ -128,7 +162,7 @@ namespace RetailPointBackend.Services
                     TransactionType = isRefund ? LoyaltyTransactionType.REDEEM : LoyaltyTransactionType.EARN,
                     Points = isRefund ? -points : points,
                     Reason = isRefund ? $"Refund for order #{order.OrderNumber}" : $"Purchase order #{order.OrderNumber}",
-                    ExpiryDate = DateTime.Now.AddDays((await GetLoyaltyConfigAsync()).PointExpiryDays),
+                    ExpiryDate = DateTime.Now.AddDays((await GetLoyaltySettingsAsync()).PointsExpirationDays),
                     ProcessedAt = DateTime.Now,
                     ProcessedBy = order.StaffId
                 };
@@ -167,8 +201,8 @@ namespace RetailPointBackend.Services
 
         public async Task<decimal> GetPointsValueAsync(int points)
         {
-            var config = await GetLoyaltyConfigAsync();
-            return points * config.PointValue;
+            var settings = await GetLoyaltySettingsAsync();
+            return points * settings.RedemptionRate;
         }
 
         public async Task<bool> CanRedeemPointsAsync(int customerId, int pointsToRedeem)
@@ -435,6 +469,128 @@ namespace RetailPointBackend.Services
                 _logger.LogError(ex, "Error updating all customer tiers");
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Tính toán điểm thưởng bổ sung dựa trên hạng khách hàng
+        /// </summary>
+        /// <param name="tierName">Tên hạng khách hàng</param>
+        /// <param name="orderAmount">Số tiền đơn hàng</param>
+        /// <param name="basePoints">Điểm cơ bản đã tính</param>
+        /// <returns>Điểm thưởng bổ sung</returns>
+        private int CalculateTierBonusPoints(string tierName, decimal orderAmount, int basePoints)
+        {
+            var bonusPoints = 0;
+            var tierNameLower = tierName.ToLower();
+
+            // Quyền lợi điểm thưởng theo hạng
+            if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+            {
+                // Hạng Bạc: +20% điểm thưởng + 50 điểm cố định mỗi đơn >= 100k
+                bonusPoints = (int)(basePoints * 0.2m);
+                if (orderAmount >= 100000) bonusPoints += 50;
+                
+                _logger.LogInformation("Tier Bạc bonus: +{BonusPercent}% + {FixedBonus} points", 20, orderAmount >= 100000 ? 50 : 0);
+            }
+            else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+            {
+                // Hạng Vàng: +50% điểm thưởng + 100 điểm cố định mỗi đơn >= 200k + điểm milestone
+                bonusPoints = (int)(basePoints * 0.5m);
+                if (orderAmount >= 200000) bonusPoints += 100;
+                
+                // Milestone bonus cho hạng Vàng: mỗi 500k thêm 200 điểm
+                var milestoneBonus = (int)(orderAmount / 500000) * 200;
+                bonusPoints += milestoneBonus;
+                
+                _logger.LogInformation("Tier Vàng bonus: +50% + {FixedBonus} + {MilestoneBonus} milestone points", 
+                    orderAmount >= 200000 ? 100 : 0, milestoneBonus);
+            }
+            else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || 
+                     tierNameLower.Contains("platinum"))
+            {
+                // Hạng Kim cương/Platinum: +100% điểm thưởng + 300 điểm cố định + điểm milestone + weekend double
+                bonusPoints = (int)(basePoints * 1.0m); // Gấp đôi điểm cơ bản
+                bonusPoints += 300; // Điểm cố định cao
+                
+                // Milestone bonus cho hạng Kim cương: mỗi 300k thêm 250 điểm
+                var milestoneBonus = (int)(orderAmount / 300000) * 250;
+                bonusPoints += milestoneBonus;
+                
+                // Weekend double bonus (chỉ hạng Kim cương)
+                var isWeekend = DateTime.Now.DayOfWeek == DayOfWeek.Saturday || DateTime.Now.DayOfWeek == DayOfWeek.Sunday;
+                if (isWeekend)
+                {
+                    var weekendBonus = bonusPoints; // Gấp đôi toàn bộ bonus
+                    bonusPoints += weekendBonus;
+                    _logger.LogInformation("Weekend double bonus applied for Diamond tier: +{WeekendBonus} points", weekendBonus);
+                }
+                
+                _logger.LogInformation("Tier Kim cương bonus: +100% + 300 fixed + {MilestoneBonus} milestone points", milestoneBonus);
+            }
+
+            return bonusPoints;
+        }
+
+        /// <summary>
+        /// Tính toán điểm thưởng đặc biệt cho ngày đặc biệt (sinh nhật, holiday)
+        /// </summary>
+        /// <param name="customer">Thông tin khách hàng</param>
+        /// <param name="basePoints">Điểm cơ bản</param>
+        /// <returns>Điểm thưởng đặc biệt</returns>
+        private async Task<int> CalculateSpecialDayBonusAsync(Customer customer, int basePoints)
+        {
+            var specialBonus = 0;
+            var today = DateTime.Now;
+            
+            // Bonus sinh nhật (áp dụng trong vòng 7 ngày)
+            if (customer.DateOfBirth.HasValue)
+            {
+                var birthday = new DateTime(today.Year, customer.DateOfBirth.Value.Month, customer.DateOfBirth.Value.Day);
+                var daysDiff = Math.Abs((today - birthday).Days);
+                
+                if (daysDiff <= 7) // Trong vòng 7 ngày sinh nhật
+                {
+                    var customerTier = await _context.CustomerTiers.FindAsync(customer.TierId);
+                    var tierName = customerTier?.TierName?.ToLower() ?? "";
+                    
+                    if (tierName.Contains("bạc") || tierName.Contains("silver"))
+                        specialBonus = basePoints; // Gấp đôi điểm
+                    else if (tierName.Contains("vàng") || tierName.Contains("gold"))
+                        specialBonus = (int)(basePoints * 1.5m); // Gấp 2.5 lần điểm
+                    else if (tierName.Contains("kim cương") || tierName.Contains("diamond") || tierName.Contains("platinum"))
+                        specialBonus = basePoints * 2; // Gấp 3 lần điểm
+                    
+                    _logger.LogInformation("Birthday bonus applied: +{BonusPoints} points for customer {CustomerId}", specialBonus, customer.CustomerId);
+                }
+            }
+            
+            // Bonus ngày lễ (1/1, 30/4, 2/9, Tết...)
+            if (IsHolidayToday(today))
+            {
+                var holidayBonus = (int)(basePoints * 0.5m); // +50% điểm trong ngày lễ
+                specialBonus += holidayBonus;
+                _logger.LogInformation("Holiday bonus applied: +{HolidayBonus} points", holidayBonus);
+            }
+            
+            return specialBonus;
+        }
+
+        /// <summary>
+        /// Kiểm tra có phải ngày lễ không
+        /// </summary>
+        private bool IsHolidayToday(DateTime date)
+        {
+            // Ngày lễ cố định
+            var holidays = new[]
+            {
+                new DateTime(date.Year, 1, 1),   // Tết Dương lịch
+                new DateTime(date.Year, 4, 30),  // 30/4
+                new DateTime(date.Year, 5, 1),   // 1/5
+                new DateTime(date.Year, 9, 2),   // Quốc khánh
+                new DateTime(date.Year, 12, 25), // Noel
+            };
+            
+            return holidays.Contains(date.Date);
         }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 using System.Linq;
@@ -86,13 +87,26 @@ namespace RetailPointBackend.Controllers
                 StoreId = storeId?.ToString(), // Convert int? to string
                 Items = items
             };
-            // Nếu có CustomerId, gán lại CustomerName từ bảng Customer
+            // Nếu có CustomerId, gán lại CustomerName và tính giảm giá theo hạng
             if (order.CustomerId.HasValue && order.CustomerId > 0)
             {
-                var customer = _context.Customers.FirstOrDefault(c => c.CustomerId == order.CustomerId);
+                var customer = _notificationContext.Customers
+                    .Include(c => c.CustomerTier)
+                    .FirstOrDefault(c => c.CustomerId == order.CustomerId);
                 if (customer != null)
                 {
                     order.CustomerName = customer.HoTen;
+                    
+                    // Áp dụng giảm giá theo hạng khách hàng (nếu chưa có giảm giá thủ công)
+                    if (customer.CustomerTier != null && order.DiscountAmount == 0)
+                    {
+                        var tierDiscountAmount = order.SubTotal * (customer.CustomerTier.DiscountPercentage / 100);
+                        order.DiscountAmount = tierDiscountAmount;
+                        order.TotalAmount = order.SubTotal + order.TaxAmount - tierDiscountAmount;
+                        
+                        _logger.LogInformation("Applied tier discount for customer {CustomerId}: {DiscountPercentage}% = {DiscountAmount}", 
+                            customer.CustomerId, customer.CustomerTier.DiscountPercentage, tierDiscountAmount);
+                    }
                 }
             }
 

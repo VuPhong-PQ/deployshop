@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test LoyaltySettings API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { background: #f5f5f5; padding: 10px; border-radius: 3px; margin: 10px 0; }
+        button { padding: 8px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        input, select { padding: 5px; margin: 5px; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test LoyaltySettings API</h1>
+        
+        <div class="section">
+            <h2>1. GET LoyaltySettings</h2>
+            <button onclick="getLoyaltySettings()">Lấy cài đặt tích điểm</button>
+            <div id="getResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>2. UPDATE LoyaltySettings</h2>
+            <div>
+                <label>Kích hoạt tích điểm: <input type="checkbox" id="isPointsEnabled" checked></label><br>
+                <label>Cho phép đổi điểm: <input type="checkbox" id="isRedemptionEnabled" checked></label><br>
+                <label>Tỷ lệ tích điểm (VNĐ/điểm): <input type="number" id="pointsRate" value="1000"></label><br>
+                <label>Tỷ lệ đổi điểm (VNĐ/điểm): <input type="number" id="redemptionRate" value="1000"></label><br>
+                <label>Đơn hàng tối thiểu: <input type="number" id="minOrderAmount" value="50000"></label><br>
+                <label>Giới hạn đổi điểm (%): <input type="number" id="maxRedemptionPercentage" value="50"></label><br>
+                <label>Điểm hết hạn (ngày): <input type="number" id="pointsExpirationDays" value="365"></label><br>
+                <label>Ghi chú: <input type="text" id="notes" value="Cập nhật từ test API"></label><br>
+            </div>
+            <button onclick="updateLoyaltySettings()">Cập nhật cài đặt</button>
+            <div id="updateResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>3. GET System Overview</h2>
+            <button onclick="getSystemOverview()">Xem tổng quan hệ thống</button>
+            <div id="overviewResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://localhost:5273/api';
+
+        async function getLoyaltySettings() {
+            try {
+                const response = await fetch(`${baseUrl}/LoyaltySystemSettings`);
+                const data = await response.json();
+                document.getElementById('getResult').innerHTML = `
+                    <h3>Kết quả:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+
+                // Fill form with current values
+                if (data) {
+                    document.getElementById('isPointsEnabled').checked = data.isPointsEnabled;
+                    document.getElementById('isRedemptionEnabled').checked = data.isRedemptionEnabled;
+                    document.getElementById('pointsRate').value = data.pointsRate;
+                    document.getElementById('redemptionRate').value = data.redemptionRate;
+                    document.getElementById('minOrderAmount').value = data.minOrderAmount;
+                    document.getElementById('maxRedemptionPercentage').value = data.maxRedemptionPercentage;
+                    document.getElementById('pointsExpirationDays').value = data.pointsExpirationDays;
+                    document.getElementById('notes').value = data.notes || '';
+                }
+            } catch (error) {
+                document.getElementById('getResult').innerHTML = `<p style="color: red">Lỗi: ${error.message}</p>`;
+            }
+        }
+
+        async function updateLoyaltySettings() {
+            try {
+                const data = {
+                    isPointsEnabled: document.getElementById('isPointsEnabled').checked,
+                    isRedemptionEnabled: document.getElementById('isRedemptionEnabled').checked,
+                    pointsRate: parseFloat(document.getElementById('pointsRate').value),
+                    redemptionRate: parseFloat(document.getElementById('redemptionRate').value),
+                    minOrderAmount: parseFloat(document.getElementById('minOrderAmount').value),
+                    maxRedemptionPercentage: parseInt(document.getElementById('maxRedemptionPercentage').value),
+                    pointsExpirationDays: parseInt(document.getElementById('pointsExpirationDays').value),
+                    notes: document.getElementById('notes').value
+                };
+
+                const response = await fetch(`${baseUrl}/LoyaltySystemSettings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                document.getElementById('updateResult').innerHTML = `
+                    <h3>Kết quả cập nhật:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('updateResult').innerHTML = `<p style="color: red">Lỗi: ${error.message}</p>`;
+            }
+        }
+
+        async function getSystemOverview() {
+            try {
+                const response = await fetch(`${baseUrl}/LoyaltySystemSettings/system-overview`);
+                const data = await response.json();
+                document.getElementById('overviewResult').innerHTML = `
+                    <h3>Tổng quan hệ thống:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                document.getElementById('overviewResult').innerHTML = `<p style="color: red">Lỗi: ${error.message}</p>`;
+            }
+        }
+
+        // Load settings on page load
+        window.onload = function() {
+            getLoyaltySettings();
+        };
+    </script>
+</body>
+</html>

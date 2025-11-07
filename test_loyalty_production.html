@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Loyalty System - Production</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .card { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 8px; }
+        .tier-badge { padding: 5px 10px; border-radius: 15px; color: white; font-weight: bold; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .stat-item { background: #f8f9fa; padding: 10px; border-radius: 5px; }
+        .stat-label { font-size: 12px; color: #666; margin-bottom: 5px; }
+        .stat-value { font-size: 16px; font-weight: bold; color: #333; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Kiểm Tra Hệ Thống Loyalty - Production</h1>
+        <p><strong>Server:</strong> 101.53.9.76:5273</p>
+        
+        <!-- Loyalty Settings -->
+        <div class="card">
+            <h3>⚙️ Cài Đặt Tích Điểm</h3>
+            <button onclick="loadLoyaltySettings()">🔄 Tải Cài Đặt</button>
+            <div id="loyaltySettings"></div>
+        </div>
+
+        <!-- Customer Tiers -->
+        <div class="card">
+            <h3>🎯 Hạng Khách Hàng</h3>
+            <button onclick="loadCustomerTiers()">📊 Tải Danh Sách Hạng</button>
+            <div id="tiersList"></div>
+        </div>
+
+        <!-- Current Customers -->
+        <div class="card">
+            <h3>👥 Khách Hàng Hiện Tại</h3>
+            <button onclick="loadCustomers()">👤 Tải Danh Sách Khách Hàng</button>
+            <div id="customersList"></div>
+        </div>
+
+        <!-- Test Order Processing -->
+        <div class="card">
+            <h3>🛒 Test Tạo Đơn Hàng (Tích Điểm)</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Khách hàng ID:</label>
+                    <input type="number" id="customerId" value="6" style="width: 100%; padding: 5px;">
+                </div>
+                <div>
+                    <label>Số tiền đơn hàng (VNĐ):</label>
+                    <input type="number" id="orderAmount" value="500000" style="width: 100%; padding: 5px;">
+                </div>
+                <div>
+                    <label>Store ID:</label>
+                    <input type="number" id="storeId" value="1" style="width: 100%; padding: 5px;">
+                </div>
+            </div>
+            <button onclick="simulateOrder()">💰 Tạo Đơn Hàng Test</button>
+            <div id="orderResult"></div>
+        </div>
+
+        <!-- Manual Tier Update -->
+        <div class="card">
+            <h3>🔧 Test Cập Nhật Hạng Khách Hàng</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                <div>
+                    <label>Customer ID:</label>
+                    <input type="number" id="updateCustomerId" value="6" style="width: 100%; padding: 5px;">
+                </div>
+                <div>
+                    <label>Tier ID mới:</label>
+                    <input type="number" id="newTierId" value="8" style="width: 100%; padding: 5px;">
+                </div>
+            </div>
+            <button onclick="updateCustomerTier()">🎯 Cập Nhật Hạng</button>
+            <div id="tierUpdateResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://101.53.9.76:5273/api';
+
+        // Load Loyalty Settings
+        async function loadLoyaltySettings() {
+            try {
+                const response = await fetch(`${API_BASE}/LoyaltySystemSettings/settings`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const settings = await response.json();
+                
+                document.getElementById('loyaltySettings').innerHTML = `
+                    <div class="stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Tích điểm kích hoạt</div>
+                            <div class="stat-value">${settings.isPointsEnabled ? '✅ Có' : '❌ Không'}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tỷ lệ tích điểm</div>
+                            <div class="stat-value">${settings.pointsRate} VNĐ = 1 điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Đổi điểm kích hoạt</div>
+                            <div class="stat-value">${settings.isRedemptionEnabled ? '✅ Có' : '❌ Không'}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tỷ lệ đổi điểm</div>
+                            <div class="stat-value">1 điểm = ${settings.redemptionRate} VNĐ</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Đơn hàng tối thiểu</div>
+                            <div class="stat-value">${settings.minOrderAmount?.toLocaleString('vi-VN')} VNĐ</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Điểm hết hạn sau</div>
+                            <div class="stat-value">${settings.pointsExpirationDays} ngày</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loyaltySettings').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Customer Tiers
+        async function loadCustomerTiers() {
+            try {
+                const response = await fetch(`${API_BASE}/CustomerTierManagement`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const tiers = await response.json();
+                
+                const sortedTiers = tiers.sort((a, b) => a.minSpent - b.minSpent);
+                
+                const tiersHtml = sortedTiers.map(tier => `
+                    <div class="card" style="margin: 10px 0;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <span class="tier-badge" style="background-color: ${tier.tierColor}">
+                                ${tier.tierName}
+                            </span>
+                            <span style="margin-left: 10px;">${tier.description}</span>
+                            <span style="margin-left: auto; font-size: 12px;">ID: ${tier.tierId}</span>
+                        </div>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Chi tiêu tối thiểu</div>
+                                <div class="stat-value">${tier.minSpent.toLocaleString('vi-VN')} VNĐ</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Điểm tối thiểu</div>
+                                <div class="stat-value">${tier.minPoints} điểm</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Hệ số tích điểm</div>
+                                <div class="stat-value">x${tier.pointsMultiplier}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Giảm giá tự động</div>
+                                <div class="stat-value">${tier.discountPercentage}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('tiersList').innerHTML = tiersHtml;
+            } catch (error) {
+                document.getElementById('tiersList').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Customers
+        async function loadCustomers() {
+            try {
+                const response = await fetch(`${API_BASE}/Customers`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const customers = await response.json();
+                
+                const customersHtml = customers.slice(0, 10).map(customer => `
+                    <div class="card" style="margin: 5px 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <strong>${customer.hoTen}</strong> (ID: ${customer.customerId})
+                                <br><small>📱 ${customer.soDienThoai}</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <div>Hạng: <strong>${customer.hangKhachHang}</strong> (Tier ID: ${customer.tierId})</div>
+                                <div>💎 ${customer.loyaltyPoints} điểm</div>
+                                <div>💰 ${customer.totalSpent?.toLocaleString('vi-VN')} VNĐ</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('customersList').innerHTML = customersHtml;
+            } catch (error) {
+                document.getElementById('customersList').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Simulate Order (Test Points Calculation)
+        async function simulateOrder() {
+            const customerId = document.getElementById('customerId').value;
+            const orderAmount = parseFloat(document.getElementById('orderAmount').value);
+            const storeId = document.getElementById('storeId').value;
+            
+            if (!customerId || !orderAmount) {
+                alert('Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+            
+            try {
+                // Get customer current info
+                const customerResponse = await fetch(`${API_BASE}/Customers/${customerId}`);
+                if (!customerResponse.ok) throw new Error('Không tìm thấy khách hàng');
+                const customer = await customerResponse.json();
+                
+                // Calculate theoretical points (client side)
+                const basePoints = Math.floor(orderAmount / 1000); // 1000 VNĐ = 1 điểm
+                
+                // Get tier info
+                const tiersResponse = await fetch(`${API_BASE}/CustomerTierManagement`);
+                const tiers = await tiersResponse.json();
+                const currentTier = tiers.find(t => t.tierId === customer.tierId);
+                
+                const multipliedPoints = currentTier ? Math.floor(basePoints * currentTier.pointsMultiplier) : basePoints;
+                const discount = currentTier ? Math.floor(orderAmount * currentTier.discountPercentage / 100) : 0;
+                
+                document.getElementById('orderResult').innerHTML = `
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; margin-top: 10px;">
+                        <h4>📊 Mô Phỏng Kết Quả Đơn Hàng</h4>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Khách hàng</div>
+                                <div class="stat-value">${customer.hoTen}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Hạng hiện tại</div>
+                                <div class="stat-value">${customer.hangKhachHang} (ID: ${customer.tierId})</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Số tiền đơn hàng</div>
+                                <div class="stat-value">${orderAmount.toLocaleString('vi-VN')} VNĐ</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Điểm cơ bản</div>
+                                <div class="stat-value">${basePoints} điểm</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Hệ số nhân</div>
+                                <div class="stat-value">x${currentTier?.pointsMultiplier || 1.0}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">🎯 Điểm nhận được</div>
+                                <div class="stat-value" style="color: green;">${multipliedPoints} điểm</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">💸 Giảm giá tự động</div>
+                                <div class="stat-value" style="color: red;">${discount.toLocaleString('vi-VN')} VNĐ (${currentTier?.discountPercentage || 0}%)</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">💳 Thành tiền</div>
+                                <div class="stat-value">${(orderAmount - discount).toLocaleString('vi-VN')} VNĐ</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                            <strong>💡 Lưu ý:</strong> Đây là tính toán mô phỏng. Trong thực tế, hệ thống sẽ:
+                            <ul>
+                                <li>✅ Tự động cộng điểm khi tạo đơn hàng</li>
+                                <li>✅ Áp dụng giảm giá theo hạng</li>
+                                <li>✅ Kiểm tra và nâng hạng tự động nếu đủ điều kiện</li>
+                                <li>✅ Thêm bonus điểm đặc biệt (sinh nhật, cuối tuần) nếu có</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('orderResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Update Customer Tier
+        async function updateCustomerTier() {
+            const customerId = document.getElementById('updateCustomerId').value;
+            const newTierId = document.getElementById('newTierId').value;
+            
+            if (!customerId || !newTierId) {
+                alert('Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+            
+            try {
+                // Get customer info first
+                const customerResponse = await fetch(`${API_BASE}/Customers/${customerId}`);
+                if (!customerResponse.ok) throw new Error('Không tìm thấy khách hàng');
+                const customer = await customerResponse.json();
+                
+                // Get tier info
+                const tiersResponse = await fetch(`${API_BASE}/CustomerTierManagement`);
+                const tiers = await tiersResponse.json();
+                const newTier = tiers.find(t => t.tierId == newTierId);
+                
+                if (!newTier) {
+                    throw new Error('Không tìm thấy hạng mới');
+                }
+                
+                // Update customer (PUT request)
+                const updateData = {
+                    ...customer,
+                    tierId: parseInt(newTierId),
+                    hangKhachHang: getVietnameseTierName(newTier.tierName)
+                };
+                
+                const updateResponse = await fetch(`${API_BASE}/Customers/${customerId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (!updateResponse.ok) {
+                    const errorText = await updateResponse.text();
+                    throw new Error(`HTTP ${updateResponse.status}: ${errorText}`);
+                }
+                
+                document.getElementById('tierUpdateResult').innerHTML = `
+                    <div class="success" style="background: #d4edda; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        ✅ <strong>Cập nhật thành công!</strong><br>
+                        Khách hàng: <strong>${customer.hoTen}</strong><br>
+                        Hạng mới: <strong>${newTier.tierName}</strong> (ID: ${newTier.tierId})<br>
+                        Quyền lợi: Tích điểm x${newTier.pointsMultiplier}, Giảm giá ${newTier.discountPercentage}%
+                    </div>
+                `;
+                
+                // Reload customers list
+                loadCustomers();
+                
+            } catch (error) {
+                document.getElementById('tierUpdateResult').innerHTML = `<div class="error">❌ Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Helper function to map tier names
+        function getVietnameseTierName(tierName) {
+            const mapping = {
+                'Đồng': 'Bronze',
+                'Bạc': 'Silver', 
+                'Vàng': 'Gold',
+                'Kim cương': 'Diamond',
+                'VIP': 'Platinum'
+            };
+            return mapping[tierName] || 'Bronze';
+        }
+
+        // Initialize page
+        window.onload = function() {
+            loadLoyaltySettings();
+            loadCustomerTiers();
+            loadCustomers();
+        };
+    </script>
+</body>
+</html>

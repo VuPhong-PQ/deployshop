@@ -55,6 +55,7 @@ namespace RetailPointBackend.Models
     public DbSet<CategoryLoyaltyRule> CategoryLoyaltyRules { get; set; }
     public DbSet<ProductLoyaltyRule> ProductLoyaltyRules { get; set; }
     public DbSet<LoyaltyPromotion> LoyaltyPromotions { get; set; }
+    public DbSet<LoyaltySettings> LoyaltySettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -179,6 +180,19 @@ namespace RetailPointBackend.Models
             .Property(lp => lp.PointsMultiplier)
             .HasPrecision(3, 2);
 
+        // Configure LoyaltySettings decimal properties
+        modelBuilder.Entity<LoyaltySettings>()
+            .Property(ls => ls.PointsRate)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<LoyaltySettings>()
+            .Property(ls => ls.RedemptionRate)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<LoyaltySettings>()
+            .Property(ls => ls.MinOrderAmount)
+            .HasPrecision(18, 2);
+
         // Seed default data
         SeedDefaultData(modelBuilder);
     }
@@ -294,6 +308,25 @@ namespace RetailPointBackend.Models
                 TierColor = "#B9F2FF",
                 IsActive = true,
                 CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            }
+        );
+
+        // Seed default LoyaltySettings
+        modelBuilder.Entity<LoyaltySettings>().HasData(
+            new LoyaltySettings
+            {
+                Id = 1,
+                IsPointsEnabled = true,
+                PointsRate = 1000,
+                IsRedemptionEnabled = true,
+                RedemptionRate = 1000,
+                MinOrderAmount = 50000,
+                MaxRedemptionPercentage = 50,
+                MaxPointsPerOrder = 0,
+                PointsExpirationDays = 365,
+                CreatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                Notes = "Cài đặt tích điểm mặc định"
             }
         );
     }

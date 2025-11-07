@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Quyền Lợi Tích Điểm Theo Hạng</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .tier-card { 
+            border: 1px solid #ddd; 
+            margin: 10px 0; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tier-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 10px; 
+        }
+        .tier-badge { 
+            padding: 5px 10px; 
+            border-radius: 15px; 
+            color: white; 
+            font-weight: bold; 
+            margin-right: 15px; 
+        }
+        .tier-stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+        .stat-item { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            border-radius: 5px; 
+        }
+        .stat-label { 
+            font-size: 12px; 
+            color: #666; 
+            margin-bottom: 5px; 
+        }
+        .stat-value { 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #333; 
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px; 
+        }
+        button:hover { background: #0056b3; }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+        }
+        .loyalty-settings { 
+            background: #e3f2fd; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        .special-bonus { 
+            background: #fff3e0; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 5px 0; 
+        }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏆 Test Hệ Thống Quyền Lợi Tích Điểm Theo Hạng</h1>
+        
+        <!-- Loyalty Settings -->
+        <div class="loyalty-settings">
+            <h3>📋 Cài Đặt Tích Điểm Hiện Tại</h3>
+            <div id="loyaltySettings">Đang tải...</div>
+            <button onclick="loadLoyaltySettings()">🔄 Tải Lại Cài Đặt</button>
+        </div>
+
+        <!-- Customer Tiers -->
+        <div class="test-section">
+            <h3>🎯 Danh Sách Hạng Khách Hàng & Quyền Lợi</h3>
+            <button onclick="loadCustomerTiers()">📊 Tải Danh Sách Hạng</button>
+            <div id="tiersList"></div>
+        </div>
+
+        <!-- Tier Benefits Calculator -->
+        <div class="test-section">
+            <h3>🧮 Máy Tính Quyền Lợi Theo Hạng</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label>Chọn Hạng:</label>
+                    <select id="tierSelect" style="width: 100%; padding: 8px;">
+                        <option value="">-- Chọn hạng --</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Số Tiền Đơn Hàng (VNĐ):</label>
+                    <input type="number" id="orderAmount" value="1000000" style="width: 100%; padding: 8px;">
+                </div>
+                <div>
+                    <label>Loại Ngày Đặc Biệt:</label>
+                    <select id="specialDay" style="width: 100%; padding: 8px;">
+                        <option value="normal">Ngày thường</option>
+                        <option value="weekend">Cuối tuần</option>
+                        <option value="birthday">Sinh nhật</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="calculateBenefits()">💰 Tính Quyền Lợi</button>
+            <div id="benefitsResult"></div>
+        </div>
+
+        <!-- Test Specific APIs -->
+        <div class="test-section">
+            <h3>🔧 Test Các API Đặc Biệt</h3>
+            <button onclick="testTierBenefits()">📈 Test API Tier Benefits</button>
+            <button onclick="testLoyaltyStatus()">👤 Test API Loyalty Status</button>
+            <button onclick="testPointsCalculation()">🎲 Test Tính Điểm Thưởng</button>
+            <div id="apiTestResults"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5273/api';
+        let customerTiers = [];
+        let loyaltySettings = null;
+
+        // Load Loyalty Settings
+        async function loadLoyaltySettings() {
+            try {
+                const response = await fetch(`${API_BASE}/LoyaltySystemSettings/settings`);
+                const settings = await response.json();
+                loyaltySettings = settings;
+                
+                document.getElementById('loyaltySettings').innerHTML = `
+                    <div class="tier-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Tích Điểm Kích Hoạt</div>
+                            <div class="stat-value">${settings.isEnabled ? '✅ Có' : '❌ Không'}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Đổi Điểm Kích Hoạt</div>
+                            <div class="stat-value">${settings.isRedemptionEnabled ? '✅ Có' : '❌ Không'}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tỷ Lệ Tích Điểm</div>
+                            <div class="stat-value">${settings.pointsRate} VNĐ = 1 điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tỷ Lệ Đổi Điểm</div>
+                            <div class="stat-value">1 điểm = ${settings.redemptionRate} VNĐ</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Đơn Hàng Tối Thiểu</div>
+                            <div class="stat-value">${settings.minOrderAmount?.toLocaleString('vi-VN')} VNĐ</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Giới Hạn Đổi Điểm</div>
+                            <div class="stat-value">${settings.maxRedemptionPercentage}% đơn hàng</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Điểm Hết Hạn Sau</div>
+                            <div class="stat-value">${settings.pointsExpirationDays} ngày</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tổng Khách Hàng</div>
+                            <div class="stat-value">${settings.totalCustomers}</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('loyaltySettings').innerHTML = `<div class="error">Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Load Customer Tiers
+        async function loadCustomerTiers() {
+            try {
+                const response = await fetch(`${API_BASE}/CustomerTierManagement`);
+                customerTiers = await response.json();
+                
+                // Update select options
+                const tierSelect = document.getElementById('tierSelect');
+                tierSelect.innerHTML = '<option value="">-- Chọn hạng --</option>';
+                customerTiers.forEach(tier => {
+                    tierSelect.innerHTML += `<option value="${tier.tierId}">${tier.tierName}</option>`;
+                });
+                
+                // Display tiers
+                const tiersHtml = customerTiers.map(tier => `
+                    <div class="tier-card">
+                        <div class="tier-header">
+                            <span class="tier-badge" style="background-color: ${tier.tierColor}">${tier.tierName}</span>
+                            <span>${tier.description}</span>
+                        </div>
+                        <div class="tier-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Chi Tiêu Tối Thiểu</div>
+                                <div class="stat-value">${tier.minSpent.toLocaleString('vi-VN')} VNĐ</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Điểm Tối Thiểu</div>
+                                <div class="stat-value">${tier.minPoints} điểm</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Hệ Số Tích Điểm</div>
+                                <div class="stat-value">x${tier.pointsMultiplier}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Giảm Giá Tự Động</div>
+                                <div class="stat-value">${tier.discountPercentage}%</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Trạng Thái</div>
+                                <div class="stat-value">${tier.isActive ? '✅ Kích hoạt' : '❌ Tắt'}</div>
+                            </div>
+                        </div>
+                        <div class="special-bonus">
+                            <strong>🎁 Quyền Lợi Đặc Biệt:</strong>
+                            ${getSpecialBenefits(tier.tierName)}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('tiersList').innerHTML = tiersHtml;
+            } catch (error) {
+                document.getElementById('tiersList').innerHTML = `<div class="error">Lỗi: ${error.message}</div>`;
+            }
+        }
+
+        // Get Special Benefits Description
+        function getSpecialBenefits(tierName) {
+            const benefits = {
+                'Đồng': 'Không có quyền lợi đặc biệt',
+                'Bạc': '🎯 Tích điểm x1.2 cho mọi đơn hàng',
+                'Vàng': '🎯 Tích điểm x1.5 + 🎂 Bonus điểm sinh nhật x2.0',
+                'Kim cương': '🎯 Tích điểm x2.0 + 📅 Bonus cuối tuần x1.5 + 🎂 Bonus sinh nhật x2.0',
+                'VIP': '🎯 Tích điểm x3.0 + 📅 Bonus cuối tuần x1.5 + 🎂 Bonus sinh nhật x2.0 + 🎊 Tất cả quyền lợi đặc biệt'
+            };
+            return benefits[tierName] || 'Chưa có thông tin quyền lợi';
+        }
+
+        // Calculate Benefits
+        async function calculateBenefits() {
+            const tierId = document.getElementById('tierSelect').value;
+            const orderAmount = parseInt(document.getElementById('orderAmount').value) || 0;
+            const specialDay = document.getElementById('specialDay').value;
+            
+            if (!tierId || !orderAmount) {
+                alert('Vui lòng chọn hạng và nhập số tiền đơn hàng!');
+                return;
+            }
+            
+            const tier = customerTiers.find(t => t.tierId == tierId);
+            if (!tier) return;
+            
+            // Calculate base points
+            const basePoints = Math.floor(orderAmount / (loyaltySettings?.pointsRate || 1000));
+            const tierMultipliedPoints = Math.floor(basePoints * tier.pointsMultiplier);
+            
+            // Calculate special day bonus
+            let specialBonus = 0;
+            let bonusDescription = '';
+            
+            if (specialDay === 'weekend' && ['Kim cương', 'VIP'].includes(tier.tierName)) {
+                specialBonus = Math.floor(tierMultipliedPoints * 0.5); // 50% bonus
+                bonusDescription = '📅 Bonus cuối tuần +50%';
+            }
+            
+            if (specialDay === 'birthday' && ['Vàng', 'Kim cương', 'VIP'].includes(tier.tierName)) {
+                specialBonus = Math.max(specialBonus, Math.floor(tierMultipliedPoints * 1.0)); // 100% bonus
+                bonusDescription = '🎂 Bonus sinh nhật +100%';
+            }
+            
+            const totalPoints = tierMultipliedPoints + specialBonus;
+            const discount = Math.floor(orderAmount * tier.discountPercentage / 100);
+            
+            document.getElementById('benefitsResult').innerHTML = `
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <h4>💰 Kết Quả Tính Toán Quyền Lợi - ${tier.tierName}</h4>
+                    <div class="tier-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Số Tiền Đơn Hàng</div>
+                            <div class="stat-value">${orderAmount.toLocaleString('vi-VN')} VNĐ</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Điểm Cơ Bản</div>
+                            <div class="stat-value">${basePoints} điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Sau Hệ Số x${tier.pointsMultiplier}</div>
+                            <div class="stat-value">${tierMultipliedPoints} điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Bonus Đặc Biệt</div>
+                            <div class="stat-value">${specialBonus > 0 ? `+${specialBonus}` : '0'} điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">🏆 Tổng Điểm Nhận Được</div>
+                            <div class="stat-value" style="color: #4CAF50; font-size: 18px;">${totalPoints} điểm</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">💸 Giảm Giá Tự Động</div>
+                            <div class="stat-value" style="color: #FF5722;">${discount.toLocaleString('vi-VN')} VNĐ (${tier.discountPercentage}%)</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">💳 Thành Tiền Sau Giảm</div>
+                            <div class="stat-value">${(orderAmount - discount).toLocaleString('vi-VN')} VNĐ</div>
+                        </div>
+                    </div>
+                    ${bonusDescription ? `<div class="special-bonus" style="margin-top: 10px;"><strong>${bonusDescription}</strong></div>` : ''}
+                </div>
+            `;
+        }
+
+        // Test API Functions
+        async function testTierBenefits() {
+            try {
+                const response = await fetch(`${API_BASE}/TierBenefits/tier-benefits`);
+                const benefits = await response.json();
+                
+                document.getElementById('apiTestResults').innerHTML = `
+                    <h4>📈 API Tier Benefits Response:</h4>
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
+${JSON.stringify(benefits, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiTestResults').innerHTML = `<div class="error">Lỗi API: ${error.message}</div>`;
+            }
+        }
+
+        async function testLoyaltyStatus() {
+            // Test với customer ID = 1
+            try {
+                const response = await fetch(`${API_BASE}/LoyaltySystemSettings/customer-status/1`);
+                const status = await response.json();
+                
+                document.getElementById('apiTestResults').innerHTML = `
+                    <h4>👤 API Customer Loyalty Status (ID: 1):</h4>
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto;">
+${JSON.stringify(status, null, 2)}
+                    </pre>
+                `;
+            } catch (error) {
+                document.getElementById('apiTestResults').innerHTML = `<div class="error">Lỗi API: ${error.message}</div>`;
+            }
+        }
+
+        async function testPointsCalculation() {
+            document.getElementById('apiTestResults').innerHTML = `
+                <div class="success">✅ Tính năng này được test thông qua "Máy Tính Quyền Lợi" ở trên!</div>
+            `;
+        }
+
+        // Initialize page
+        window.onload = function() {
+            loadLoyaltySettings();
+            loadCustomerTiers();
+        };
+    </script>
+</body>
+</html>
