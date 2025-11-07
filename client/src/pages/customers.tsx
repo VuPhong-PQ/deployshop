@@ -45,6 +45,7 @@ export default function Customers() {
         email: customerData.email || null,
         diaChi: customerData.address || null,
         hangKhachHang: customerData.customerType === 'vip' ? 'VIP' : 
+                      customerData.customerType === 'platinum' ? 'Platinum' :
                       customerData.customerType === 'premium' ? 'Premium' : 'Thuong',
         storeId: customerData.storeId ? parseInt(customerData.storeId) : null,
         loyaltyPoints: customerData.loyaltyPoints || 0,
@@ -132,10 +133,13 @@ export default function Customers() {
     customerType: 
       // Kiểm tra theo string chính xác
       c.hangKhachHang === 'VIP' ? 'vip'
+      : c.hangKhachHang === 'Platinum' ? 'platinum'
       : c.hangKhachHang === 'Premium' ? 'premium'
+      : c.hangKhachHang === 'Silver' ? 'premium'
+      : c.hangKhachHang === 'Bronze' ? 'regular'
       : c.hangKhachHang === 'Thuong' ? 'regular'
       // Fallback cho các giá trị số cũ (nếu có)
-      : c.hangKhachHang === 3 ? 'vip'
+      : c.hangKhachHang === 3 ? 'platinum'
       : c.hangKhachHang === 2 ? 'premium'
       : 'regular',
     loyaltyPoints: c.loyaltyPoints || 0,
@@ -224,6 +228,7 @@ export default function Customers() {
         email: data.email || '',
         diaChi: data.address || '',
         hangKhachHang: data.customerType === 'vip' ? 'VIP' : 
+                      data.customerType === 'platinum' ? 'Platinum' :
                       data.customerType === 'premium' ? 'Premium' : 'Thuong',
         storeId: data.storeId ? parseInt(data.storeId) : null,
         loyaltyPoints: data.loyaltyPoints || 0,
@@ -376,15 +381,30 @@ export default function Customers() {
     }
   };
 
-  // Get customer tier badge
+  // Get customer tier badge with Vietnamese names
   const getTierBadge = (hangKhachHang: string) => {
+    // Map English tier names to Vietnamese
+    const tierMapping = {
+      "Bronze": "Đồng",
+      "Silver": "Bạc", 
+      "Platinum": "Vàng",
+      "VIP": "Kim cương"
+    };
+
+    // Get Vietnamese name, fallback to original if not found
+    const vietnameseName = tierMapping[hangKhachHang as keyof typeof tierMapping] || hangKhachHang;
+
     switch (hangKhachHang) {
       case 'VIP':
-        return { label: 'VIP', color: 'bg-purple-500' };
+        return { label: 'Kim cương', color: 'bg-purple-500' };
       case 'Premium':
         return { label: 'Premium', color: 'bg-yellow-400 text-black' };
       case 'Platinum':
-        return { label: 'Platinum', color: 'bg-gray-800' };
+        return { label: 'Vàng', color: 'bg-yellow-500' };
+      case 'Silver':
+        return { label: 'Bạc', color: 'bg-gray-400' };
+      case 'Bronze':
+        return { label: 'Đồng', color: 'bg-orange-600' };
       case 'Thuong':
       default:
         return { label: 'Thường', color: 'bg-gray-500' };
@@ -414,7 +434,9 @@ export default function Customers() {
       address: customer.diaChi || "",
       storeId: customer.storeId?.toString() || "",
       customerType: customer.hangKhachHang === 'VIP' ? 'vip' : 
-                   customer.hangKhachHang === 'Premium' ? 'premium' : 'regular',
+                   customer.hangKhachHang === 'Platinum' ? 'platinum' :
+                   customer.hangKhachHang === 'Premium' ? 'premium' : 
+                   customer.hangKhachHang === 'Silver' ? 'premium' : 'regular',
       loyaltyPoints: customer.loyaltyPoints || 0,
       totalSpent: customer.totalSpent.toString() || "0",
       isActive: customer.isActive,
@@ -460,7 +482,8 @@ export default function Customers() {
                 <SelectItem value="all">Tất cả hạng</SelectItem>
                 <SelectItem value="regular">Thường</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="vip">VIP</SelectItem>
+                <SelectItem value="platinum">Vàng</SelectItem>
+                <SelectItem value="vip">Kim cương</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={resetFilters} data-testid="button-reset-filters">
@@ -604,7 +627,8 @@ export default function Customers() {
                           <SelectContent>
                             <SelectItem value="regular">Thường</SelectItem>
                             <SelectItem value="premium">Premium</SelectItem>
-                            <SelectItem value="vip">VIP</SelectItem>
+                            <SelectItem value="platinum">Vàng</SelectItem>
+                            <SelectItem value="vip">Kim cương</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

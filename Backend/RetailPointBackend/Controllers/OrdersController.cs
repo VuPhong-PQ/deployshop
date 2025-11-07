@@ -14,13 +14,17 @@ namespace RetailPointBackend.Controllers
         private readonly AppDbContext _notificationContext;
         private readonly INotificationService _notificationService;
         private readonly IDiscountService _discountService;
+        private readonly ILoyaltyService _loyaltyService;
+        private readonly ILogger<OrdersController> _logger;
         
-        public OrdersController(RetailPointContext context, AppDbContext notificationContext, INotificationService notificationService, IDiscountService discountService)
+        public OrdersController(RetailPointContext context, AppDbContext notificationContext, INotificationService notificationService, IDiscountService discountService, ILoyaltyService loyaltyService, ILogger<OrdersController> logger)
         {
             _context = context;
             _notificationContext = notificationContext;
             _notificationService = notificationService;
             _discountService = discountService;
+            _loyaltyService = loyaltyService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -218,6 +222,39 @@ namespace RetailPointBackend.Controllers
                 Console.WriteLine($"Failed to create notification: {ex.Message}");
             }
 
+            // Xử lý tích điểm và nâng hạng cho khách hàng (chỉ khi có CustomerId)
+            if (actualCustomerId.HasValue)
+            {
+                try
+                {
+                    // Tích điểm cho đơn hàng (chạy background để không ảnh hưởng tốc độ tạo đơn)
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Processing loyalty points for order {OrderId}, customer {CustomerId}", order.OrderId, actualCustomerId.Value);
+                            var pointsProcessed = await _loyaltyService.ProcessOrderPointsAsync(order.OrderId);
+                            if (pointsProcessed)
+                            {
+                                _logger.LogInformation("Loyalty points processed successfully for order {OrderId}", order.OrderId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to process loyalty points for order {OrderId}", order.OrderId);
+                            }
+                        }
+                        catch (Exception loyaltyEx)
+                        {
+                            _logger.LogError(loyaltyEx, "Error processing loyalty points for order {OrderId}", order.OrderId);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error starting loyalty processing task for order {OrderId}", order.OrderId);
+                }
+            }
+
             // Trả về kết quả với thông tin tồn kho thấp nếu có
             var result = new { order.OrderId, Status = "Success" };
             if (lowStockProducts.Any())
@@ -407,6 +444,8 @@ namespace RetailPointBackend.Controllers
             var order = _context.Orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null) return NotFound("Không tìm thấy đơn hàng");
             
+            var oldStatus = order.Status;
+            
             // Cập nhật thông tin thanh toán
             order.PaymentMethod = paymentMethod ?? order.PaymentMethod;
             order.PaymentStatus = paymentStatus ?? "paid";
@@ -420,6 +459,31 @@ namespace RetailPointBackend.Controllers
                 // Tạo thông báo thanh toán thành công
                 await _notificationService.CreatePaymentSuccessNotificationAsync(order.OrderId, order.TotalAmount, order.PaymentMethod ?? "cash");
                 
+                // Xử lý tích điểm khi đơn hàng chuyển sang completed
+                if (oldStatus != "completed" && order.Status == "completed" && order.CustomerId.HasValue)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Processing loyalty points for completed order {OrderId}, customer {CustomerId}", order.OrderId, order.CustomerId.Value);
+                            var pointsProcessed = await _loyaltyService.ProcessOrderPointsAsync(order.OrderId);
+                            if (pointsProcessed)
+                            {
+                                _logger.LogInformation("Loyalty points processed successfully for completed order {OrderId}", order.OrderId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Failed to process loyalty points for completed order {OrderId}", order.OrderId);
+                            }
+                        }
+                        catch (Exception loyaltyEx)
+                        {
+                            _logger.LogError(loyaltyEx, "Error processing loyalty points for completed order {OrderId}", order.OrderId);
+                        }
+                    });
+                }
+                
                 return Ok(new { message = "Đơn hàng đã được cập nhật thành công", orderId = order.OrderId });
             }
             catch (Exception ex)
@@ -430,10 +494,12 @@ namespace RetailPointBackend.Controllers
 
         // Cập nhật đơn hàng
         [HttpPut("{id}")]
-        public IActionResult UpdateOrder(int id, [FromBody] Order updatedOrder)
+        public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order updatedOrder)
         {
             var order = _context.Orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null) return NotFound();
+            
+            var oldStatus = order.Status;
             
             // Cập nhật các field được gửi lên
             if (updatedOrder.CustomerId.HasValue) order.CustomerId = updatedOrder.CustomerId;
@@ -451,6 +517,43 @@ namespace RetailPointBackend.Controllers
             
             Console.WriteLine($"Updating order {id}: Status = {updatedOrder.Status}, CancellationReason = {updatedOrder.CancellationReason}");
             _context.SaveChanges();
+            
+            // Xử lý tích điểm khi đơn hàng được hoàn thành hoặc hủy
+            if (order.CustomerId.HasValue)
+            {
+                if (oldStatus != "completed" && order.Status == "completed")
+                {
+                    // Đơn hàng mới hoàn thành - tích điểm
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Processing loyalty points for order {OrderId} status change to completed", order.OrderId);
+                            await _loyaltyService.ProcessOrderPointsAsync(order.OrderId);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error processing loyalty points for completed order {OrderId}", order.OrderId);
+                        }
+                    });
+                }
+                else if (oldStatus == "completed" && (order.Status == "cancelled" || order.Status == "refunded"))
+                {
+                    // Đơn hàng bị hủy hoặc hoàn trả - hoàn điểm
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Processing loyalty points refund for cancelled/refunded order {OrderId}", order.OrderId);
+                            await _loyaltyService.ProcessOrderPointsAsync(order.OrderId, isRefund: true);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error processing loyalty points refund for order {OrderId}", order.OrderId);
+                        }
+                    });
+                }
+            }
             
             return Ok(new { order.OrderId, Status = "Updated", NewStatus = order.Status, CancellationReason = order.CancellationReason });
         }
