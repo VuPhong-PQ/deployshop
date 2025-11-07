@@ -17,7 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
-import type { ApiCustomer, CustomerFormData, ApiStore, Customer } from "@/types/api";
+import type { ApiCustomer, CustomerFormData, ApiStore, Customer, Order, OrderItem, CustomerDetailData } from "@/types/api";
 
 const customerFormSchema = z.object({
   name: z.string().min(1, "Họ tên là bắt buộc"),
@@ -95,6 +95,8 @@ export default function Customers() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<ApiCustomer | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isOrderDetailOpen, setIsOrderDetailOpen] = useState(false);
 
   // Fetch customers and orders
   const { data: rawCustomers = [], isLoading, refetch } = useQuery<ApiCustomer[]>({
@@ -148,6 +150,39 @@ export default function Customers() {
 
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
+  });
+
+  // Fetch stores
+  const { data: stores = [] } = useQuery<ApiStore[]>({
+    queryKey: ['/api/stores'],
+    queryFn: async () => {
+      console.log('Fetching stores from API...');
+      const response = await apiRequest('/api/stores', { method: 'GET' });
+      console.log('Stores API response:', response);
+      return response;
+    },
+  });
+
+  // Fetch customer detail data when selected
+  const { data: customerDetail, isLoading: isLoadingDetail, error: customerDetailError } = useQuery<CustomerDetailData>({
+    queryKey: ['/api/customers', selectedCustomer?.customerId, 'detail'],
+    queryFn: async () => {
+      if (!selectedCustomer?.customerId) {
+        console.log('No customerId available:', selectedCustomer);
+        return null;
+      }
+      console.log('Fetching customer detail for:', selectedCustomer.customerId);
+      try {
+        const response = await apiRequest(`/api/customers/${selectedCustomer.customerId}`, { method: 'GET' });
+        console.log('Customer detail response:', response);
+        return response;
+      } catch (error) {
+        console.error('Customer detail API error:', error);
+        throw error;
+      }
+    },
+    enabled: !!selectedCustomer?.customerId,
+    retry: 1,
   });
 
   // Form for adding/editing customers
@@ -259,9 +294,38 @@ export default function Customers() {
     return matchesSearch && matchesTier;
   });
 
-  // Get customer orders
-  const getCustomerOrders = (customerId: number) => {
-    return orders.filter(order => order.customerId === customerId);
+  // Get customer orders from original orders data (for card display)
+  const getCustomerOrdersForCard = (customerId: string) => {
+    const id = parseInt(customerId);
+    return orders.filter(order => order.customerId === id);
+  };
+
+  // Get customer orders from detailed API (for modal tabs)
+  const getCustomerOrders = () => {
+    console.log('getCustomerOrders called - customerDetail:', customerDetail);
+    console.log('customerDetail?.orders:', customerDetail?.orders);
+    console.log('customerDetailError:', customerDetailError);
+    const orders = customerDetail?.orders || [];
+    console.log('Returning orders array length:', orders.length);
+    return orders;
+  };
+
+  // Handle view order detail
+  const handleViewOrderDetail = async (orderId: number) => {
+    try {
+      console.log('Fetching order detail for:', orderId);
+      const orderDetail = await apiRequest(`/api/customers/orders/${orderId}`, { method: 'GET' });
+      console.log('Order detail response:', orderDetail);
+      setSelectedOrder(orderDetail);
+      setIsOrderDetailOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch order detail:', error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải chi tiết đơn hàng",
+        variant: "destructive",
+      });
+    }
   };
 
   // Get customer tier badge
@@ -552,7 +616,12 @@ export default function Customers() {
                 <Card 
                   key={customer.customerId} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => setSelectedCustomer(customer)}
+                  onClick={() => {
+                    console.log('Clicked customer (mapped):', customer);
+                    const rawCustomer = rawCustomers.find(raw => raw.customerId.toString() === customer.id);
+                    console.log('Found rawCustomer:', rawCustomer);
+                    setSelectedCustomer(rawCustomer || null);
+                  }}
                   data-testid={`customer-card-${customer.customerId}`}
                 >
                   <CardContent className="p-6">
@@ -688,36 +757,53 @@ export default function Customers() {
                 </TabsContent>
 
                 <TabsContent value="orders" className="space-y-4">
-                  <div className="space-y-3">
-                    {getCustomerOrders(selectedCustomer.id).map((order, index) => (
-                      <Card key={order.id} data-testid={`order-${index}`}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">Đơn hàng #{order.orderNumber}</p>
-                              <p className="text-sm text-gray-500">
-                                {new Date(order.createdAt).toLocaleString('vi-VN')}
-                              </p>
+                  {console.log('Orders tab rendering - isLoadingDetail:', isLoadingDetail, 'getCustomerOrders().length:', getCustomerOrders().length)}
+                  {isLoadingDetail ? (
+                    <div className="text-center py-8">
+                      <p>Đang tải đơn hàng...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {getCustomerOrders().map((order, index) => (
+                        <Card 
+                          key={order.orderId} 
+                          data-testid={`order-${index}`}
+                          className="cursor-pointer hover:shadow-md transition-shadow"
+                          onClick={() => handleViewOrderDetail(order.orderId)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium">Đơn hàng #{order.orderNumber || order.orderId}</p>
+                                <p className="text-sm text-gray-500">
+                                  {new Date(order.createdAt).toLocaleString('vi-VN')}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {order.items?.length || 0} sản phẩm
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-primary">
+                                  {parseFloat(order.totalAmount || "0").toLocaleString('vi-VN')}₫
+                                </p>
+                                <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                                  {order.status === 'completed' ? 'Hoàn thành' : 
+                                   order.status === 'pending' ? 'Chờ xử lý' : 
+                                   order.status === 'processing' ? 'Đang xử lý' : 'Đang xử lý'}
+                                </Badge>
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="font-bold text-primary">
-                                {parseInt(order.total).toLocaleString('vi-VN')}₫
-                              </p>
-                              <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                                {order.status === 'completed' ? 'Hoàn thành' : 'Đang xử lý'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    {getCustomerOrders(selectedCustomer.id).length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p>Khách hàng chưa có đơn hàng nào</p>
-                      </div>
-                    )}
-                  </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                      {getCustomerOrders().length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>Khách hàng chưa có đơn hàng nào</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="loyalty" className="space-y-4">
@@ -732,35 +818,60 @@ export default function Customers() {
                       <div className="grid grid-cols-2 gap-6">
                         <div className="text-center">
                           <p className="text-2xl font-bold text-primary">
-                            {selectedCustomer.loyaltyPoints}
+                            {customerDetail?.loyaltyPoints || selectedCustomer.loyaltyPoints}
                           </p>
                           <p className="text-sm text-gray-500">Điểm hiện tại</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold text-green-600">
-                            {parseInt(selectedCustomer.totalSpent).toLocaleString('vi-VN')}₫
+                            {parseInt(customerDetail?.totalSpent || selectedCustomer.totalSpent.toString() || "0").toLocaleString('vi-VN')}₫
                           </p>
                           <p className="text-sm text-gray-500">Tổng chi tiêu</p>
                         </div>
                       </div>
+                      
+                      {/* Loyalty Transactions */}
+                      {customerDetail?.loyaltyTransactions && customerDetail.loyaltyTransactions.length > 0 && (
+                        <div className="mt-6">
+                          <h4 className="font-medium mb-3">Lịch sử giao dịch điểm</h4>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {customerDetail.loyaltyTransactions.slice(0, 5).map((transaction, index) => (
+                              <div key={index} className="flex justify-between items-center text-sm py-2 border-b">
+                                <div>
+                                  <p className="font-medium">{transaction.reason || 'Giao dịch điểm'}</p>
+                                  <p className="text-gray-500">
+                                    {new Date(transaction.processedAt).toLocaleDateString('vi-VN')}
+                                  </p>
+                                </div>
+                                <div className={`font-bold ${transaction.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {transaction.points > 0 ? '+' : ''}{transaction.points}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="mt-6">
-                        <p className="text-sm text-gray-600 mb-2">Quyền lợi hạng {getTierBadge(selectedCustomer.customerType).label}:</p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Quyền lợi hạng {getTierBadge(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang).label}:
+                        </p>
                         <ul className="text-sm space-y-1">
-                          {selectedCustomer.customerType === 'vip' && (
+                          {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'VIP' && (
                             <>
                               <li>• Giảm giá 15% cho tất cả sản phẩm</li>
                               <li>• Tích điểm x3</li>
                               <li>• Ưu tiên hỗ trợ khách hàng</li>
                             </>
                           )}
-                          {selectedCustomer.customerType === 'premium' && (
+                          {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'Premium' && (
                             <>
                               <li>• Giảm giá 10% cho tất cả sản phẩm</li>
                               <li>• Tích điểm x2</li>
                               <li>• Miễn phí giao hàng</li>
                             </>
                           )}
-                          {selectedCustomer.customerType === 'regular' && (
+                          {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'Thuong' && (
                             <>
                               <li>• Tích điểm tiêu chuẩn</li>
                               <li>• Ưu đãi đặc biệt theo mùa</li>
@@ -772,6 +883,95 @@ export default function Customers() {
                   </Card>
                 </TabsContent>
               </Tabs>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Order Detail Modal */}
+        {selectedOrder && (
+          <Dialog open={isOrderDetailOpen} onOpenChange={setIsOrderDetailOpen}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Chi tiết đơn hàng #{selectedOrder.orderNumber || selectedOrder.orderId}</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Order Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Thông tin đơn hàng</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-500">Ngày tạo</p>
+                        <p className="font-medium">
+                          {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Trạng thái</p>
+                        <Badge variant={selectedOrder.status === 'completed' ? 'default' : 'secondary'}>
+                          {selectedOrder.status === 'completed' ? 'Hoàn thành' : 
+                           selectedOrder.status === 'pending' ? 'Chờ xử lý' : 
+                           selectedOrder.status === 'processing' ? 'Đang xử lý' : 'Đang xử lý'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Tổng tiền</p>
+                        <p className="font-bold text-primary text-lg">
+                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}₫
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Phương thức thanh toán</p>
+                        <p className="font-medium">
+                          {selectedOrder.paymentMethod === 'cash' ? 'Tiền mặt' : 
+                           selectedOrder.paymentMethod === 'card' ? 'Thẻ' : 'Khác'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Order Items */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Sản phẩm trong đơn hàng</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selectedOrder.items?.map((item, index) => (
+                        <div key={index} className="flex justify-between items-center py-3 border-b">
+                          <div className="flex-1">
+                            <p className="font-medium">{item.productName || item.product?.name || 'Sản phẩm'}</p>
+                            <p className="text-sm text-gray-500">
+                              {parseFloat(item.price || "0").toLocaleString('vi-VN')}₫ × {item.quantity}
+                            </p>
+                            {item.product?.sku && (
+                              <p className="text-xs text-gray-400">SKU: {item.product.sku}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold">
+                              {parseFloat(item.totalPrice || (parseFloat(item.price || "0") * item.quantity).toString()).toLocaleString('vi-VN')}₫
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex justify-between items-center text-lg font-bold">
+                        <span>Tổng cộng:</span>
+                        <span className="text-primary">
+                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}₫
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </DialogContent>
           </Dialog>
         )}

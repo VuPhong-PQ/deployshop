@@ -115,3 +115,63 @@ export interface ApiStore {
   createdAt: string;
   updatedAt: string;
 }
+
+// Order and Product types
+export interface Order {
+  orderId: number;
+  orderNumber?: string;
+  customerId?: number;
+  storeId?: number;
+  status: "pending" | "processing" | "completed" | "cancelled";
+  totalAmount: string;
+  subTotal?: string;
+  taxAmount?: string;
+  discountAmount?: string;
+  paymentMethod?: "cash" | "card" | "other";
+  createdAt: string;
+  updatedAt?: string;
+  items?: OrderItem[];
+  customer?: ApiCustomer;
+  store?: ApiStore;
+}
+
+export interface OrderItem {
+  orderItemId: number;
+  orderId: number;
+  productId: number;
+  quantity: number;
+  price: string;
+  totalPrice?: string;
+  productName?: string;
+  product?: Product;
+}
+
+export interface Product {
+  productId: number;
+  name: string;
+  sku?: string;
+  description?: string;
+  price: string;
+  cost?: string;
+  stock?: number;
+  imageUrl?: string;
+  isActive?: boolean;
+  categoryId?: number;
+  storeId?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Customer detail with orders and transactions
+export interface CustomerDetailData {
+  customerId: number;
+  hoTen: string;
+  soDienThoai: string;
+  email?: string;
+  diaChi?: string;
+  hangKhachHang: string;
+  loyaltyPoints: number;
+  totalSpent: string;
+  orders: Order[];
+  loyaltyTransactions: LoyaltyTransaction[];
+}

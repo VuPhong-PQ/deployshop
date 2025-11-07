@@ -86,7 +86,14 @@ namespace RetailPointBackend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<object>> GetCustomer(int id)
         {
-            var customer = await _context.Customers.FindAsync(id);
+            var customer = await _context.Customers
+                .Include(c => c.CustomerTier)
+                .Include(c => c.Orders)
+                    .ThenInclude(o => o.Items)
+                    .ThenInclude(i => i.Product)
+                .Include(c => c.LoyaltyTransactions)
+                .FirstOrDefaultAsync(c => c.CustomerId == id);
+                
             if (customer == null) return NotFound();
             
             var result = new
@@ -104,7 +111,50 @@ namespace RetailPointBackend.Controllers
                 dateOfBirth = customer.DateOfBirth,
                 isActive = customer.IsActive,
                 createdAt = customer.CreatedAt,
-                updatedAt = customer.UpdatedAt
+                updatedAt = customer.UpdatedAt,
+                orders = customer.Orders?.Select(o => new
+                {
+                    orderId = o.OrderId,
+                    orderNumber = o.OrderNumber,
+                    customerId = o.CustomerId,
+                    storeId = o.StoreId,
+                    totalAmount = o.TotalAmount.ToString("F2"),
+                    subTotal = o.SubTotal.ToString("F2"),
+                    taxAmount = o.TaxAmount.ToString("F2"),
+                    discountAmount = o.DiscountAmount.ToString("F2"),
+                    status = o.Status,
+                    paymentMethod = o.PaymentMethod,
+                    createdAt = o.CreatedAt,
+                    items = o.Items?.Select(i => new
+                    {
+                        orderItemId = i.OrderItemId,
+                        orderId = i.OrderId,
+                        productId = i.ProductId,
+                        quantity = i.Quantity,
+                        price = i.Price.ToString("F2"),
+                        totalPrice = i.TotalPrice.ToString("F2"),
+                        productName = i.ProductName,
+                        product = i.Product != null ? new
+                        {
+                            productId = i.Product.ProductId,
+                            name = i.Product.Name,
+                            barcode = i.Product.Barcode,
+                            price = i.Product.Price.ToString("F2")
+                        } : null
+                    }).ToList()
+                }).ToList(),
+                loyaltyTransactions = customer.LoyaltyTransactions?.Select(t => new
+                {
+                    transactionId = t.TransactionId,
+                    customerId = t.CustomerId,
+                    orderId = t.OrderId,
+                    transactionType = t.TransactionType,
+                    points = t.Points,
+                    pointsBalance = t.PointsBalance,
+                    reason = t.Reason,
+                    expiryDate = t.ExpiryDate,
+                    processedAt = t.ProcessedAt
+                }).ToList()
             };
             
             return Ok(result);
@@ -210,6 +260,70 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi xóa khách hàng: {ex.Message}");
+            }
+        }
+
+        // GET: api/customers/orders/{orderId}
+        [HttpGet("orders/{orderId}")]
+        public async Task<IActionResult> GetOrderDetails(int orderId)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Items)
+                        .ThenInclude(i => i.Product)
+                    .Include(o => o.Customer)
+                    .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+                if (order == null)
+                {
+                    return NotFound($"Không tìm thấy đơn hàng với ID: {orderId}");
+                }
+
+                var result = new
+                {
+                    orderId = order.OrderId,
+                    orderNumber = order.OrderNumber,
+                    customerId = order.CustomerId,
+                    storeId = order.StoreId,
+                    status = order.Status.ToString().ToLower(),
+                    totalAmount = order.TotalAmount,
+                    subTotal = order.SubTotal,
+                    taxAmount = order.TaxAmount,
+                    discountAmount = order.DiscountAmount,
+                    paymentMethod = order.PaymentMethod?.ToString().ToLower(),
+                    createdAt = order.CreatedAt,
+                    items = order.Items.Select(item => new
+                    {
+                        orderItemId = item.OrderItemId,
+                        orderId = item.OrderId,
+                        productId = item.ProductId,
+                        quantity = item.Quantity,
+                        price = item.Price,
+                        totalPrice = item.TotalPrice,
+                        productName = item.Product?.Name,
+                        product = item.Product != null ? new
+                        {
+                            productId = item.Product.ProductId,
+                            name = item.Product.Name,
+                            sku = item.Product.Barcode,
+                            price = item.Product.Price,
+                            description = item.Product.Description
+                        } : null
+                    }).ToList(),
+                    customer = order.Customer != null ? new
+                    {
+                        customerId = order.Customer.CustomerId,
+                        hoTen = order.Customer.HoTen,
+                        soDienThoai = order.Customer.SoDienThoai
+                    } : null
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Lỗi lấy chi tiết đơn hàng: {ex.Message}");
             }
         }
     }
