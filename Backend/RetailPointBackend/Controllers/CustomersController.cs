@@ -55,7 +55,9 @@ namespace RetailPointBackend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetCustomers([FromQuery] int? storeId = null)
         {
-            var query = _context.Customers.AsQueryable();
+            var query = _context.Customers
+                .Where(c => c.IsActive) // Only show active customers
+                .AsQueryable();
             
             // Don't filter by store - show all customers regardless of StoreId
             // This allows customers to be shared across stores
@@ -87,6 +89,7 @@ namespace RetailPointBackend.Controllers
         public async Task<ActionResult<object>> GetCustomer(int id)
         {
             var customer = await _context.Customers
+                .Where(c => c.IsActive) // Only show active customers
                 .Include(c => c.CustomerTier)
                 .Include(c => c.Orders)
                     .ThenInclude(o => o.Items)
@@ -94,7 +97,7 @@ namespace RetailPointBackend.Controllers
                 .Include(c => c.LoyaltyTransactions)
                 .FirstOrDefaultAsync(c => c.CustomerId == id);
                 
-            if (customer == null) return NotFound();
+            if (customer == null) return NotFound("Customer not found or has been deactivated");
             
             var result = new
             {
@@ -253,9 +256,12 @@ namespace RetailPointBackend.Controllers
                 var customer = await _context.Customers.FindAsync(id);
                 if (customer == null) return NotFound();
                 
-                _context.Customers.Remove(customer);
+                // Soft delete: Mark customer as inactive instead of hard delete
+                customer.IsActive = false;
+                customer.UpdatedAt = DateTime.Now;
+                
                 await _context.SaveChangesAsync();
-                return NoContent();
+                return Ok(new { success = true, message = "Customer deactivated successfully" });
             }
             catch (Exception ex)
             {
@@ -324,6 +330,47 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 return BadRequest($"Lỗi lấy chi tiết đơn hàng: {ex.Message}");
+            }
+        }
+
+        [HttpGet("inactive")]
+        public async Task<ActionResult<IEnumerable<object>>> GetInactiveCustomers()
+        {
+            try
+            {
+                var customers = await _context.Customers
+                    .Where(c => !c.IsActive) // Only inactive customers
+                    .Include(c => c.CustomerTier)
+                    .ToListAsync();
+
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error retrieving inactive customers", error = ex.Message });
+            }
+        }
+
+        [HttpPut("restore/{id}")]
+        public async Task<IActionResult> RestoreCustomer(int id)
+        {
+            try
+            {
+                var customer = await _context.Customers.FindAsync(id);
+                if (customer == null)
+                {
+                    return NotFound(new { message = "Customer not found" });
+                }
+
+                customer.IsActive = true;
+                customer.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+                return Ok(new { success = true, message = "Customer restored successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error restoring customer", error = ex.Message });
             }
         }
     }

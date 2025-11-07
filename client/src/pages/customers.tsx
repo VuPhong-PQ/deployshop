@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { normalizeSearchText } from "@/lib/utils";
-import { Plus, Search, Edit, Trash2, Users, Phone, Mail, MapPin, ShoppingBag, Calendar, Star } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Users, Phone, Mail, MapPin, ShoppingBag, Calendar, Star, RotateCcw } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -87,6 +87,7 @@ export default function Customers() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("all");
+  const [showInactive, setShowInactive] = useState(false);
   // Hàm reset bộ lọc
   const resetFilters = () => {
     setSearchTerm("");
@@ -100,10 +101,11 @@ export default function Customers() {
 
   // Fetch customers and orders
   const { data: rawCustomers = [], isLoading, refetch } = useQuery<ApiCustomer[]>({
-    queryKey: ['/api/customers'],
+    queryKey: ['/api/customers', { showInactive }],
     queryFn: async () => {
-      console.log('Fetching customers from API...');
-      const response = await apiRequest('/api/customers', { method: 'GET' });
+      const endpoint = showInactive ? '/api/customers/inactive' : '/api/customers';
+      console.log('Fetching customers from API:', endpoint);
+      const response = await apiRequest(endpoint, { method: 'GET' });
       console.log('Raw API response:', response);
       return response;
     },
@@ -183,6 +185,18 @@ export default function Customers() {
     },
     enabled: !!selectedCustomer?.customerId,
     retry: 1,
+  });
+
+  // Fetch inactive customers
+  const { data: inactiveCustomers = [] } = useQuery<ApiCustomer[]>({
+    queryKey: ['/api/customers/inactive'],
+    queryFn: async () => {
+      console.log('Fetching inactive customers...');
+      const response = await apiRequest('/api/customers/inactive', { method: 'GET' });
+      console.log('Inactive customers response:', response);
+      return response;
+    },
+    enabled: showInactive,
   });
 
   // Form for adding/editing customers
@@ -273,24 +287,58 @@ export default function Customers() {
     }
   });
 
+  // Restore customer mutation
+  const restoreCustomerMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/customers/restore/${id}`, {
+        method: 'PUT',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thành công",
+        description: "Khách hàng đã được khôi phục",
+      });
+      console.log('Customer restored, refetching data...');
+      refetch();
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể khôi phục khách hàng",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Filter customers with Vietnamese diacritics support
-  const filteredCustomers = customers.filter(customer => {
-    if (!customer || !customer.name || !customer.phone) return false;
+  const sourceCustomers = showInactive ? inactiveCustomers : customers;
+  const filteredCustomers = sourceCustomers.filter(customer => {
+    if (!customer) return false;
+    
+    // Handle different data structures (mapped vs raw)
+    const customerName = customer.name || customer.hoTen || '';
+    const customerPhone = customer.phone || customer.soDienThoai || '';
+    const customerEmail = customer.email || '';
+    
+    if (!customerName || !customerPhone) return false;
     
     const searchNormalized = normalizeSearchText(searchTerm);
-    const customerNameNormalized = normalizeSearchText(customer.name || '');
-    const customerPhoneNormalized = normalizeSearchText(customer.phone || '');
-    const customerEmailNormalized = normalizeSearchText(customer.email || '');
+    const customerNameNormalized = normalizeSearchText(customerName);
+    const customerPhoneNormalized = normalizeSearchText(customerPhone);
+    const customerEmailNormalized = normalizeSearchText(customerEmail);
     
     const matchesSearch = customerNameNormalized.includes(searchNormalized) ||
                          customerPhoneNormalized.includes(searchNormalized) ||
                          customerEmailNormalized.includes(searchNormalized);
-    // Filter by tier using backend field
+    
+    // Filter by tier using backend field (both mapped and raw)
+    const tierField = customer.hangKhachHang || customer.customerType;
     const matchesTier = selectedTier === "all" || 
-      (selectedTier === "vip" && customer.hangKhachHang === "VIP") ||
-      (selectedTier === "premium" && customer.hangKhachHang === "Premium") ||
-      (selectedTier === "regular" && customer.hangKhachHang === "Thuong") ||
-      (selectedTier === "platinum" && customer.hangKhachHang === "Platinum");
+      (selectedTier === "vip" && (tierField === "VIP" || tierField === "vip")) ||
+      (selectedTier === "premium" && (tierField === "Premium" || tierField === "premium")) ||
+      (selectedTier === "regular" && (tierField === "Thuong" || tierField === "regular")) ||
+      (selectedTier === "platinum" && tierField === "Platinum");
     return matchesSearch && matchesTier;
   });
 
@@ -377,7 +425,14 @@ export default function Customers() {
   // Handle delete customer
   const handleDeleteCustomer = (id: number) => {
     if (confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
-      deleteCustomerMutation.mutate(id);
+      deleteCustomerMutation.mutate(id.toString());
+    }
+  };
+
+  // Handle restore customer
+  const handleRestoreCustomer = (id: number) => {
+    if (confirm("Bạn có chắc chắn muốn khôi phục khách hàng này?")) {
+      restoreCustomerMutation.mutate(id);
     }
   };
 
@@ -410,6 +465,13 @@ export default function Customers() {
             </Select>
             <Button variant="outline" onClick={resetFilters} data-testid="button-reset-filters">
               Xóa bộ lọc
+            </Button>
+            <Button 
+              variant={showInactive ? "default" : "outline"}
+              onClick={() => setShowInactive(!showInactive)} 
+              data-testid="button-toggle-inactive"
+            >
+              {showInactive ? "Hiển thị hoạt động" : "Hiển thị đã xóa"}
             </Button>
             <Button 
               variant="outline" 
@@ -606,77 +668,118 @@ export default function Customers() {
             </Card>
           ) : (
             filteredCustomers.map((customer) => {
-              const tierBadge = getTierBadge(customer.hangKhachHang);
-              const customerOrders = getCustomerOrders(customer.id);
-              const lastOrderDate = customerOrders.length > 0 
-                ? new Date(customerOrders[0].createdAt).toLocaleDateString('vi-VN')
+              // Handle both mapped and raw customer data
+              const customerId = customer.customerId || customer.id;
+              const customerName = customer.hoTen || customer.name;
+              const customerPhone = customer.soDienThoai || customer.phone;
+              const customerEmail = customer.email;
+              const customerAddress = customer.diaChi || customer.address;
+              const loyaltyPoints = customer.loyaltyPoints || 0;
+              const totalSpent = customer.totalSpent || "0";
+              const tierField = customer.hangKhachHang;
+              
+              const tierBadge = getTierBadge(tierField);
+              const customerOrdersForCard = getCustomerOrdersForCard(customerId?.toString() || "0");
+              const lastOrderDate = customerOrdersForCard.length > 0 
+                ? new Date(customerOrdersForCard[0].createdAt).toLocaleDateString('vi-VN')
                 : "Chưa có đơn hàng";
 
               return (
                 <Card 
-                  key={customer.customerId} 
+                  key={customerId} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => {
-                    console.log('Clicked customer (mapped):', customer);
-                    const rawCustomer = rawCustomers.find(raw => raw.customerId.toString() === customer.id);
+                    console.log('=== CUSTOMER CLICK DEBUG ===');
+                    console.log('Clicked customer:', customer);
+                    console.log('Show inactive:', showInactive);
+                    console.log('Raw customers length:', rawCustomers?.length);
+                    console.log('Customer ID:', customerId);
+                    console.log('Customer ID type:', typeof customerId);
+                    
+                    const rawCustomer = showInactive 
+                      ? customer 
+                      : rawCustomers.find(rc => {
+                          console.log(`Comparing rawCustomer.customerId: ${rc.customerId} (${typeof rc.customerId}) vs customerId: ${customerId} (${typeof customerId})`);
+                          return rc.customerId.toString() === customerId.toString();
+                        });
+                    
                     console.log('Found rawCustomer:', rawCustomer);
+                    console.log('Setting selected customer...');
                     setSelectedCustomer(rawCustomer || null);
+                    console.log('=== END DEBUG ===');
                   }}
-                  data-testid={`customer-card-${customer.customerId}`}
+                  data-testid={`customer-card-${customerId}`}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="font-semibold text-lg mb-1" data-testid={`customer-name-${customer.customerId}`}>
-                          {customer.name}
+                        <h3 className="font-semibold text-lg mb-1" data-testid={`customer-name-${customerId}`}>
+                          {customerName}
                         </h3>
                         <Badge className={`text-white ${tierBadge.color}`}>
                           {tierBadge.label}
                         </Badge>
                       </div>
                       <div className="flex space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditCustomer(customer);
-                          }}
-                          data-testid={`button-edit-${customer.customerId}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteCustomer(customer.customerId);
-                          }}
-                          data-testid={`button-delete-${customer.customerId}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!showInactive && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCustomer(customer);
+                            }}
+                            data-testid={`button-edit-${customerId}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {showInactive ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRestoreCustomer(customerId);
+                            }}
+                            data-testid={`button-restore-${customerId}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomer(customerId);
+                            }}
+                            data-testid={`button-delete-${customerId}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2" />
-                        <span data-testid={`customer-phone-${customer.customerId}`}>{customer.phone}</span>
+                        <span data-testid={`customer-phone-${customerId}`}>{customerPhone}</span>
                       </div>
-                      {customer.email && (
+                      {customerEmail && (
                         <div className="flex items-center">
                           <Mail className="w-4 h-4 mr-2" />
-                          <span data-testid={`customer-email-${customer.customerId}`}>{customer.email}</span>
+                          <span data-testid={`customer-email-${customerId}`}>{customerEmail}</span>
                         </div>
                       )}
-                      {customer.address && (
+                      {customerAddress && (
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2" />
-                          <span className="line-clamp-1" data-testid={`customer-address-${customer.customerId}`}>
-                            {customer.address}
+                          <span className="line-clamp-1" data-testid={`customer-address-${customerId}`}>
+                            {customerAddress}
                           </span>
                         </div>
                       )}
@@ -686,14 +789,14 @@ export default function Customers() {
                       <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
                           <p className="text-sm text-gray-500">Điểm tích lũy</p>
-                          <p className="font-semibold text-primary" data-testid={`customer-points-${customer.id}`}>
-                            {customer.loyaltyPoints}
+                          <p className="font-semibold text-primary" data-testid={`customer-points-${customerId}`}>
+                            {loyaltyPoints}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Tổng chi tiêu</p>
-                          <p className="font-semibold text-green-600" data-testid={`customer-spent-${customer.id}`}>
-                            {parseInt(customer.totalSpent).toLocaleString('vi-VN')}₫
+                          <p className="font-semibold text-green-600" data-testid={`customer-spent-${customerId}`}>
+                            {parseInt(totalSpent.toString()).toLocaleString('vi-VN')}₫
                           </p>
                         </div>
                       </div>
@@ -711,6 +814,7 @@ export default function Customers() {
         </div>
 
         {/* Customer Detail Modal */}
+        {console.log('Modal render check - selectedCustomer:', selectedCustomer)}
         {selectedCustomer && (
           <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -718,6 +822,7 @@ export default function Customers() {
                 <DialogTitle>Chi tiết khách hàng</DialogTitle>
               </DialogHeader>
 
+              {console.log('Modal content rendering for customer:', selectedCustomer?.hoTen || selectedCustomer?.name)}
               <Tabs defaultValue="info" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="info" data-testid="tab-customer-info">Thông tin</TabsTrigger>
