@@ -628,7 +628,7 @@ export default function Customers() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="font-semibold text-lg mb-1" data-testid={`customer-name-${customer.customerId}`}>
-                          {customer.hoTen}
+                          {customer.name}
                         </h3>
                         <Badge className={`text-white ${tierBadge.color}`}>
                           {tierBadge.label}
@@ -664,7 +664,7 @@ export default function Customers() {
                     <div className="space-y-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2" />
-                        <span data-testid={`customer-phone-${customer.customerId}`}>{customer.soDienThoai}</span>
+                        <span data-testid={`customer-phone-${customer.customerId}`}>{customer.phone}</span>
                       </div>
                       {customer.email && (
                         <div className="flex items-center">
@@ -672,11 +672,11 @@ export default function Customers() {
                           <span data-testid={`customer-email-${customer.customerId}`}>{customer.email}</span>
                         </div>
                       )}
-                      {customer.diaChi && (
+                      {customer.address && (
                         <div className="flex items-center">
                           <MapPin className="w-4 h-4 mr-2" />
                           <span className="line-clamp-1" data-testid={`customer-address-${customer.customerId}`}>
-                            {customer.diaChi}
+                            {customer.address}
                           </span>
                         </div>
                       )}
