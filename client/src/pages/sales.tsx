@@ -620,6 +620,19 @@ export default function Sales() {
         console.log('Manual discount applied to order:', response.orderId, manualDiscountAmount);
       }
       
+      // Process loyalty points for the order
+      if (response?.orderId) {
+        try {
+          const loyaltyResponse = await apiRequest(`/api/LoyaltyProcess/process-order/${response.orderId}`, { 
+            method: 'POST' 
+          });
+          console.log('Loyalty points processed for order:', response.orderId, loyaltyResponse);
+        } catch (error) {
+          console.error('Failed to process loyalty points:', error);
+          // Don't show error to user since order creation was successful
+        }
+      }
+      
       toast({
         title: "Thành công",
         description: "Đơn hàng đã được tạo thành công",
@@ -790,6 +803,20 @@ export default function Sales() {
       // Hiển thị popup chi tiết hóa đơn
       setOrderDetailData(orderDetail);
       setShowOrderDetail(true);
+      
+      // Process loyalty points for the completed order
+      if (currentReopenedOrder?.orderId) {
+        (async () => {
+          try {
+            const loyaltyResponse = await apiRequest(`/api/LoyaltyProcess/process-order/${currentReopenedOrder.orderId}`, { 
+              method: 'POST' 
+            });
+            console.log('Loyalty points processed for completed order:', currentReopenedOrder.orderId, loyaltyResponse);
+          } catch (error) {
+            console.error('Failed to process loyalty points for completed order:', error);
+          }
+        })();
+      }
       
       // Clear state
       setCart([]);
