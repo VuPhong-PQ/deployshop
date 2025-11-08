@@ -354,10 +354,10 @@ namespace RetailPointBackend.Controllers
                     {
                         var correctEnum = customer.CustomerTier.TierName switch
                         {
-                            "Kim cương" => CustomerRank.VIP,
-                            "Vàng" => CustomerRank.Platinum,
-                            "Bạc" => CustomerRank.Premium,
-                            "Đồng" => CustomerRank.Thuong,
+                            "Kim cương" => CustomerRank.Platinum,  // Cao nhất (3)
+                            "Vàng" => CustomerRank.VIP,            // Cao (2)
+                            "Bạc" => CustomerRank.Premium,         // Trung bình (1)
+                            "Đồng" => CustomerRank.Thuong,        // Thấp nhất (0)
                             _ => CustomerRank.Thuong
                         };
 

@@ -251,15 +251,26 @@ namespace RetailPointBackend.Controllers
                 .Where(o => o.CustomerId == customer.CustomerId && o.Status == "completed")
                 .SumAsync(o => o.TotalAmount);
 
-            // Tìm cấp độ phù hợp
+            // Tìm cấp độ phù hợp (chọn tier cao nhất mà khách hàng đáp ứng điều kiện)
             var appropriateTier = await _context.CustomerTiers
-                .Where(t => t.IsActive && t.MinSpent <= totalSpent && t.MinPoints <= customer.LoyaltyPoints)
+                .Where(t => t.IsActive && totalSpent >= t.MinSpent && customer.LoyaltyPoints >= t.MinPoints)
                 .OrderByDescending(t => t.MinSpent)
+                .ThenByDescending(t => t.MinPoints)
                 .FirstOrDefaultAsync();
 
             if (appropriateTier != null && customer.TierId != appropriateTier.TierId)
             {
                 customer.TierId = appropriateTier.TierId;
+                
+                // Cập nhật enum HangKhachHang theo tên tier (mapping đúng thứ tự)
+                customer.HangKhachHang = appropriateTier.TierName switch
+                {
+                    "Kim cương" => CustomerRank.Platinum,  // Cao nhất (3)
+                    "Vàng" => CustomerRank.VIP,            // Cao (2)
+                    "Bạc" => CustomerRank.Premium,         // Trung bình (1)
+                    "Đồng" => CustomerRank.Thuong,        // Thấp nhất (0)
+                    _ => CustomerRank.Thuong
+                };
             }
         }
     }

@@ -396,14 +396,18 @@ export default function Customers() {
 
     switch (hangKhachHang) {
       case 'VIP':
+      case 'Kim cương':  // Thêm case cho tên tiếng Việt từ backend
         return { label: 'Kim cương', color: 'bg-purple-500' };
       case 'Premium':
         return { label: 'Premium', color: 'bg-yellow-400 text-black' };
       case 'Platinum':
+      case 'Vàng':  // Thêm case cho tên tiếng Việt từ backend
         return { label: 'Vàng', color: 'bg-yellow-500' };
       case 'Silver':
+      case 'Bạc':  // Thêm case cho tên tiếng Việt từ backend
         return { label: 'Bạc', color: 'bg-gray-400' };
       case 'Bronze':
+      case 'Đồng':  // Thêm case cho tên tiếng Việt từ backend
         return { label: 'Đồng', color: 'bg-orange-600' };
       case 'Thuong':
       default:

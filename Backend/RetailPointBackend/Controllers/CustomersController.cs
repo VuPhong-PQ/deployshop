@@ -16,28 +16,28 @@ namespace RetailPointBackend.Controllers
             _context = context;
         }
 
-        // Helper method to map CustomerRank to frontend-friendly names
+        // Helper method to map CustomerRank to Vietnamese tier names
         private string MapCustomerRankToFrontend(CustomerRank rank)
         {
             return rank switch
             {
-                CustomerRank.Thuong => "Bronze",
-                CustomerRank.Premium => "Silver", 
-                CustomerRank.VIP => "Gold",
-                CustomerRank.Platinum => "Platinum",
-                _ => "Bronze"
+                CustomerRank.Thuong => "Đồng",
+                CustomerRank.Premium => "Bạc", 
+                CustomerRank.VIP => "Vàng",
+                CustomerRank.Platinum => "Kim cương",
+                _ => "Đồng"
             };
         }
 
-        // Helper method to map frontend names to CustomerRank
+        // Helper method to map frontend names to CustomerRank (hỗ trợ cả tiếng Anh và Việt)
         private CustomerRank MapFrontendToCustomerRank(string frontendRank)
         {
             return frontendRank?.ToLower() switch
             {
-                "bronze" => CustomerRank.Thuong,
-                "silver" => CustomerRank.Premium,
-                "gold" => CustomerRank.VIP,
-                "platinum" => CustomerRank.Platinum,
+                "bronze" or "đồng" => CustomerRank.Thuong,
+                "silver" or "bạc" => CustomerRank.Premium,
+                "gold" or "vàng" => CustomerRank.VIP,
+                "platinum" or "kim cương" or "kim cuong" => CustomerRank.Platinum,
                 _ => CustomerRank.Thuong
             };
         }
