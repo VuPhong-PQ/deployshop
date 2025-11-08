@@ -21,10 +21,10 @@ namespace RetailPointBackend.Controllers
         {
             return rank switch
             {
-                CustomerRank.Thuong => "Đồng",
-                CustomerRank.Premium => "Bạc", 
-                CustomerRank.VIP => "Vàng",
-                CustomerRank.Platinum => "Kim cương",
+                CustomerRank.Thuong => "Đồng",     // TierId 1
+                CustomerRank.Premium => "Bạc",     // TierId 2  
+                CustomerRank.VIP => "Vàng",        // TierId 3 - ĐÚNG cho khách hàng hiện tại
+                CustomerRank.Platinum => "Kim cương", // TierId 4
                 _ => "Đồng"
             };
         }
