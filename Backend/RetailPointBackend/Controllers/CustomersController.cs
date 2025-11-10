@@ -382,5 +382,18 @@ namespace RetailPointBackend.Controllers
                 return StatusCode(500, new { message = "Error restoring customer", error = ex.Message });
             }
         }
+
+        [HttpGet("{id}/test")]
+        public async Task<IActionResult> GetCustomerTierBenefits(int id)
+        {
+            try
+            {
+                return Ok(new { message = "Test endpoint working", customerId = id });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error", error = ex.Message });
+            }
+        }
     }
 }

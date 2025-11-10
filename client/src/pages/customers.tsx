@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -211,6 +211,8 @@ export default function Customers() {
     refetchInterval: 30000, // Refresh every 30 seconds
     refetchIntervalInBackground: false,
   });
+
+
 
   // Fetch inactive customers
   const { data: inactiveCustomers = [] } = useQuery<ApiCustomer[]>({
