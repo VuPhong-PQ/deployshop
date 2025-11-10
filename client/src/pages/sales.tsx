@@ -18,6 +18,7 @@ import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
 import { useAuth } from "@/contexts/auth-context";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { DiscountSelector, type DiscountRule } from "@/components/DiscountSelector";
 
 type StoreInfo = {
   name: string;
@@ -97,6 +98,10 @@ export default function Sales() {
   const [allProductsPage, setAllProductsPage] = useState(1);
   const [featuredProductsPage, setFeaturedProductsPage] = useState(1);
   const PRODUCTS_PER_PAGE = 10;
+  
+  // Discount states
+  const [selectedDiscount, setSelectedDiscount] = useState<DiscountRule | Discount | null>(null);
+  const [selectedDiscountAmount, setSelectedDiscountAmount] = useState(0);
   
   // Customer search state
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -198,7 +203,6 @@ export default function Sales() {
   });
   
   // State for discount management
-  const [selectedDiscount, setSelectedDiscount] = useState<Discount | null>(null);
   const [discountCalculation, setDiscountCalculation] = useState<DiscountCalculationResponse | null>(null);
   const [isCalculatingDiscount, setIsCalculatingDiscount] = useState(false);
   
@@ -649,8 +653,8 @@ export default function Sales() {
         discountName: selectedDiscount?.name || (manualDiscountAmount > 0 ? 'Giảm giá thủ công' : null),
         manualDiscountAmount: manualDiscountAmount,
         discountType: selectedDiscount ? 
-          (selectedDiscount.discountType === 'PercentageTotal' ? `${selectedDiscount.value}% tổng bill` :
-           selectedDiscount.discountType === 'FixedAmountTotal' ? `${selectedDiscount.value.toLocaleString('vi-VN')}₫ tổng bill` :
+          (selectedDiscount.type === 'PercentageTotal' ? `${selectedDiscount.value}% tổng bill` :
+           selectedDiscount.type === 'FixedAmountTotal' ? `${selectedDiscount.value.toLocaleString('vi-VN')}₫ tổng bill` :
            `${selectedDiscount.value.toLocaleString('vi-VN')}₫ từng món`) :
           (manualDiscountAmount > 0 ? 
             `${manualDiscountType === 'percentage' ? manualDiscountValue + '%' : manualDiscountValue + '₫'} tổng bill` 
@@ -1179,8 +1183,8 @@ export default function Sales() {
   const taxAmount = isVATEnabled ? subtotal * (taxRate / 100) : 0;
   
   // Calculate discount amount
-  const selectedDiscountAmount = discountCalculation?.canApply ? discountCalculation.discountAmount : 0;
-  const totalDiscountAmount = Math.max(selectedDiscountAmount, manualDiscountAmount);
+  const cartDiscountAmount = discountCalculation?.canApply ? discountCalculation.discountAmount : 0;
+  const totalDiscountAmount = Math.max(cartDiscountAmount, manualDiscountAmount, selectedDiscountAmount);
   
   // Calculate final total with discount
   const total = subtotal + taxAmount - totalDiscountAmount;
@@ -2665,6 +2669,22 @@ export default function Sales() {
                     <span data-testid="subtotal">{subtotal.toLocaleString('vi-VN')}₫</span>
                   </div>
 
+                  {/* Discount Selector */}
+                  <DiscountSelector 
+                    cart={cart.map(item => ({
+                      productId: item.productId || 0,
+                      quantity: item.quantity,
+                      totalPrice: item.totalPrice,
+                      categoryId: item.categoryId
+                    }))}
+                    subtotal={subtotal}
+                    onDiscountSelect={(discount, amount) => {
+                      setSelectedDiscount(discount);
+                      setSelectedDiscountAmount(amount);
+                    }}
+                    selectedDiscount={selectedDiscount}
+                  />
+
                   {/* Manual Discount Input */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -2764,9 +2784,30 @@ export default function Sales() {
                     </div>
                   )}
                   
-                  {/* Display total discount amount */}
-                  {totalDiscountAmount > 0 && (
+                  {/* Display discount breakdown */}
+                  {selectedDiscountAmount > 0 && (
                     <div className="flex justify-between text-green-600 print:text-black">
+                      <span>Giảm giá ({selectedDiscount?.name}):</span>
+                      <span>-{selectedDiscountAmount.toLocaleString('vi-VN')}₫</span>
+                    </div>
+                  )}
+                  
+                  {manualDiscountAmount > 0 && (
+                    <div className="flex justify-between text-green-600 print:text-black">
+                      <span>Giảm thủ công:</span>
+                      <span>-{manualDiscountAmount.toLocaleString('vi-VN')}₫</span>
+                    </div>
+                  )}
+                  
+                  {cartDiscountAmount > 0 && selectedDiscountAmount === 0 && manualDiscountAmount === 0 && (
+                    <div className="flex justify-between text-green-600 print:text-black">
+                      <span>Giảm giá khách hàng:</span>
+                      <span>-{cartDiscountAmount.toLocaleString('vi-VN')}₫</span>
+                    </div>
+                  )}
+                  
+                  {totalDiscountAmount > 0 && (
+                    <div className="flex justify-between text-green-600 print:text-black font-semibold">
                       <span>Tổng giảm giá:</span>
                       <span data-testid="total-discount">-{totalDiscountAmount.toLocaleString('vi-VN')}₫</span>
                     </div>
