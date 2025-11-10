@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Categories API</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f5f5f5; }
+        .error { background: #ffebee; }
+        .success { background: #e8f5e8; }
+    </style>
+</head>
+<body>
+    <h1>Test Categories API</h1>
+    
+    <button onclick="testBasicEndpoint()">Test Basic Endpoint</button>
+    <button onclick="testDbEndpoint()">Test DB Endpoint</button>
+    <button onclick="testCategoriesAPI()">Test Categories API</button>
+    <button onclick="testProductsAPI()">Test Products API (Control)</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function testBasicEndpoint() {
+            try {
+                const response = await fetch('http://101.53.9.76:5273/api/categories/test');
+                const data = await response.text();
+                showResult('Basic Endpoint', response.status, data, response.ok);
+            } catch (error) {
+                showResult('Basic Endpoint', 'ERROR', error.message, false);
+            }
+        }
+
+        async function testDbEndpoint() {
+            try {
+                const response = await fetch('http://101.53.9.76:5273/api/categories/testdb');
+                const data = await response.text();
+                showResult('DB Endpoint', response.status, data, response.ok);
+            } catch (error) {
+                showResult('DB Endpoint', 'ERROR', error.message, false);
+            }
+        }
+
+        async function testCategoriesAPI() {
+            try {
+                const response = await fetch('http://101.53.9.76:5273/api/categories');
+                const data = await response.text();
+                showResult('Categories API', response.status, data, response.ok);
+            } catch (error) {
+                showResult('Categories API', 'ERROR', error.message, false);
+            }
+        }
+
+        async function testProductsAPI() {
+            try {
+                const response = await fetch('http://101.53.9.76:5273/api/products');
+                const data = await response.text();
+                const truncated = data.length > 500 ? data.substring(0, 500) + '...' : data;
+                showResult('Products API (Control)', response.status, truncated, response.ok);
+            } catch (error) {
+                showResult('Products API (Control)', 'ERROR', error.message, false);
+            }
+        }
+
+        function showResult(test, status, data, success) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <h3>${test}</h3>
+                <p><strong>Status:</strong> ${status}</p>
+                <p><strong>Response:</strong></p>
+                <pre>${data}</pre>
+            `;
+            results.appendChild(div);
+        }
+    </script>
+</body>
+</html>

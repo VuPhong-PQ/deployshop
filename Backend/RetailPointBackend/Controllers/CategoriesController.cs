@@ -4,52 +4,134 @@ using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    public class CategoryDto
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int? ParentId { get; set; }
+        public bool IsVisible { get; set; }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
     {
-        private readonly RetailPointContext _context;
-        public CategoriesController(RetailPointContext context)
+        private readonly AppDbContext _context;
+        public CategoriesController(AppDbContext context)
         {
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+    // Test endpoint
+    [HttpGet("test")]
+    public IActionResult TestCategories()
+    {
+        try
         {
-            return await _context.Categories.ToListAsync();
+            return Ok(new { message = "Categories controller working!", timestamp = DateTime.Now });
         }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] Category category)
+        catch (Exception ex)
         {
+            return BadRequest($"Error: {ex.Message}");
+        }
+    }
+
+    // Test DB connection
+    [HttpGet("testdb")]
+    public async Task<IActionResult> TestDatabaseConnection()
+    {
+        try
+        {
+            var count = await _context.Categories.CountAsync();
+            return Ok(new { message = "Database connection OK", categoryCount = count });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Database error: {ex.Message}");
+        }
+    }
+
+    // GET: api/Categories
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<CategoryDto>>> GetCategories()
+    {
+        try
+        {
+            var categories = await _context.Categories.ToListAsync();
+            var categoryDtos = categories.Select(c => new CategoryDto
+            {
+                CategoryId = c.CategoryId,
+                CategoryName = c.Name ?? string.Empty,
+                Description = c.Description,
+                ParentId = c.ParentId,
+                IsVisible = c.IsVisible
+            }).ToList();
+            
+            return Ok(categoryDtos);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal error: {ex.Message}");
+        }
+    }        [HttpPost]
+        public async Task<IActionResult> CreateCategory([FromBody] CategoryDto categoryDto)
+        {
+            var category = new Category
+            {
+                Name = categoryDto.CategoryName,
+                Description = categoryDto.Description,
+                ParentId = categoryDto.ParentId,
+                IsVisible = categoryDto.IsVisible
+            };
+            
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetCategory), new { id = category.CategoryId }, category);
+            
+            var resultDto = new CategoryDto
+            {
+                CategoryId = category.CategoryId,
+                CategoryName = category.Name ?? string.Empty,
+                Description = category.Description,
+                ParentId = category.ParentId,
+                IsVisible = category.IsVisible
+            };
+            
+            return CreatedAtAction(nameof(GetCategory), new { id = category.CategoryId }, resultDto);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> GetCategory(int id)
+        public async Task<ActionResult<CategoryDto>> GetCategory(int id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null) return NotFound();
-            return category;
+            
+            var categoryDto = new CategoryDto
+            {
+                CategoryId = category.CategoryId,
+                CategoryName = category.Name ?? string.Empty,
+                Description = category.Description,
+                ParentId = category.ParentId,
+                IsVisible = category.IsVisible
+            };
+            
+            return Ok(categoryDto);
         }
 
         // Sửa nhóm sản phẩm
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] CategoryDto categoryDto)
         {
-            if (id != category.CategoryId)
+            if (id != categoryDto.CategoryId)
                 return BadRequest();
 
             var existing = await _context.Categories.FindAsync(id);
             if (existing == null) return NotFound();
 
-            existing.Name = category.Name;
-            existing.Description = category.Description;
-            existing.ParentId = category.ParentId;
-            existing.IsVisible = category.IsVisible;
+            existing.Name = categoryDto.CategoryName;
+            existing.Description = categoryDto.Description;
+            existing.ParentId = categoryDto.ParentId;
+            existing.IsVisible = categoryDto.IsVisible;
 
             await _context.SaveChangesAsync();
             return NoContent();

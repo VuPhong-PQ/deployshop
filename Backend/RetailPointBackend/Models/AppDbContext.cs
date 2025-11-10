@@ -19,6 +19,7 @@ namespace RetailPointBackend.Models
 
     public DbSet<Product> Products { get; set; }
     public DbSet<ProductGroup> ProductGroups { get; set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<PaymentSettings> PaymentSettings { get; set; }
     public DbSet<QRSettings> QRSettings { get; set; }
     public DbSet<StoreInfo> StoreInfos { get; set; }
@@ -122,6 +123,10 @@ namespace RetailPointBackend.Models
         modelBuilder.Entity<Customer>()
             .Property(c => c.TotalSpent)
             .HasPrecision(18, 2);
+
+        // Configure table names để match với database hiện tại
+        modelBuilder.Entity<Category>()
+            .ToTable("Category");
 
         // Configure Loyalty System decimal properties
         modelBuilder.Entity<LoyaltyConfig>()
