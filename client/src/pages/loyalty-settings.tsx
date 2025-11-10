@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Star, Clock, Calendar, Calculator, Users, Award, TrendingUp } from "lucide-react";
+import { Gift, Star, Clock, Calendar, Calculator, Users, Award, TrendingUp, Edit, Save, X } from "lucide-react";
 
 export type LoyaltyConfig = {
   loyaltyConfigId?: number;
@@ -48,6 +48,17 @@ export type CustomerTier = {
 export function LoyaltySettings() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("general");
+  const [editingTier, setEditingTier] = useState<number | null>(null);
+  const [tierForm, setTierForm] = useState<CustomerTier>({
+    tierName: "",
+    minSpent: 0,
+    minPoints: 0,
+    pointsMultiplier: 1.0,
+    discountPercentage: 0,
+    description: "",
+    tierColor: "#808080",
+    isActive: true
+  });
 
   // Get current loyalty config
   const { data: config, isLoading } = useQuery<LoyaltyConfig | null>({
@@ -126,6 +137,26 @@ export function LoyaltySettings() {
     },
   });
 
+  // Tier update mutation
+  const updateTierMutation = useMutation({
+    mutationFn: async (data: CustomerTier & { tierId: number }) => {
+      const res = await apiRequest(`/api/TierConfiguration/batch-update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([data])
+      });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/CustomerTiers"] });
+      setEditingTier(null);
+      alert("Đã cập nhật cấp độ khách hàng!");
+    },
+    onError: (error: any) => {
+      alert(`Lỗi: ${error.message || "Không thể cập nhật cấp độ khách hàng"}`);
+    }
+  });
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value, type, checked } = e.target;
     setForm(prev => ({
@@ -145,6 +176,35 @@ export function LoyaltySettings() {
 
   function calculateTestPoints() {
     calculatePointsMutation.mutate(testAmount);
+  }
+
+  function handleEditTier(tier: CustomerTier) {
+    setEditingTier(tier.tierId || 0);
+    setTierForm({ ...tier });
+  }
+
+  function handleSaveTier() {
+    if (editingTier && tierForm) {
+      updateTierMutation.mutate({ ...tierForm, tierId: editingTier });
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditingTier(null);
+    setTierForm({
+      tierName: "",
+      minSpent: 0,
+      minPoints: 0,
+      pointsMultiplier: 1.0,
+      discountPercentage: 0,
+      description: "",
+      tierColor: "#808080",
+      isActive: true
+    });
+  }
+
+  function handleTierFormChange(field: keyof CustomerTier, value: any) {
+    setTierForm(prev => ({ ...prev, [field]: value }));
   }
 
   if (isLoading) {
@@ -441,36 +501,184 @@ export function LoyaltySettings() {
             </TabsContent>
 
             <TabsContent value="tiers" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="mb-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Cấu hình cấp độ khách hàng</h3>
+                  <Button 
+                    type="button"
+                    onClick={() => window.open('/customer-tier-management', '_blank')}
+                    variant="outline"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Quản lý chi tiết
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Tùy chỉnh điều kiện và quyền lợi cho từng cấp độ khách hàng. 
+                  Bấm "Quản lý chi tiết" để chỉnh sửa đầy đủ.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tiers.map((tier) => (
                   <Card key={tier.tierId} className="border-2" style={{ borderColor: tier.tierColor }}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Award className="w-5 h-5" style={{ color: tier.tierColor }} />
-                        {tier.tierName}
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Award className="w-5 h-5" style={{ color: tier.tierColor }} />
+                          {tier.tierName}
+                        </div>
+                        {editingTier === tier.tierId ? (
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={handleSaveTier}
+                              disabled={updateTierMutation.isPending}
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditTier(tier)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        )}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div>
-                        <Label className="text-sm font-medium">Chi tiêu tối thiểu</Label>
-                        <p className="text-sm">{tier.minSpent.toLocaleString()} VND</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Điểm tối thiểu</Label>
-                        <p className="text-sm">{tier.minPoints.toLocaleString()} điểm</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Hệ số điểm</Label>
-                        <Badge variant="secondary">x{tier.pointsMultiplier}</Badge>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Giảm giá</Label>
-                        <Badge variant="outline">{tier.discountPercentage}%</Badge>
-                      </div>
+                    <CardContent className="space-y-3">
+                      {editingTier === tier.tierId ? (
+                        // Edit mode
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Chi tiêu tối thiểu (VND)</Label>
+                              <Input
+                                type="number"
+                                value={tierForm.minSpent}
+                                onChange={(e) => handleTierFormChange('minSpent', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Điểm tối thiểu</Label>
+                              <Input
+                                type="number"
+                                value={tierForm.minPoints}
+                                onChange={(e) => handleTierFormChange('minPoints', parseInt(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Hệ số tích điểm</Label>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                value={tierForm.pointsMultiplier}
+                                onChange={(e) => handleTierFormChange('pointsMultiplier', parseFloat(e.target.value) || 1.0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Giảm giá (%)</Label>
+                              <Input
+                                type="number"
+                                value={tierForm.discountPercentage}
+                                onChange={(e) => handleTierFormChange('discountPercentage', parseFloat(e.target.value) || 0)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // View mode
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-600">Chi tiêu tối thiểu</Label>
+                              <p className="text-sm font-semibold">{tier.minSpent.toLocaleString()} VND</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-600">Điểm tối thiểu</Label>
+                              <p className="text-sm font-semibold">{tier.minPoints.toLocaleString()} điểm</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-sm font-medium text-gray-600">Hệ số tích điểm</Label>
+                              <Badge variant="secondary" className="w-fit">x{tier.pointsMultiplier}</Badge>
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium text-gray-600">Giảm giá</Label>
+                              <Badge variant="outline" className="w-fit">{tier.discountPercentage}%</Badge>
+                            </div>
+                          </div>
+                          
+                          {tier.description && (
+                            <div>
+                              <Label className="text-sm font-medium text-gray-600">Mô tả</Label>
+                              <p className="text-xs text-gray-500">{tier.description}</p>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
               </div>
+
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-6">
+                  <div className="text-center space-y-3">
+                    <div className="flex justify-center">
+                      <Award className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-blue-800">Tùy chỉnh tiêu chí tích điểm</h4>
+                    <p className="text-sm text-blue-700">
+                      Bạn có thể tùy chỉnh hoàn toàn các thông số cho mỗi cấp độ khách hàng:
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-blue-600">
+                      <div className="flex items-center gap-1">
+                        <span>💰</span> Chi tiêu tối thiểu
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>⭐</span> Điểm tối thiểu
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>🔢</span> Hệ số tích điểm
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span>🎯</span> % Giảm giá
+                      </div>
+                    </div>
+                    <Button 
+                      type="button"
+                      onClick={() => window.open('/customer-tier-management', '_blank')}
+                      className="mt-4"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      Mở trang quản lý cấp độ
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="calculator" className="space-y-6">

@@ -4,12 +4,13 @@ import { apiRequest } from "../lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/app-layout";
-import { Store, Printer, CreditCard, Calculator, QrCode, FileText, Gift } from "lucide-react";
+import { Store, Printer, CreditCard, Calculator, QrCode, FileText, Gift, Percent } from "lucide-react";
 import { TaxSettings } from "./tax-settings";
 import { PaymentSettings } from "./payment-settings";
 import { PrintSettings } from "./print-settings";
 import { QRSettings } from "./qr-settings";
 import { LoyaltySettings } from "./loyalty-settings";
+import { DiscountSettings } from "./discount-settings";
 import { useLocation } from "wouter";
 
 type StoreInfo = {
@@ -109,6 +110,12 @@ export default function SettingsPage() {
             <Gift className="w-4 h-4" /> Tích điểm
           </button>
           <button
+            className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "discount" ? "bg-white shadow text-primary" : "text-gray-700"}`}
+            onClick={() => setTab("discount")}
+          >
+            <Percent className="w-4 h-4" /> Giảm giá
+          </button>
+          <button
             className={`flex-1 py-3 flex items-center justify-center gap-2 font-medium transition text-sm ${tab === "qr" ? "bg-white shadow text-primary" : "text-gray-700"}`}
             onClick={() => setTab("qr")}
           >
@@ -204,6 +211,9 @@ export default function SettingsPage() {
         )}
         {tab === "loyalty" && (
           <div className="max-w-6xl mx-auto"><LoyaltySettings /></div>
+        )}
+        {tab === "discount" && (
+          <div className="max-w-6xl mx-auto"><DiscountSettings /></div>
         )}
         {tab === "qr" && (
           <div className="max-w-4xl mx-auto"><QRSettings /></div>

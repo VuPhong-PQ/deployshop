@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,48 +9,47 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Star, Users, TrendingUp, Palette, Award } from "lucide-react";
+import { Plus, Edit, Trash2, Star, Users, TrendingUp, Palette, Award, Loader2, Archive } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
+import { useLocation } from "wouter";
 
 interface CustomerTier {
   tierId: number;
   tierName: string;
   minSpent: number;
   minPoints: number;
-  pointsMultiplier: number;
+  pointsMultiplier: number; // Note: API uses 'pointsMultiplier' not 'pointMultiplier'
   discountPercentage: number;
-  description: string;
-  tierColor: string;
   isActive: boolean;
+  tierColor: string;
+  description?: string;
 }
 
 interface TierStatistics {
   tierId: number;
   tierName: string;
   customerCount: number;
-  totalSpent: number;
-  averageSpent: number;
-  tierColor: string;
 }
 
 const tierFormSchema = z.object({
   tierName: z.string().min(1, "Tên hạng là bắt buộc").max(50, "Tên hạng không được quá 50 ký tự"),
   minSpent: z.number().min(0, "Chi tiêu tối thiểu phải >= 0"),
   minPoints: z.number().min(0, "Điểm tối thiểu phải >= 0"),
-  pointsMultiplier: z.number().min(0.1).max(10, "Hệ số điểm từ 0.1 đến 10"),
-  discountPercentage: z.number().min(0).max(100, "Phần trăm giảm giá từ 0 đến 100"),
-  description: z.string().max(200, "Mô tả không được quá 200 ký tự").optional(),
+  pointsMultiplier: z.number().min(1, "Hệ số điểm phải >= 1").max(10, "Hệ số điểm không được quá 10"),
+  discountPercentage: z.number().min(0, "Giảm giá phải >= 0").max(100, "Giảm giá không được quá 100%"),
+  isActive: z.boolean(),
   tierColor: z.string().min(1, "Màu sắc là bắt buộc"),
-  isActive: z.boolean().default(true),
+  description: z.string().optional()
 });
 
 type TierFormData = z.infer<typeof tierFormSchema>;
 
 export default function CustomerTierManagement() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<CustomerTier | null>(null);
 
@@ -63,7 +62,7 @@ export default function CustomerTierManagement() {
     },
   });
 
-  // Fetch tier statistics
+  // Fetch statistics
   const { data: statistics = [] } = useQuery<TierStatistics[]>({
     queryKey: ['/api/CustomerTierManagement/statistics'],
     queryFn: async () => {
@@ -72,98 +71,115 @@ export default function CustomerTierManagement() {
     },
   });
 
-  // Form setup
+  // Form
   const form = useForm<TierFormData>({
     resolver: zodResolver(tierFormSchema),
     defaultValues: {
       tierName: "",
       minSpent: 0,
       minPoints: 0,
-      pointsMultiplier: 1.0,
+      pointsMultiplier: 1,
       discountPercentage: 0,
-      description: "",
-      tierColor: "#3B82F6",
       isActive: true,
+      tierColor: "#3B82F6",
+      description: ""
     },
   });
 
-  // Add tier mutation
-  const addTierMutation = useMutation({
+  // Create mutation
+  const createMutation = useMutation({
     mutationFn: async (tierData: TierFormData) => {
       return apiRequest('/api/CustomerTierManagement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tierData),
+        body: JSON.stringify(tierData)
       });
     },
     onSuccess: () => {
-      toast({ title: "Thành công", description: "Hạng khách hàng đã được thêm" });
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement/statistics'] });
+      toast({
+        title: "Thành công",
+        description: "Hạng khách hàng đã được tạo thành công",
+        variant: "default",
+      });
       setIsAddDialogOpen(false);
       form.reset();
     },
     onError: (error: any) => {
       toast({
         title: "Lỗi",
-        description: error.message || "Không thể thêm hạng khách hàng",
+        description: error?.message || "Có lỗi xảy ra khi tạo hạng khách hàng",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Update tier mutation
-  const updateTierMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: TierFormData }) => {
-      return apiRequest(`/api/CustomerTierManagement/${id}`, {
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ tierId, ...tierData }: { tierId: number } & TierFormData) => {
+      return apiRequest(`/api/CustomerTierManagement/${tierId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, tierId: id }),
+        body: JSON.stringify(tierData)
       });
     },
     onSuccess: () => {
-      toast({ title: "Thành công", description: "Hạng khách hàng đã được cập nhật" });
-      refetch();
-      setEditingTier(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement/statistics'] });
+      toast({
+        title: "Thành công",
+        description: "Hạng khách hàng đã được cập nhật thành công",
+        variant: "default",
+      });
       setIsAddDialogOpen(false);
+      setEditingTier(null);
       form.reset();
     },
     onError: (error: any) => {
       toast({
         title: "Lỗi",
-        description: error.message || "Không thể cập nhật hạng khách hàng",
+        description: error?.message || "Có lỗi xảy ra khi cập nhật hạng khách hàng",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Delete tier mutation
-  const deleteTierMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest(`/api/CustomerTierManagement/${id}`, { method: 'DELETE' });
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (tierId: number) => {
+      return apiRequest(`/api/CustomerTierManagement/${tierId}`, {
+        method: 'DELETE'
+      });
     },
     onSuccess: () => {
-      toast({ title: "Thành công", description: "Hạng khách hàng đã được xóa" });
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/CustomerTierManagement/statistics'] });
+      toast({
+        title: "Thành công",
+        description: "Hạng khách hàng đã được xóa thành công",
+        variant: "default",
+      });
     },
     onError: (error: any) => {
       toast({
         title: "Lỗi",
-        description: error.message || "Không thể xóa hạng khách hàng",
+        description: error?.message || "Có lỗi xảy ra khi xóa hạng khách hàng",
         variant: "destructive",
       });
-    }
+    },
   });
 
-  // Handle form submission
+
+
   const onSubmit = (data: TierFormData) => {
     if (editingTier) {
-      updateTierMutation.mutate({ id: editingTier.tierId, data });
+      updateMutation.mutate({ tierId: editingTier.tierId, ...data });
     } else {
-      addTierMutation.mutate(data);
+      createMutation.mutate(data);
     }
   };
 
-  // Handle edit
   const handleEdit = (tier: CustomerTier) => {
     setEditingTier(tier);
     form.reset({
@@ -172,320 +188,275 @@ export default function CustomerTierManagement() {
       minPoints: tier.minPoints,
       pointsMultiplier: tier.pointsMultiplier,
       discountPercentage: tier.discountPercentage,
-      description: tier.description || "",
-      tierColor: tier.tierColor,
       isActive: tier.isActive,
+      tierColor: tier.tierColor,
+      description: tier.description || ""
     });
     setIsAddDialogOpen(true);
   };
 
-  // Handle delete
-  const handleDelete = (tier: CustomerTier) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa hạng "${tier.tierName}"?`)) {
-      deleteTierMutation.mutate(tier.tierId);
+  const handleDelete = (tierId: number) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa hạng khách hàng này không?")) {
+      deleteMutation.mutate(tierId);
     }
   };
 
-  // Predefined colors
-  const predefinedColors = [
-    "#3B82F6", "#EF4444", "#10B981", "#F59E0B",
-    "#8B5CF6", "#06B6D4", "#84CC16", "#F97316",
-    "#6366F1", "#EC4899", "#14B8A6", "#A3A3A3"
-  ];
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return amount.toLocaleString('vi-VN') + ' VNĐ';
+  const getStatistics = (tierId: number) => {
+    return statistics.find(s => s.tierId === tierId)?.customerCount || 0;
   };
 
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
-    <AppLayout title="Quản lý hạng khách hàng">
+    <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Quản lý hạng khách hàng</h1>
             <p className="text-gray-600">Cấu hình các hạng khách hàng và quyền lợi tương ứng</p>
           </div>
           
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
+          <div className="flex items-center gap-2">
+            {/* Archive disabled tiers button - only show if there are disabled tiers */}
+            {tiers.some(t => !t.isActive) && (
               <Button
-                onClick={() => {
-                  setEditingTier(null);
-                  form.reset();
-                }}
+                variant="outline"
+                onClick={() => navigate("/disabled-tiers-archive")}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm hạng mới
+                <Archive className="w-4 h-4 mr-2" />
+                Kho lưu trữ ({tiers.filter(t => !t.isActive).length})
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingTier ? "Chỉnh sửa hạng khách hàng" : "Thêm hạng khách hàng mới"}
-                </DialogTitle>
-              </DialogHeader>
+            )}
+            
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  onClick={() => {
+                    setEditingTier(null);
+                    form.reset();
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm hạng mới
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingTier ? "Chỉnh sửa hạng khách hàng" : "Thêm hạng khách hàng mới"}
+                  </DialogTitle>
+                </DialogHeader>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="tierName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tên hạng *</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="VD: Vàng, Bạc, Kim cương" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="tierColor"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Màu sắc *</FormLabel>
-                          <div className="space-y-2">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="tierName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tên hạng</FormLabel>
                             <FormControl>
-                              <Input {...field} type="color" className="h-10 w-20" />
+                              <Input placeholder="VIP, Gold, Silver..." {...field} />
                             </FormControl>
-                            <div className="flex flex-wrap gap-1">
-                              {predefinedColors.map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  className="w-6 h-6 rounded border-2 border-gray-300"
-                                  style={{ backgroundColor: color }}
-                                  onClick={() => form.setValue('tierColor', color)}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="isActive"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2 space-y-0 pt-6">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="rounded"
+                              />
+                            </FormControl>
+                            <FormLabel>Kích hoạt</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="minSpent"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Chi tiêu tối thiểu (VNĐ) *</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number"
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="minSpent"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Chi tiêu tối thiểu (VND)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                onChange={e => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="minPoints"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Điểm tối thiểu</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                {...field}
+                                onChange={e => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                    <FormField
-                      control={form.control}
-                      name="minPoints"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Điểm tối thiểu *</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number"
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                              placeholder="0"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="pointsMultiplier"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Hệ số điểm</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min="1"
+                                max="10"
+                                {...field}
+                                onChange={e => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="discountPercentage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Giảm giá (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                {...field}
+                                onChange={e => field.onChange(Number(e.target.value))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="pointsMultiplier"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Hệ số tích điểm *</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number"
-                              step="0.1"
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
-                              placeholder="1.0"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="tierColor"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Màu sắc</FormLabel>
+                            <FormControl>
+                              <Input type="color" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Mô tả</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Mô tả hạng..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
-                    <FormField
-                      control={form.control}
-                      name="discountPercentage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Giảm giá (%) *</FormLabel>
-                          <FormControl>
-                            <Input 
-                              {...field} 
-                              type="number"
-                              max="100"
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mô tả</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Mô tả quyền lợi của hạng này" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsAddDialogOpen(false)}
-                    >
-                      Hủy
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={addTierMutation.isPending || updateTierMutation.isPending}
-                    >
-                      {addTierMutation.isPending || updateTierMutation.isPending 
-                        ? "Đang lưu..." 
-                        : (editingTier ? "Cập nhật" : "Thêm mới")
-                      }
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsAddDialogOpen(false);
+                          setEditingTier(null);
+                        }}
+                      >
+                        Hủy
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                      >
+                        {createMutation.isPending || updateMutation.isPending ? "Đang xử lý..." : (editingTier ? "Cập nhật" : "Tạo mới")}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        {/* Statistics Overview */}
-        {statistics.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statistics.map((stat) => (
-              <Card key={stat.tierId}>
-                <CardContent className="p-4">
+        {/* Active Tiers Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tiers.filter(tier => tier.isActive).map((tier) => {
+            const customerCount = getStatistics(tier.tierId);
+            
+            return (
+              <Card key={tier.tierId} className={`relative ${!tier.isActive ? 'opacity-60' : ''}`}>
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Hạng {stat.tierName}</p>
-                      <p className="text-2xl font-bold">{stat.customerCount}</p>
-                      <p className="text-xs text-gray-500">khách hàng</p>
-                    </div>
-                    <div 
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: stat.tierColor }}
-                    >
-                      <Star className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-600">
-                    <p>Tổng chi: {formatCurrency(stat.totalSpent)}</p>
-                    <p>TB/khách: {formatCurrency(stat.averageSpent)}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Tiers List */}
-        <div className="grid gap-4">
-          {isLoading ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p>Đang tải...</p>
-              </CardContent>
-            </Card>
-          ) : tiers.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Award className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-medium mb-2">Chưa có hạng khách hàng</h3>
-                <p className="text-gray-500 mb-4">
-                  Tạo hạng khách hàng đầu tiên để bắt đầu phân loại và tạo quyền lợi
-                </p>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Thêm hạng đầu tiên
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            tiers.map((tier) => (
-              <Card key={tier.tierId} className={tier.isActive ? "" : "opacity-60"}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <Badge 
-                          className="text-white"
-                          style={{ backgroundColor: tier.tierColor }}
-                        >
-                          {tier.tierName}
+                    <div className="flex items-center space-x-2">
+                      <div 
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: tier.tierColor }}
+                      >
+                        <Star className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{tier.tierName}</CardTitle>
+                        <Badge variant={tier.isActive ? "default" : "secondary"} className="text-xs">
+                          {tier.isActive ? "Hoạt động" : "Tạm dừng"}
                         </Badge>
-                        {!tier.isActive && (
-                          <Badge variant="secondary">Đã tắt</Badge>
-                        )}
                       </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Chi tiêu tối thiểu</p>
-                          <p className="font-semibold">{formatCurrency(tier.minSpent)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Điểm tối thiểu</p>
-                          <p className="font-semibold">{tier.minPoints} điểm</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Hệ số tích điểm</p>
-                          <p className="font-semibold">x{tier.pointsMultiplier}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Giảm giá</p>
-                          <p className="font-semibold text-green-600">{tier.discountPercentage}%</p>
-                        </div>
-                      </div>
-
-                      {tier.description && (
-                        <p className="mt-3 text-gray-600 text-sm">{tier.description}</p>
-                      )}
                     </div>
-
-                    <div className="flex space-x-1 ml-4">
+                    <div className="flex space-x-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -496,18 +467,70 @@ export default function CustomerTierManagement() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(tier)}
+                        onClick={() => handleDelete(tier.tierId)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <Label className="text-muted-foreground">Chi tiêu tối thiểu</Label>
+                      <p className="font-medium">{tier.minSpent.toLocaleString()} ₫</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Điểm tối thiểu</Label>
+                      <p className="font-medium">{tier.minPoints.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Hệ số điểm</Label>
+                      <p className="font-medium">x{tier.pointsMultiplier}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Giảm giá</Label>
+                      <p className="font-medium">{tier.discountPercentage}%</p>
+                    </div>
+                  </div>
+                  
+                  {tier.description && (
+                    <div className="pt-2 border-t">
+                      <Label className="text-muted-foreground">Mô tả</Label>
+                      <p className="text-sm">{tier.description}</p>
+                    </div>
+                  )}
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Số khách hàng</span>
+                      <Badge variant="outline">
+                        <Users className="w-3 h-3 mr-1" />
+                        {customerCount}
+                      </Badge>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ))
-          )}
+            );
+          })}
         </div>
+
+        {tiers.filter(tier => tier.isActive).length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Award className="w-12 h-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có hạng khách hàng nào</h3>
+            <p className="text-gray-500 mb-4">Bắt đầu bằng cách tạo hạng khách hàng đầu tiên</p>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo hạng đầu tiên
+            </Button>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

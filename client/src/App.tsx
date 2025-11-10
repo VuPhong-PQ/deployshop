@@ -24,6 +24,8 @@ import DataManagement from "@/pages/data-management";
 import StoreSelection from "@/pages/store-selection";
 import StoreManagement from "@/pages/store-management";
 import Dashboard from "@/pages/dashboard";
+import CustomerTierManagement from "@/pages/customer-tier-management";
+import DisabledTiersArchive from "@/pages/disabled-tiers-archive";
 
 function Router() {
   return (
@@ -89,6 +91,16 @@ function Router() {
       <Route path="/settings">
         <ProtectedRoute requiredPermission="ViewSettings">
           <Settings />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/customer-tier-management">
+        <ProtectedRoute requiredPermission="ViewSettings">
+          <CustomerTierManagement />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/disabled-tiers-archive">
+        <ProtectedRoute requiredPermission="ViewSettings">
+          <DisabledTiersArchive />
         </ProtectedRoute>
       </Route>
       <Route path="/orders">
