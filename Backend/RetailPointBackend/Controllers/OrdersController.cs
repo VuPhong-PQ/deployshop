@@ -87,7 +87,7 @@ namespace RetailPointBackend.Controllers
                 StoreId = storeId?.ToString(), // Convert int? to string
                 Items = items
             };
-            // Nếu có CustomerId, gán lại CustomerName và tính giảm giá theo hạng
+            // Nếu có CustomerId, gán lại CustomerName (không tự động áp dụng giảm giá)
             if (order.CustomerId.HasValue && order.CustomerId > 0)
             {
                 var customer = _notificationContext.Customers
@@ -97,16 +97,12 @@ namespace RetailPointBackend.Controllers
                 {
                     order.CustomerName = customer.HoTen;
                     
-                    // Áp dụng giảm giá theo hạng khách hàng (nếu chưa có giảm giá thủ công)
-                    if (customer.CustomerTier != null && order.DiscountAmount == 0)
-                    {
-                        var tierDiscountAmount = order.SubTotal * (customer.CustomerTier.DiscountPercentage / 100);
-                        order.DiscountAmount = tierDiscountAmount;
-                        order.TotalAmount = order.SubTotal + order.TaxAmount - tierDiscountAmount;
-                        
-                        _logger.LogInformation("Applied tier discount for customer {CustomerId}: {DiscountPercentage}% = {DiscountAmount}", 
-                            customer.CustomerId, customer.CustomerTier.DiscountPercentage, tierDiscountAmount);
-                    }
+                    // KHÔNG tự động áp dụng giảm giá theo hạng khách hàng
+                    // Giảm giá sẽ chỉ được áp dụng khi frontend gửi lên rõ ràng
+                    // hoặc thông qua hệ thống discount selector
+                    
+                    _logger.LogInformation("Order for customer {CustomerId} ({CustomerName}) - Tier: {TierName}. Discount will only be applied if explicitly selected.", 
+                        customer.CustomerId, customer.HoTen, customer.CustomerTier?.TierName ?? "None");
                 }
             }
 
@@ -490,6 +486,35 @@ namespace RetailPointBackend.Controllers
                             {
                                 _logger.LogWarning("Failed to process loyalty points for completed order {OrderId}", order.OrderId);
                             }
+                            
+                            // CRITICAL FIX: Đảm bảo không có discount tự động nào được áp dụng
+                            // sau khi xử lý tích điểm, chờ một khoảng thời gian để các process khác hoàn thành 
+                            await Task.Delay(3000); // Chờ 3 giây để các background job hoàn thành
+                            
+                            // Reload order từ database để kiểm tra có discount tự động nào được áp dụng không
+                            var orderToCheck = await _context.Orders.FindAsync(order.OrderId);
+                            if (orderToCheck != null && orderToCheck.DiscountAmount > 0)
+                            {
+                                // Kiểm tra xem có discount record rõ ràng nào được tạo không
+                                var hasExplicitDiscount = await _notificationContext.OrderDiscounts
+                                    .AnyAsync(od => od.OrderId == order.OrderId);
+                                
+                                if (!hasExplicitDiscount)
+                                {
+                                    // Không có discount rõ ràng được chọn, reset về 0
+                                    var originalDiscountAmount = orderToCheck.DiscountAmount;
+                                    orderToCheck.DiscountAmount = 0;
+                                    orderToCheck.TotalAmount = orderToCheck.SubTotal + orderToCheck.TaxAmount;
+                                    await _context.SaveChangesAsync();
+                                    _logger.LogWarning("AUTO-DISCOUNT PREVENTION: Reset automatic discount of {DiscountAmount} for order {OrderId} as no explicit discount was selected", 
+                                        originalDiscountAmount, order.OrderId);
+                                }
+                                else
+                                {
+                                    _logger.LogInformation("Order {OrderId} has explicit discount records, keeping discount amount: {DiscountAmount}", 
+                                        order.OrderId, orderToCheck.DiscountAmount);
+                                }
+                            }
                         }
                         catch (Exception loyaltyEx)
                         {
@@ -544,6 +569,26 @@ namespace RetailPointBackend.Controllers
                         {
                             _logger.LogInformation("Processing loyalty points for order {OrderId} status change to completed", order.OrderId);
                             await _loyaltyService.ProcessOrderPointsAsync(order.OrderId);
+                            
+                            // CRITICAL FIX: Đảm bảo không có discount tự động nào được áp dụng
+                            await Task.Delay(3000); // Chờ 3 giây để các background job hoàn thành
+                            
+                            var orderToCheck = await _context.Orders.FindAsync(order.OrderId);
+                            if (orderToCheck != null && orderToCheck.DiscountAmount > 0)
+                            {
+                                var hasExplicitDiscount = await _notificationContext.OrderDiscounts
+                                    .AnyAsync(od => od.OrderId == order.OrderId);
+                                
+                                if (!hasExplicitDiscount)
+                                {
+                                    var originalDiscountAmount = orderToCheck.DiscountAmount;
+                                    orderToCheck.DiscountAmount = 0;
+                                    orderToCheck.TotalAmount = orderToCheck.SubTotal + orderToCheck.TaxAmount;
+                                    await _context.SaveChangesAsync();
+                                    _logger.LogWarning("AUTO-DISCOUNT PREVENTION (UpdateOrder): Reset automatic discount of {DiscountAmount} for order {OrderId}", 
+                                        originalDiscountAmount, order.OrderId);
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {

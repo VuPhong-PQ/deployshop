@@ -191,6 +191,27 @@ export default function Customers() {
     retry: 1,
   });
 
+  // Fetch loyalty transactions separately to ensure fresh data
+  const { data: loyaltyTransactions, isLoading: isLoadingLoyalty, refetch: refetchTransactions } = useQuery({
+    queryKey: ['/api/LoyaltyTransactions/customer', selectedCustomer?.customerId],
+    queryFn: async () => {
+      if (!selectedCustomer?.customerId) return null;
+      console.log('Fetching loyalty transactions for customer:', selectedCustomer.customerId);
+      try {
+        const response = await apiRequest(`/api/LoyaltyTransactions/customer/${selectedCustomer.customerId}`, { method: 'GET' });
+        console.log('Loyalty transactions response:', response);
+        return response?.transactions || [];
+      } catch (error) {
+        console.error('Loyalty transactions API error:', error);
+        return [];
+      }
+    },
+    enabled: !!selectedCustomer?.customerId,
+    retry: 1,
+    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchIntervalInBackground: false,
+  });
+
   // Fetch inactive customers
   const { data: inactiveCustomers = [] } = useQuery<ApiCustomer[]>({
     queryKey: ['/api/customers/inactive'],
@@ -964,16 +985,28 @@ export default function Customers() {
                       </div>
                       
                       {/* Loyalty Transactions */}
-                      {customerDetail?.loyaltyTransactions && customerDetail.loyaltyTransactions.length > 0 && (
-                        <div className="mt-6">
-                          <h4 className="font-medium mb-3">Lịch sử giao dịch điểm</h4>
+                      <div className="mt-6">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium">Lịch sử giao dịch điểm</h4>
+                          <button 
+                            onClick={() => refetchTransactions()}
+                            disabled={isLoadingLoyalty}
+                            className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                          >
+                            {isLoadingLoyalty ? 'Đang tải...' : '🔄 Làm mới'}
+                          </button>
+                        </div>
+                        
+                        {isLoadingLoyalty ? (
+                          <div className="text-center text-gray-500">Đang tải...</div>
+                        ) : loyaltyTransactions && loyaltyTransactions.length > 0 ? (
                           <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {customerDetail.loyaltyTransactions.slice(0, 5).map((transaction, index) => (
-                              <div key={index} className="flex justify-between items-center text-sm py-2 border-b">
+                            {loyaltyTransactions.slice(0, 10).map((transaction: any, index: number) => (
+                              <div key={transaction.transactionId || index} className="flex justify-between items-center text-sm py-2 border-b">
                                 <div>
                                   <p className="font-medium">{transaction.reason || 'Giao dịch điểm'}</p>
                                   <p className="text-gray-500">
-                                    {new Date(transaction.processedAt).toLocaleDateString('vi-VN')}
+                                    {new Date(transaction.processedAt).toLocaleDateString('vi-VN')} {new Date(transaction.processedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
                                 </div>
                                 <div className={`font-bold ${transaction.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -981,9 +1014,16 @@ export default function Customers() {
                                 </div>
                               </div>
                             ))}
+                            {loyaltyTransactions.length > 10 && (
+                              <div className="text-center text-gray-500 text-xs pt-2">
+                                Hiển thị 10 giao dịch gần nhất từ {loyaltyTransactions.length} giao dịch
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="text-center text-gray-500">Chưa có giao dịch nào</div>
+                        )}
+                      </div>
 
                       <div className="mt-6">
                         <p className="text-sm text-gray-600 mb-2">

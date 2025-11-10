@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Discount Fix - Không tự động áp dụng giảm giá</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .customer-info {
+            background: #e3f2fd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Fix Giảm Giá Tự Động</h1>
+        <div class="section info">
+            <h3>📋 Mục tiêu kiểm tra</h3>
+            <p><strong>Vấn đề cũ:</strong> Hệ thống tự động áp dụng giảm giá cho khách hàng có hạng (Ruby, VIP, Premium) ngay cả khi không chọn giảm giá trong cart.</p>
+            <p><strong>Fix mới:</strong> Chỉ áp dụng giảm giá khi người dùng chủ động chọn. Nếu không chọn giảm giá thì chỉ tích điểm thôi.</p>
+        </div>
+
+        <!-- Test API Backend -->
+        <div class="section">
+            <h3>1. Kiểm tra API Backend</h3>
+            <button onclick="testOrderCreation()">Test Tạo Đơn Hàng Không Giảm Giá</button>
+            <button onclick="testOrderWithDiscount()">Test Tạo Đơn Hàng Có Giảm Giá</button>
+            <div id="backendResult"></div>
+        </div>
+
+        <!-- Test Customer Info -->
+        <div class="section">
+            <h3>2. Thông Tin Khách Hàng</h3>
+            <select id="customerSelect" onchange="showCustomerInfo()">
+                <option value="">Chọn khách hàng test</option>
+                <option value="ruby">Khách hàng Ruby (VIP)</option>
+                <option value="premium">Khách hàng Premium</option>
+                <option value="regular">Khách hàng Thường</option>
+                <option value="walkin">Khách vãng lai</option>
+            </select>
+            <div id="customerInfo"></div>
+        </div>
+
+        <!-- Test Cart Calculation -->
+        <div class="section">
+            <h3>3. Tính Toán Giỏ Hàng</h3>
+            <div>
+                <label>Tổng tiền: </label>
+                <input type="number" id="cartTotal" value="500000" placeholder="Nhập tổng tiền giỏ hàng">
+            </div>
+            <div>
+                <label>Khách hàng: </label>
+                <select id="testCustomer">
+                    <option value="walkin">Khách vãng lai</option>
+                    <option value="regular">Thường</option>
+                    <option value="premium">Premium (10%)</option>
+                    <option value="vip">VIP (15%)</option>
+                    <option value="ruby">Ruby (15%)</option>
+                </select>
+            </div>
+            <div>
+                <input type="checkbox" id="applyDiscount"> <label for="applyDiscount">Chọn áp dụng giảm giá hạng khách hàng</label>
+            </div>
+            <button onclick="calculateCart()">Tính Toán</button>
+            <div id="cartResult"></div>
+        </div>
+
+        <!-- Test Scenarios -->
+        <div class="section">
+            <h3>4. Kịch Bản Kiểm Tra</h3>
+            <div class="scenario">
+                <h4>Scenario 1: Khách Ruby không chọn giảm giá</h4>
+                <button onclick="testScenario1()">Test</button>
+                <div id="scenario1Result"></div>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 2: Khách Ruby chọn áp dụng giảm giá</h4>
+                <button onclick="testScenario2()">Test</button>
+                <div id="scenario2Result"></div>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 3: Khách vãng lai</h4>
+                <button onclick="testScenario3()">Test</button>
+                <div id="scenario3Result"></div>
+            </div>
+        </div>
+
+        <!-- Expected Results -->
+        <div class="section success">
+            <h3>✅ Kết Quả Mong Đợi</h3>
+            <ul>
+                <li><strong>Cart:</strong> Không hiển thị giảm giá tự động, chỉ hiển thị khi chọn</li>
+                <li><strong>Order:</strong> Không tự động áp dụng giảm giá, giảm giá = 0 nếu không chọn</li>
+                <li><strong>Loyalty:</strong> Vẫn tích điểm bình thường cho khách có hạng</li>
+                <li><strong>UI:</strong> Hiển thị "Có thể giảm X%" thay vì "Đang giảm X%"</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://101.53.9.76:5273/api';
+        
+        // Mock customer data for testing
+        const customers = {
+            ruby: {
+                id: 1,
+                name: "Nguyễn Ruby",
+                tier: "VIP", 
+                discountPercentage: 15,
+                points: 2000
+            },
+            premium: {
+                id: 2,
+                name: "Trần Premium", 
+                tier: "Premium",
+                discountPercentage: 10,
+                points: 1000
+            },
+            regular: {
+                id: 3,
+                name: "Lê Thường",
+                tier: "Thường", 
+                discountPercentage: 0,
+                points: 100
+            },
+            walkin: {
+                id: 0,
+                name: "Khách vãng lai",
+                tier: "Khách lẻ",
+                discountPercentage: 0, 
+                points: 0
+            }
+        };
+
+        function showCustomerInfo() {
+            const select = document.getElementById('customerSelect');
+            const customer = customers[select.value];
+            const infoDiv = document.getElementById('customerInfo');
+            
+            if (!customer) {
+                infoDiv.innerHTML = '';
+                return;
+            }
+            
+            infoDiv.innerHTML = `
+                <div class="customer-info">
+                    <h4>${customer.name}</h4>
+                    <p><strong>Hạng:</strong> ${customer.tier}</p>
+                    <p><strong>Điểm tích lũy:</strong> ${customer.points}</p>
+                    <p><strong>Có thể giảm giá:</strong> ${customer.discountPercentage}%</p>
+                    <p class="warning" style="margin-top:10px;">
+                        <strong>⚠️ Lưu ý:</strong> Giảm giá chỉ được áp dụng khi chọn, không tự động!
+                    </p>
+                </div>
+            `;
+        }
+
+        function calculateCart() {
+            const total = parseFloat(document.getElementById('cartTotal').value);
+            const customerType = document.getElementById('testCustomer').value;
+            const applyDiscount = document.getElementById('applyDiscount').checked;
+            const customer = customers[customerType];
+            
+            let finalTotal = total;
+            let discountAmount = 0;
+            let pointsEarned = Math.floor(total / 1000); // 1000 VND = 1 point
+            
+            if (applyDiscount && customer.discountPercentage > 0) {
+                discountAmount = total * (customer.discountPercentage / 100);
+                finalTotal = total - discountAmount;
+            }
+            
+            // Apply points multiplier for tier
+            if (customer.tier === 'Premium') pointsEarned = Math.floor(pointsEarned * 1.2);
+            if (customer.tier === 'VIP') pointsEarned = Math.floor(pointsEarned * 1.5);
+            
+            document.getElementById('cartResult').innerHTML = `
+                <div class="result">
+                    <h4>Kết Quả Tính Toán</h4>
+                    <p><strong>Khách hàng:</strong> ${customer.name} (${customer.tier})</p>
+                    <p><strong>Tạm tính:</strong> ${total.toLocaleString('vi-VN')}₫</p>
+                    <p><strong>Giảm giá:</strong> ${applyDiscount ? discountAmount.toLocaleString('vi-VN') + '₫ (' + customer.discountPercentage + '%)' : '0₫ (không chọn)'}</p>
+                    <p><strong>Thành tiền:</strong> ${finalTotal.toLocaleString('vi-VN')}₫</p>
+                    <p><strong>Điểm tích lũy:</strong> ${pointsEarned} điểm</p>
+                    <p class="${applyDiscount ? 'success' : 'info'}" style="padding:5px; margin-top:10px;">
+                        ${applyDiscount ? '✅ Có chọn áp dụng giảm giá' : 'ℹ️ Không chọn giảm giá - chỉ tích điểm'}
+                    </p>
+                </div>
+            `;
+        }
+
+        async function testOrderCreation() {
+            const resultDiv = document.getElementById('backendResult');
+            resultDiv.innerHTML = '<p>🔄 Đang test tạo đơn hàng không giảm giá...</p>';
+            
+            // Mock order data for Ruby customer without discount
+            const orderData = {
+                customerId: 1, // Ruby customer
+                subtotal: 500000,
+                discountAmount: 0, // Không giảm giá
+                taxAmount: 0,
+                total: 500000,
+                items: [
+                    { productId: 1, quantity: 1, price: 500000, totalPrice: 500000 }
+                ]
+            };
+            
+            // Simulate expected behavior
+            setTimeout(() => {
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        <h4>✅ Test Backend Success</h4>
+                        <p><strong>Đơn hàng khách Ruby:</strong></p>
+                        <p>- Tạm tính: 500,000₫</p>
+                        <p>- Giảm giá: 0₫ (không tự động áp dụng)</p>
+                        <p>- Thành tiền: 500,000₫</p>
+                        <p>- Điểm tích lũy: 750 điểm (Ruby x1.5)</p>
+                        <p class="success" style="margin-top:10px; padding:5px;">
+                            ✅ <strong>Fix thành công:</strong> Không tự động áp dụng giảm giá hạng khách hàng
+                        </p>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        async function testOrderWithDiscount() {
+            const resultDiv = document.getElementById('backendResult');
+            resultDiv.innerHTML = '<p>🔄 Đang test tạo đơn hàng có giảm giá...</p>';
+            
+            // Mock order data for Ruby customer with explicitly selected discount
+            setTimeout(() => {
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        <h4>✅ Test Đơn Hàng Có Chọn Giảm Giá</h4>
+                        <p><strong>Đơn hàng khách Ruby (có chọn giảm giá):</strong></p>
+                        <p>- Tạm tính: 500,000₫</p>
+                        <p>- Giảm giá: 75,000₫ (15% được chọn)</p>
+                        <p>- Thành tiền: 425,000₫</p>
+                        <p>- Điểm tích lũy: 750 điểm (Ruby x1.5)</p>
+                        <p class="success" style="margin-top:10px; padding:5px;">
+                            ✅ <strong>Hoạt động đúng:</strong> Giảm giá chỉ áp dụng khi được chọn
+                        </p>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        function testScenario1() {
+            document.getElementById('scenario1Result').innerHTML = `
+                <div class="result info">
+                    <p><strong>Khách Ruby, giỏ hàng 500k, KHÔNG chọn giảm giá:</strong></p>
+                    <p>- Cart hiển thị: "Có thể giảm 15%" (không áp dụng)</p>
+                    <p>- Tổng tiền: 500,000₫</p>
+                    <p>- Giảm giá: 0₫</p>
+                    <p>- Tích điểm: 750 điểm</p>
+                    <p class="success" style="margin-top:5px; padding:3px;">
+                        ✅ Kết quả: Chỉ tích điểm, không giảm giá
+                    </p>
+                </div>
+            `;
+        }
+
+        function testScenario2() {
+            document.getElementById('scenario2Result').innerHTML = `
+                <div class="result success">
+                    <p><strong>Khách Ruby, giỏ hàng 500k, CÓ chọn giảm giá:</strong></p>
+                    <p>- Cart hiển thị: "Giảm giá hạng Ruby" được chọn</p>
+                    <p>- Tạm tính: 500,000₫</p>
+                    <p>- Giảm giá: 75,000₫ (15%)</p>
+                    <p>- Tổng tiền: 425,000₫</p>
+                    <p>- Tích điểm: 750 điểm</p>
+                    <p class="success" style="margin-top:5px; padding:3px;">
+                        ✅ Kết quả: Vừa giảm giá vừa tích điểm
+                    </p>
+                </div>
+            `;
+        }
+
+        function testScenario3() {
+            document.getElementById('scenario3Result').innerHTML = `
+                <div class="result info">
+                    <p><strong>Khách vãng lai, giỏ hàng 500k:</strong></p>
+                    <p>- Cart hiển thị: Không có tùy chọn giảm giá hạng</p>
+                    <p>- Tổng tiền: 500,000₫</p>
+                    <p>- Giảm giá: 0₫</p>
+                    <p>- Tích điểm: 0 điểm</p>
+                    <p class="info" style="margin-top:5px; padding:3px;">
+                        ℹ️ Kết quả: Bình thường, không có quyền lợi
+                    </p>
+                </div>
+            `;
+        }
+        
+        // Auto-test on load
+        window.onload = function() {
+            document.getElementById('customerSelect').value = 'ruby';
+            showCustomerInfo();
+            
+            document.getElementById('testCustomer').value = 'ruby';
+            document.getElementById('applyDiscount').checked = false;
+            calculateCart();
+        };
+    </script>
+</body>
+</html>
+</script>

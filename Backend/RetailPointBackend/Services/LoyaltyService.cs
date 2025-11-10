@@ -187,6 +187,11 @@ namespace RetailPointBackend.Services
                 // Update customer tier
                 await UpdateCustomerTierAsync(customer.CustomerId);
 
+                // NOTE: KHÔNG tự động áp dụng giảm giá cho hạng khách hàng
+                // Theo yêu cầu của user: "chỉ khi nào áp dụng chọn giảm giá cho khách hàng thì mới được giảm giá"
+                // Giảm giá sẽ chỉ được áp dụng khi có lựa chọn rõ ràng từ frontend
+                _logger.LogInformation("Customer tier updated for customer {CustomerId}. No automatic tier discount applied as per business rule.", customer.CustomerId);
+
                 _logger.LogInformation("Processed {Points} points for order {OrderId}, customer {CustomerId}", 
                     transaction.Points, orderId, customer.CustomerId);
 

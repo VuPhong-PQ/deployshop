@@ -101,6 +101,9 @@ export interface Customer {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  // Add tier information
+  tierId?: number | null;
+  customerTier?: CustomerTier | null;
 }
 
 // API Store type

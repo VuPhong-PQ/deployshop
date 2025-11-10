@@ -31,9 +31,10 @@ interface DiscountSelectorProps {
   onDiscountSelect: (discount: DiscountRule | null, discountAmount: number) => void;
   selectedDiscount: DiscountRule | null;
   manualDiscountAmount?: number;
+  selectedCustomer?: any; // Add customer info to show tier-based discounts
 }
 
-export function DiscountSelector({ cart, subtotal, onDiscountSelect, selectedDiscount, manualDiscountAmount = 0 }: DiscountSelectorProps) {
+export function DiscountSelector({ cart, subtotal, onDiscountSelect, selectedDiscount, manualDiscountAmount = 0, selectedCustomer }: DiscountSelectorProps) {
   const [showDiscountSelect, setShowDiscountSelect] = useState(false);
 
   // Fetch available discount rules
@@ -105,8 +106,53 @@ export function DiscountSelector({ cart, subtotal, onDiscountSelect, selectedDis
     return Math.max(0, discountAmount);
   };
 
+  // Generate customer tier discount rules if applicable
+  const getCustomerTierDiscounts = (): DiscountRule[] => {
+    if (!selectedCustomer || !selectedCustomer.hangKhachHang || selectedCustomer.hangKhachHang === 'Thuong') {
+      return [];
+    }
+
+    const tierDiscounts: DiscountRule[] = [];
+    let discountPercentage = 0;
+    let tierName = '';
+
+    switch (selectedCustomer.hangKhachHang) {
+      case 'VIP':
+        discountPercentage = 0.15; // 15%
+        tierName = 'VIP';
+        break;
+      case 'Premium':
+        discountPercentage = 0.10; // 10%
+        tierName = 'Premium';
+        break;
+      case 'Platinum':
+        discountPercentage = 0.20; // 20%
+        tierName = 'Platinum';
+        break;
+      default:
+        return [];
+    }
+
+    if (discountPercentage > 0) {
+      tierDiscounts.push({
+        discountId: -1, // Special ID for tier discount
+        name: `Giảm giá hạng ${tierName}`,
+        description: `Giảm giá ${(discountPercentage * 100)}% dành cho khách hàng hạng ${tierName}`,
+        type: 1, // PercentageTotal
+        value: discountPercentage,
+        isActive: true,
+      });
+    }
+
+    return tierDiscounts;
+  };
+
+  // Combine regular discounts with tier-based discounts
+  const customerTierDiscounts = getCustomerTierDiscounts();
+  const allDiscounts = [...discountRules, ...customerTierDiscounts];
+
   // Filter applicable discount rules
-  const applicableDiscounts = discountRules.filter(rule => {
+  const applicableDiscounts = allDiscounts.filter(rule => {
     const discountAmount = calculateDiscountAmount(rule);
     return discountAmount > 0;
   });
@@ -118,7 +164,7 @@ export function DiscountSelector({ cart, subtotal, onDiscountSelect, selectedDis
       return;
     }
 
-    const rule = discountRules.find(r => r.discountId.toString() === discountId);
+    const rule = allDiscounts.find(r => r.discountId.toString() === discountId);
     if (rule) {
       const discountAmount = calculateDiscountAmount(rule);
       onDiscountSelect(rule, discountAmount);
@@ -191,12 +237,46 @@ export function DiscountSelector({ cart, subtotal, onDiscountSelect, selectedDis
                 <SelectItem value="none" className="text-xs">
                   Không áp dụng giảm giá
                 </SelectItem>
-                {applicableDiscounts.map((rule) => {
+                
+                {/* Tier-based discounts first */}
+                {customerTierDiscounts.length > 0 && (
+                  <>
+                    {customerTierDiscounts.map((rule) => {
+                      const discountAmount = calculateDiscountAmount(rule);
+                      return (
+                        <SelectItem key={rule.discountId} value={rule.discountId.toString()} className="text-xs">
+                          <div className="flex flex-col gap-1">
+                            <div className="font-medium flex items-center gap-2">
+                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 text-xs rounded-full">Hạng KH</span>
+                              {rule.name}
+                            </div>
+                            <div className="text-gray-500">
+                              {formatDiscountType(rule.type)} - 
+                              {(rule.type === 0 || rule.type === 1) ? ` ${(rule.value * 100).toFixed(1)}%` : ` ${rule.value.toLocaleString('vi-VN')}₫`}
+                              {discountAmount > 0 && (
+                                <span className="text-green-600 ml-1">
+                                  (-{discountAmount.toLocaleString('vi-VN')}₫)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                    {discountRules.length > 0 && <hr className="my-1" />}
+                  </>
+                )}
+                
+                {/* Regular discount rules */}
+                {discountRules.filter(rule => calculateDiscountAmount(rule) > 0).map((rule) => {
                   const discountAmount = calculateDiscountAmount(rule);
                   return (
                     <SelectItem key={rule.discountId} value={rule.discountId.toString()} className="text-xs">
                       <div className="flex flex-col gap-1">
-                        <div className="font-medium">{rule.name}</div>
+                        <div className="font-medium flex items-center gap-2">
+                          <span className="bg-gray-100 text-gray-800 px-2 py-0.5 text-xs rounded-full">Chương trình</span>
+                          {rule.name}
+                        </div>
                         <div className="text-gray-500">
                           {formatDiscountType(rule.type)} - 
                           {(rule.type === 0 || rule.type === 1) ? ` ${(rule.value * 100).toFixed(1)}%` : ` ${rule.value.toLocaleString('vi-VN')}₫`}

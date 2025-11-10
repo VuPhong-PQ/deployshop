@@ -57,6 +57,7 @@ namespace RetailPointBackend.Controllers
         {
             var query = _context.Customers
                 .Where(c => c.IsActive) // Only show active customers
+                .Include(c => c.CustomerTier) // Include tier information
                 .AsQueryable();
             
             // Don't filter by store - show all customers regardless of StoreId
@@ -73,10 +74,18 @@ namespace RetailPointBackend.Controllers
                 email = c.Email,
                 diaChi = c.DiaChi,
                 hangKhachHang = MapCustomerRankToFrontend(c.HangKhachHang),
+                tierId = c.TierId,
+                customerTier = c.CustomerTier != null ? new
+                {
+                    tierId = c.CustomerTier.TierId,
+                    tierName = c.CustomerTier.TierName,
+                    discountPercentage = c.CustomerTier.DiscountPercentage,
+                    pointsMultiplier = c.CustomerTier.PointsMultiplier,
+                    tierColor = c.CustomerTier.TierColor
+                } : null,
                 storeId = c.StoreId,
                 loyaltyPoints = c.LoyaltyPoints,
                 totalSpent = c.TotalSpent,
-                tierId = c.TierId,
                 dateOfBirth = c.DateOfBirth,
                 isActive = c.IsActive,
                 createdAt = c.CreatedAt,
