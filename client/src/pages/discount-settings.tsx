@@ -86,12 +86,12 @@ export function DiscountSettings() {
     },
   });
 
-  // Fetch products for dropdown
+  // Fetch products for dropdown  
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products'],
     queryFn: async () => {
       const response = await apiRequest('/api/products', { method: 'GET' });
-      return response;
+      return Array.isArray(response) ? response : JSON.parse(response);
     },
   });
 
@@ -100,11 +100,9 @@ export function DiscountSettings() {
     queryKey: ['/api/categories'],
     queryFn: async () => {
       const response = await apiRequest('/api/categories', { method: 'GET' });
-      return response;
+      return Array.isArray(response) ? response : JSON.parse(response);
     },
-  });
-
-  // Form
+  });  // Form
   const form = useForm<DiscountFormData>({
     resolver: zodResolver(discountFormSchema),
     defaultValues: {
