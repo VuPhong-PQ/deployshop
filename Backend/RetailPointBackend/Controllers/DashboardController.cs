@@ -8,11 +8,15 @@ namespace RetailPointBackend.Controllers
     [Route("api/[controller]")]
     public class DashboardController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly RetailPointContext _context;
+        private readonly AppDbContext _notificationContext;
+        private readonly ILogger<DashboardController> _logger;
 
-        public DashboardController(AppDbContext context)
+        public DashboardController(RetailPointContext context, AppDbContext notificationContext, ILogger<DashboardController> logger)
         {
             _context = context;
+            _notificationContext = notificationContext;
+            _logger = logger;
         }
 
         [HttpGet("metrics")]
@@ -60,10 +64,10 @@ namespace RetailPointBackend.Controllers
                     : "N/A";
 
                 // Tính số khách hàng mới hôm nay (giả sử customers có CreatedAt field)
-                var newCustomersToday = _context.Customers.Count(); // Simplified for now
+                var newCustomersToday = _notificationContext.Customers.Count(); // Simplified for now
 
                 // Tính số sản phẩm sắp hết hàng
-                var lowStockItems = _context.Products
+                var lowStockItems = _notificationContext.Products
                     .Where(p => p.StockQuantity <= p.MinStockLevel)
                     .Count();
 
@@ -83,6 +87,24 @@ namespace RetailPointBackend.Controllers
                     ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).ToString("F1") + "%"
                     : "N/A";
 
+                // Tính tổng số khách hàng
+                var totalCustomers = _notificationContext.Customers.Count();
+
+                // Lấy danh sách sản phẩm sắp hết hàng
+                var lowStockProductsList = _notificationContext.Products
+                    .Where(p => p.StockQuantity <= 10)
+                    .OrderBy(p => p.StockQuantity)
+                    .Take(10)
+                    .Select(p => new 
+                    {
+                        id = p.ProductId,
+                        name = p.Name,
+                        stockQuantity = p.StockQuantity,
+                        price = p.Price,
+                        category = p.CategoryId != null ? p.CategoryId.ToString() : "Chưa phân loại"
+                    })
+                    .ToList();
+
                 var response = new
                 {
                     todayRevenue = todayRevenue.ToString("N0") + "₫",
@@ -90,10 +112,13 @@ namespace RetailPointBackend.Controllers
                     monthRevenue = thisMonthRevenue.ToString("N0") + "₫", 
                     monthGrowth = monthGrowth.StartsWith("-") ? monthGrowth : "+" + monthGrowth,
                     ordersCount = totalOrders,
+                    todayOrders = todayOrdersCount, // Thêm đơn hàng hôm nay
                     ordersGrowth = ordersGrowth.StartsWith("-") ? ordersGrowth : "+" + ordersGrowth,
                     newCustomers = newCustomersToday,
+                    totalCustomers = totalCustomers, // Thêm tổng khách hàng
                     customersGrowth = "+0%", // Simplified
                     lowStockItems = lowStockItems,
+                    lowStockProductsList = lowStockProductsList,
                     // Thêm thống kê chi tiết về trạng thái đơn hàng
                     ordersByStatus = new
                     {
@@ -171,7 +196,7 @@ namespace RetailPointBackend.Controllers
                 // Lấy thông tin user từ header
                 var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
                 
-                var staff = await _context.Staffs
+                var staff = await _notificationContext.Staffs
                     .Include(s => s.Role)
                     .FirstOrDefaultAsync(s => s.Username == username && s.IsActive);
                     
@@ -181,12 +206,12 @@ namespace RetailPointBackend.Controllers
                 }
 
                 // Nếu là Admin thì có quyền truy cập tất cả stores
-                IQueryable<Store> storesQuery = _context.Stores.Where(s => s.IsActive);
+                IQueryable<Store> storesQuery = _notificationContext.Stores.Where(s => s.IsActive);
                 
                 if (staff.Role.RoleName != "Admin")
                 {
                     // Lọc chỉ stores được assign cho staff này
-                    var assignedStoreIds = await _context.StaffStores
+                    var assignedStoreIds = await _notificationContext.StaffStores
                         .Where(ss => ss.StaffId == staff.StaffId)
                         .Select(ss => ss.StoreId)
                         .ToListAsync();
@@ -243,5 +268,7 @@ namespace RetailPointBackend.Controllers
                 return StatusCode(500, new { message = "Lỗi khi tải thông tin cửa hàng", error = ex.Message });
             }
         }
+
+
     }
 }

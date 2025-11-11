@@ -58,6 +58,14 @@ export default function Dashboard() {
     enabled: !!user?.username,
   });
 
+  const { data: lowStockProducts, isLoading: isLoadingLowStock } = useQuery({
+    queryKey: ["/api/dashboard/low-stock-products"],
+    queryFn: async () => {
+      const response = await api.getLowStockProducts();
+      return response.success ? response.data : [];
+    },
+  });
+
   const metrics = metricsResponse as DashboardMetrics;
 
   const handleStoreClick = (storeId: number) => {
@@ -182,7 +190,7 @@ export default function Dashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -203,47 +211,13 @@ export default function Dashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Đơn hàng hôm nay
-                </CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {metrics?.todayOrdersCount || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {metrics?.orderGrowth || '+0%'} so với hôm qua
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Tổng khách hàng
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {metrics?.totalCustomers || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Trong hệ thống
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
                   Sản phẩm sắp hết
                 </CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {metrics?.lowStockCount || 0}
+                  {metrics?.lowStockItems || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Cần nhập thêm
@@ -262,15 +236,50 @@ export default function Dashboard() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Tổng đơn hàng</p>
-                  <p className="text-2xl font-bold">{metrics?.totalOrders || 0}</p>
+                  <p className="text-2xl font-bold">{metrics?.ordersCount || 0}</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Doanh thu hôm nay</p>
                   <p className="text-2xl font-bold">
-                    {metrics?.todayRevenue?.toLocaleString('vi-VN') || '0'} đ
+                    {metrics?.todayRevenue || '0₫'}
                   </p>
                 </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Doanh thu tháng này</p>
+                  <p className="text-2xl font-bold">
+                    {metrics?.monthRevenue || '0₫'}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Khách hàng mới</p>
+                  <p className="text-2xl font-bold">{metrics?.newCustomers || 0}</p>
+                </div>
               </div>
+              
+              {/* Orders by Status */}
+              {metrics?.ordersByStatus && (
+                <div className="mt-6">
+                  <p className="text-sm font-medium mb-3">Trạng thái đơn hàng</p>
+                  <div className="grid gap-2 md:grid-cols-4">
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-xs text-green-600">Hoàn thành</p>
+                      <p className="text-lg font-bold text-green-700">{metrics.ordersByStatus.completed}</p>
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-xs text-blue-600">Đã thanh toán</p>
+                      <p className="text-lg font-bold text-blue-700">{metrics.ordersByStatus.paid}</p>
+                    </div>
+                    <div className="bg-yellow-50 p-3 rounded-lg">
+                      <p className="text-xs text-yellow-600">Đang chờ</p>
+                      <p className="text-lg font-bold text-yellow-700">{metrics.ordersByStatus.pending}</p>
+                    </div>
+                    <div className="bg-red-50 p-3 rounded-lg">
+                      <p className="text-xs text-red-600">Đã hủy</p>
+                      <p className="text-lg font-bold text-red-700">{metrics.ordersByStatus.cancelled}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -283,16 +292,101 @@ export default function Dashboard() {
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Tổng sản phẩm</p>
-                  <p className="text-2xl font-bold">{metrics?.totalProducts || 0}</p>
-                </div>
-                <div className="space-y-2">
                   <p className="text-sm font-medium">Sản phẩm sắp hết</p>
                   <p className="text-2xl font-bold text-red-600">
-                    {metrics?.lowStockCount || 0}
+                    {metrics?.lowStockItems || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Cần nhập thêm hàng
                   </p>
                 </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Tình trạng kho</p>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className={`w-5 h-5 ${(metrics?.lowStockItems || 0) > 0 ? 'text-red-500' : 'text-green-500'}`} />
+                    <span className={`font-bold ${(metrics?.lowStockItems || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {(metrics?.lowStockItems || 0) > 0 ? 'Cần chú ý' : 'Ổn định'}
+                    </span>
+                  </div>
+                </div>
               </div>
+              
+              {/* Inventory Status Alert */}
+              {(metrics?.lowStockItems || 0) > 0 && (
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800">
+                        Cảnh báo tồn kho thấp!
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        Có {metrics.lowStockItems} sản phẩm sắp hết hàng. Hãy kiểm tra và nhập thêm hàng.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Low Stock Products List */}
+              {lowStockProducts && lowStockProducts.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4">Danh sách sản phẩm sắp hết</h3>
+                  <div className="bg-white border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Tên sản phẩm
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Danh mục
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Tồn kho
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Giá bán
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {lowStockProducts.map((product: any) => (
+                            <tr key={product.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                {product.name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500">
+                                {product.category}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  product.stockQuantity <= 3 
+                                    ? 'bg-red-100 text-red-800' 
+                                    : product.stockQuantity <= 7 
+                                    ? 'bg-yellow-100 text-yellow-800' 
+                                    : 'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {product.stockQuantity} sản phẩm
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {product.price?.toLocaleString('vi-VN')}₫
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  {isLoadingLowStock && (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500">Đang tải danh sách sản phẩm...</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -4,8 +4,10 @@ export interface DashboardMetrics {
   monthRevenue: string;
   monthGrowth: string;
   ordersCount: number;
+  todayOrders: number; // Thêm đơn hàng hôm nay
   ordersGrowth: string;
   newCustomers: number;
+  totalCustomers: number; // Thêm tổng khách hàng
   customersGrowth: string;
   lowStockItems: number;
   ordersByStatus: {
