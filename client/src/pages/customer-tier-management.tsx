@@ -91,7 +91,7 @@ export default function CustomerTierManagement() {
     mutationFn: async (tierData: TierFormData) => {
       return apiRequest('/api/CustomerTierManagement', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify(tierData)
       });
     },
@@ -120,8 +120,8 @@ export default function CustomerTierManagement() {
     mutationFn: async ({ tierId, ...tierData }: { tierId: number } & TierFormData) => {
       return apiRequest(`/api/CustomerTierManagement/${tierId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tierData)
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ TierId: tierId, ...tierData })
       });
     },
     onSuccess: () => {
