@@ -269,6 +269,34 @@ namespace RetailPointBackend.Controllers
             }
         }
 
+        [HttpGet("low-stock-products")]
+        public async Task<IActionResult> GetLowStockProducts([FromQuery] string? storeId = null)
+        {
+            try
+            {
+                // Query products from the same context as metrics
+                var lowStockProducts = await _notificationContext.Products
+                    .Where(p => p.StockQuantity <= 10)
+                    .Select(p => new 
+                    {
+                        id = p.ProductId,
+                        name = p.Name,
+                        stockQuantity = p.StockQuantity,
+                        price = p.Price,
+                        category = p.CategoryId != null ? p.CategoryId.ToString() : "Chưa phân loại"
+                    })
+                    .OrderBy(p => p.stockQuantity)
+                    .Take(20)
+                    .ToListAsync();
+
+                return Ok(lowStockProducts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting low stock products: {ex.Message}");
+                return BadRequest(new { error = ex.Message });
+            }
+        }
 
     }
 }

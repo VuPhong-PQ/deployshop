@@ -1,5 +1,5 @@
-// API request utility
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://101.53.9.76:5273/api';
+// API request utility - Force correct API URL
+const API_BASE_URL = 'http://101.53.9.76:5273/api';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -58,18 +58,27 @@ export async function apiRequest<T>(
 export const api = {
   // Dashboard
   getDashboardMetrics: (storeId: number) =>
-    apiRequest<any>(`/api/dashboard/metrics?storeId=${storeId}`),
+    apiRequest<any>(`/dashboard/metrics?storeId=${storeId}&_t=${Date.now()}`),
   
-  getLowStockProducts: () => {
-    // Return mock low stock products for demo
-    const mockProducts = [
-      { id: 1, name: "Nước uống Coca Cola", stockQuantity: 5, price: 15000, category: "Đồ uống" },
-      { id: 2, name: "Bánh mì sandwich", stockQuantity: 3, price: 25000, category: "Thực phẩm" },
-      { id: 3, name: "Kẹo Mentos", stockQuantity: 8, price: 10000, category: "Kẹo" },
-      { id: 4, name: "Nước suối Lavie", stockQuantity: 2, price: 8000, category: "Đồ uống" },
-      { id: 5, name: "Bánh quy Oreo", stockQuantity: 6, price: 35000, category: "Bánh kẹo" }
-    ];
-    return Promise.resolve({ success: true, data: mockProducts });
+  getLowStockProducts: async (storeId?: number) => {
+    // Get all products and filter low stock ones
+    const response = await api.getProducts(storeId);
+    if (response.success && response.data && (response.data as any).products) {
+      const products = (response.data as any).products;
+      const lowStockProducts = products
+        .filter((product: any) => product.stockQuantity <= 10)
+        .sort((a: any, b: any) => a.stockQuantity - b.stockQuantity)
+        .slice(0, 20)
+        .map((product: any) => ({
+          id: product.productId || product.id,
+          name: product.name,
+          stockQuantity: product.stockQuantity,
+          price: product.price,
+          category: product.categoryName || product.category || 'Chưa phân loại'
+        }));
+      return { success: true, data: lowStockProducts };
+    }
+    return response;
   },
 
   // Stores
