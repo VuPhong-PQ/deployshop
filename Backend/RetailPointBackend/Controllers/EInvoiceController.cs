@@ -188,7 +188,7 @@ namespace RetailPointBackend.Controllers
                     {
                         IsEnabled = true,
                         Provider = "VNPT",
-                        ApiUrl = "http://localhost:8080",
+                        ApiUrl = "http://101.53.9.76:8080",
                         Username = "admin",
                         Password = "123456",
                         CompanyTaxCode = "0123456789",

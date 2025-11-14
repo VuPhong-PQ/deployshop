@@ -7,9 +7,9 @@ namespace RetailPointBackend.Controllers
     [Route("api/[controller]")]
     public class AdminController : ControllerBase
     {
-        private readonly RetailPointContext _context;
+        private readonly AppDbContext _context;
 
-        public AdminController(RetailPointContext context)
+        public AdminController(AppDbContext context)
         {
             _context = context;
         }

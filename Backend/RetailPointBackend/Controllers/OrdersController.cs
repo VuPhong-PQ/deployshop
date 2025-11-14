@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
@@ -11,17 +11,15 @@ namespace RetailPointBackend.Controllers
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly RetailPointContext _context;
-        private readonly AppDbContext _notificationContext;
+        private readonly AppDbContext _context;
         private readonly INotificationService _notificationService;
         private readonly IDiscountService _discountService;
         private readonly ILoyaltyService _loyaltyService;
         private readonly ILogger<OrdersController> _logger;
         
-        public OrdersController(RetailPointContext context, AppDbContext notificationContext, INotificationService notificationService, IDiscountService discountService, ILoyaltyService loyaltyService, ILogger<OrdersController> logger)
+        public OrdersController(AppDbContext context, INotificationService notificationService, IDiscountService discountService, ILoyaltyService loyaltyService, ILogger<OrdersController> logger)
         {
             _context = context;
-            _notificationContext = notificationContext;
             _notificationService = notificationService;
             _discountService = discountService;
             _loyaltyService = loyaltyService;
@@ -42,7 +40,7 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? paymentStatus,
             [FromForm] string? status)
         {
-            // Lấy danh sách sản phẩm từ form-data
+            // Láº¥y danh sÃ¡ch sáº£n pháº©m tá»« form-data
             var items = new List<OrderItem>();
             foreach (var key in Request.Form.Keys)
             {
@@ -67,7 +65,7 @@ namespace RetailPointBackend.Controllers
             }
             if (!items.Any()) return BadRequest("Order or items missing");
             
-            // Nếu customerId = 0 thì set thành null (khách vãng lai)
+            // Náº¿u customerId = 0 thÃ¬ set thÃ nh null (khÃ¡ch vÃ£ng lai)
             int? actualCustomerId = customerId.HasValue && customerId.Value > 0 ? customerId : null;
             
             var order = new Order
@@ -80,33 +78,33 @@ namespace RetailPointBackend.Controllers
                 TaxAmount = decimal.TryParse(taxAmount, out var ta) ? ta : 0,
                 DiscountAmount = decimal.TryParse(discountAmount, out var da) ? da : 0,
                 PaymentMethod = paymentMethod ?? "cash",
-                PaymentStatus = paymentStatus ?? "pending", // Default là pending thay vì paid
-                Status = status ?? "pending", // Default là pending thay vì completed
+                PaymentStatus = paymentStatus ?? "pending", // Default lÃ  pending thay vÃ¬ paid
+                Status = status ?? "pending", // Default lÃ  pending thay vÃ¬ completed
                 OrderNumber = orderNumber,
                 StaffId = staffId,
                 StoreId = storeId?.ToString(), // Convert int? to string
                 Items = items
             };
-            // Nếu có CustomerId, gán lại CustomerName (không tự động áp dụng giảm giá)
+            // Náº¿u cÃ³ CustomerId, gÃ¡n láº¡i CustomerName (khÃ´ng tá»± Ä‘á»™ng Ã¡p dá»¥ng giáº£m giÃ¡)
             if (order.CustomerId.HasValue && order.CustomerId > 0)
             {
-                var customer = _notificationContext.Customers
+                var customer = _context.Customers
                     .Include(c => c.CustomerTier)
                     .FirstOrDefault(c => c.CustomerId == order.CustomerId);
                 if (customer != null)
                 {
                     order.CustomerName = customer.HoTen;
                     
-                    // KHÔNG tự động áp dụng giảm giá theo hạng khách hàng
-                    // Giảm giá sẽ chỉ được áp dụng khi frontend gửi lên rõ ràng
-                    // hoặc thông qua hệ thống discount selector
+                    // KHÃ”NG tá»± Ä‘á»™ng Ã¡p dá»¥ng giáº£m giÃ¡ theo háº¡ng khÃ¡ch hÃ ng
+                    // Giáº£m giÃ¡ sáº½ chá»‰ Ä‘Æ°á»£c Ã¡p dá»¥ng khi frontend gá»­i lÃªn rÃµ rÃ ng
+                    // hoáº·c thÃ´ng qua há»‡ thá»‘ng discount selector
                     
                     _logger.LogInformation("Order for customer {CustomerId} ({CustomerName}) - Tier: {TierName}. Discount will only be applied if explicitly selected.", 
                         customer.CustomerId, customer.HoTen, customer.CustomerTier?.TierName ?? "None");
                 }
             }
 
-            // Kiểm tra và trừ tồn kho cho mỗi sản phẩm trong đơn hàng
+            // Kiá»ƒm tra vÃ  trá»« tá»“n kho cho má»—i sáº£n pháº©m trong Ä‘Æ¡n hÃ ng
             var lowStockProducts = new List<string>();
             var insufficientStockProducts = new List<string>();
 
@@ -115,30 +113,30 @@ namespace RetailPointBackend.Controllers
                 var product = _context.Products.FirstOrDefault(p => p.ProductId == item.ProductId);
                 if (product != null)
                 {
-                    // Kiểm tra xem có đủ tồn kho hay không
+                    // Kiá»ƒm tra xem cÃ³ Ä‘á»§ tá»“n kho hay khÃ´ng
                     if (product.StockQuantity < item.Quantity)
                     {
-                        insufficientStockProducts.Add($"{product.Name} (còn {product.StockQuantity}, cần {item.Quantity})");
+                        insufficientStockProducts.Add($"{product.Name} (cÃ²n {product.StockQuantity}, cáº§n {item.Quantity})");
                         continue;
                     }
 
-                    // Trừ tồn kho
+                    // Trá»« tá»“n kho
                     product.StockQuantity -= item.Quantity;
 
-                    // Kiểm tra tồn kho thấp sau khi trừ
+                    // Kiá»ƒm tra tá»“n kho tháº¥p sau khi trá»«
                     if (product.StockQuantity <= product.MinStockLevel)
                     {
-                        lowStockProducts.Add($"{product.Name} (còn {product.StockQuantity})");
+                        lowStockProducts.Add($"{product.Name} (cÃ²n {product.StockQuantity})");
                     }
                 }
             }
 
-            // Nếu có sản phẩm không đủ tồn kho, trả về lỗi
+            // Náº¿u cÃ³ sáº£n pháº©m khÃ´ng Ä‘á»§ tá»“n kho, tráº£ vá» lá»—i
             if (insufficientStockProducts.Any())
             {
                 return BadRequest(new 
                 { 
-                    message = "Không đủ tồn kho cho các sản phẩm", 
+                    message = "KhÃ´ng Ä‘á»§ tá»“n kho cho cÃ¡c sáº£n pháº©m", 
                     products = insufficientStockProducts 
                 });
             }
@@ -146,31 +144,31 @@ namespace RetailPointBackend.Controllers
             _context.Orders.Add(order);
             _context.SaveChanges();
             
-            // Tạo OrderDiscount record nếu có manual discount
+            // Táº¡o OrderDiscount record náº¿u cÃ³ manual discount
             if (order.DiscountAmount > 0)
             {
-                // Tìm hoặc tạo discount record cho manual discount
-                var manualDiscount = _notificationContext.Discounts.FirstOrDefault(d => d.Name == "Giảm giá thủ công");
+                // TÃ¬m hoáº·c táº¡o discount record cho manual discount
+                var manualDiscount = _context.Discounts.FirstOrDefault(d => d.Name == "Giáº£m giÃ¡ thá»§ cÃ´ng");
                 if (manualDiscount == null)
                 {
                     manualDiscount = new Discount
                     {
-                        Name = "Giảm giá thủ công",
-                        Description = "Giảm giá được áp dụng thủ công tại quầy",
+                        Name = "Giáº£m giÃ¡ thá»§ cÃ´ng",
+                        Description = "Giáº£m giÃ¡ Ä‘Æ°á»£c Ã¡p dá»¥ng thá»§ cÃ´ng táº¡i quáº§y",
                         Type = DiscountType.FixedAmountTotal,
-                        Value = 0, // Giá trị sẽ khác nhau cho từng đơn
+                        Value = 0, // GiÃ¡ trá»‹ sáº½ khÃ¡c nhau cho tá»«ng Ä‘Æ¡n
                         IsActive = true,
                         UsageCount = 0
                     };
-                    _notificationContext.Discounts.Add(manualDiscount);
-                    _notificationContext.SaveChanges();
+                    _context.Discounts.Add(manualDiscount);
+                    _context.SaveChanges();
                 }
                 
                 var orderDiscount = new OrderDiscount
                 {
                     OrderId = order.OrderId,
                     DiscountId = manualDiscount.DiscountId,
-                    DiscountName = "Giảm giá thủ công",
+                    DiscountName = "Giáº£m giÃ¡ thá»§ cÃ´ng",
                     DiscountType = DiscountType.FixedAmountTotal, // Manual discount default to fixed amount
                     DiscountValue = order.DiscountAmount,
                     DiscountAmount = order.DiscountAmount,
@@ -179,41 +177,41 @@ namespace RetailPointBackend.Controllers
                     AppliedBy = staffId ?? 1 // Default staff if not provided
                 };
                 
-                _notificationContext.OrderDiscounts.Add(orderDiscount);
+                _context.OrderDiscounts.Add(orderDiscount);
                 
-                // Cập nhật usage count
+                // Cáº­p nháº­t usage count
                 manualDiscount.UsageCount++;
-                _notificationContext.SaveChanges();
+                _context.SaveChanges();
             }
             
-            // Tạo thông báo đơn hàng mới
+            // Táº¡o thÃ´ng bÃ¡o Ä‘Æ¡n hÃ ng má»›i
             try
             {
                 var notification = new Notification
                 {
                     Type = NotificationType.NewOrder,
-                    Title = "Đơn hàng mới",
-                    Message = $"Khách hàng {order.CustomerName ?? "Vãng lai"} vừa đặt đơn hàng #{order.OrderId}",
+                    Title = "ÄÆ¡n hÃ ng má»›i",
+                    Message = $"KhÃ¡ch hÃ ng {order.CustomerName ?? "VÃ£ng lai"} vá»«a Ä‘áº·t Ä‘Æ¡n hÃ ng #{order.OrderId}",
                     OrderId = order.OrderId,
                     Metadata = JsonSerializer.Serialize(new
                     {
-                        CustomerName = order.CustomerName ?? "Vãng lai",
+                        CustomerName = order.CustomerName ?? "VÃ£ng lai",
                         TotalAmount = order.TotalAmount,
-                        FormattedTotal = order.TotalAmount.ToString("N0") + "đ",
+                        FormattedTotal = order.TotalAmount.ToString("N0") + "Ä‘",
                         ItemCount = items.Count
                     })
                 };
                 
-                _notificationContext.Notifications.Add(notification);
+                _context.Notifications.Add(notification);
 
-                // Tạo thông báo cho tồn kho thấp nếu có
+                // Táº¡o thÃ´ng bÃ¡o cho tá»“n kho tháº¥p náº¿u cÃ³
                 if (lowStockProducts.Any())
                 {
                     var lowStockNotification = new Notification
                     {
                         Type = NotificationType.LowStock,
-                        Title = "Cảnh báo tồn kho thấp",
-                        Message = $"Có {lowStockProducts.Count} sản phẩm đạt mức tồn kho thấp",
+                        Title = "Cáº£nh bÃ¡o tá»“n kho tháº¥p",
+                        Message = $"CÃ³ {lowStockProducts.Count} sáº£n pháº©m Ä‘áº¡t má»©c tá»“n kho tháº¥p",
                         Metadata = JsonSerializer.Serialize(new
                         {
                             ProductCount = lowStockProducts.Count,
@@ -221,10 +219,10 @@ namespace RetailPointBackend.Controllers
                         })
                     };
                     
-                    _notificationContext.Notifications.Add(lowStockNotification);
+                    _context.Notifications.Add(lowStockNotification);
                 }
 
-                _notificationContext.SaveChanges();
+                _context.SaveChanges();
             }
             catch (Exception ex)
             {
@@ -232,12 +230,12 @@ namespace RetailPointBackend.Controllers
                 Console.WriteLine($"Failed to create notification: {ex.Message}");
             }
 
-            // Xử lý tích điểm và nâng hạng cho khách hàng (chỉ khi có CustomerId)
+            // Xá»­ lÃ½ tÃ­ch Ä‘iá»ƒm vÃ  nÃ¢ng háº¡ng cho khÃ¡ch hÃ ng (chá»‰ khi cÃ³ CustomerId)
             if (actualCustomerId.HasValue)
             {
                 try
                 {
-                    // Tích điểm cho đơn hàng (chạy background để không ảnh hưởng tốc độ tạo đơn)
+                    // TÃ­ch Ä‘iá»ƒm cho Ä‘Æ¡n hÃ ng (cháº¡y background Ä‘á»ƒ khÃ´ng áº£nh hÆ°á»Ÿng tá»‘c Ä‘á»™ táº¡o Ä‘Æ¡n)
                     _ = Task.Run(async () =>
                     {
                         try
@@ -265,7 +263,7 @@ namespace RetailPointBackend.Controllers
                 }
             }
 
-            // Trả về kết quả với thông tin tồn kho thấp nếu có
+            // Tráº£ vá» káº¿t quáº£ vá»›i thÃ´ng tin tá»“n kho tháº¥p náº¿u cÃ³
             var result = new { order.OrderId, Status = "Success" };
             if (lowStockProducts.Any())
             {
@@ -275,7 +273,7 @@ namespace RetailPointBackend.Controllers
                     Status = "Success", 
                     LowStockWarning = new 
                     { 
-                        Message = "Đơn hàng đã được tạo, nhưng một số sản phẩm đạt mức tồn kho thấp",
+                        Message = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c táº¡o, nhÆ°ng má»™t sá»‘ sáº£n pháº©m Ä‘áº¡t má»©c tá»“n kho tháº¥p",
                         Products = lowStockProducts 
                     }
                 });
@@ -295,7 +293,7 @@ namespace RetailPointBackend.Controllers
                 query = query.Where(o => o.StoreId == storeId.Value.ToString());
             }
             
-            // Lấy danh sách orders trước
+            // Láº¥y danh sÃ¡ch orders trÆ°á»›c
             var ordersData = query
                 .Select(o => new {
                     o.OrderId,
@@ -318,8 +316,8 @@ namespace RetailPointBackend.Controllers
                     o.Status,
                     o.PaymentMethod,
                     o.StoreId,
-                    CashierName = "Admin", // Tạm thời hardcode vì Staff chưa có trong context
-                    o.CancellationReason, // Thêm lý do hủy nếu có
+                    CashierName = "Admin", // Táº¡m thá»i hardcode vÃ¬ Staff chÆ°a cÃ³ trong context
+                    o.CancellationReason, // ThÃªm lÃ½ do há»§y náº¿u cÃ³
                     Items = o.Items.Select(i => new {
                         i.ProductName,
                         i.Quantity,
@@ -330,17 +328,17 @@ namespace RetailPointBackend.Controllers
                 .OrderByDescending(o => o.OrderId)
                 .ToList();
 
-            // Lấy thông tin stores từ AppDbContext
+            // Láº¥y thÃ´ng tin stores tá»« AppDbContext
             var storeIds = ordersData.Where(o => !string.IsNullOrEmpty(o.StoreId) && int.TryParse(o.StoreId, out _))
                 .Select(o => int.Parse(o.StoreId!))
                 .Distinct()
                 .ToList();
                 
-            var stores = _notificationContext.Stores
+            var stores = _context.Stores
                 .Where(s => storeIds.Contains(s.StoreId))
                 .ToDictionary(s => s.StoreId.ToString(), s => s.Name);
 
-            // Gắn tên store vào orders
+            // Gáº¯n tÃªn store vÃ o orders
             var orders = ordersData.Select(o => new {
                 o.OrderId,
                 o.CustomerId,
@@ -356,7 +354,7 @@ namespace RetailPointBackend.Controllers
                 o.PaymentMethod,
                 o.StoreId,
                 StoreName = !string.IsNullOrEmpty(o.StoreId) && stores.ContainsKey(o.StoreId) ?
-                    stores[o.StoreId] : "Cửa hàng chính",
+                    stores[o.StoreId] : "Cá»­a hÃ ng chÃ­nh",
                 o.CashierName,
                 o.CancellationReason,
                 o.Items
@@ -365,7 +363,7 @@ namespace RetailPointBackend.Controllers
             return Ok(orders);
         }
 
-        // Lấy chi tiết đơn hàng theo ID
+        // Láº¥y chi tiáº¿t Ä‘Æ¡n hÃ ng theo ID
         [HttpGet("{id}")]
         public IActionResult GetOrderById(int id)
         {
@@ -408,11 +406,11 @@ namespace RetailPointBackend.Controllers
             
             if (order == null) return NotFound();
             
-            // Lấy tên store nếu có StoreId
-            string storeName = "Cửa hàng chính";
+            // Láº¥y tÃªn store náº¿u cÃ³ StoreId
+            string storeName = "Cá»­a hÃ ng chÃ­nh";
             if (!string.IsNullOrEmpty(order.StoreId) && int.TryParse(order.StoreId, out int storeId))
             {
-                var store = _notificationContext.Stores.FirstOrDefault(s => s.StoreId == storeId);
+                var store = _context.Stores.FirstOrDefault(s => s.StoreId == storeId);
                 if (store != null)
                 {
                     storeName = store.Name;
@@ -444,7 +442,7 @@ namespace RetailPointBackend.Controllers
             return Ok(result);
         }
 
-        // Cập nhật đơn hàng từ pending thành completed
+        // Cáº­p nháº­t Ä‘Æ¡n hÃ ng tá»« pending thÃ nh completed
         [HttpPut("{id}/complete")]
         public async Task<IActionResult> CompleteOrder(int id,
             [FromForm] string? paymentMethod,
@@ -452,11 +450,11 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? status)
         {
             var order = _context.Orders.FirstOrDefault(o => o.OrderId == id);
-            if (order == null) return NotFound("Không tìm thấy đơn hàng");
+            if (order == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
             
             var oldStatus = order.Status;
             
-            // Cập nhật thông tin thanh toán
+            // Cáº­p nháº­t thÃ´ng tin thanh toÃ¡n
             order.PaymentMethod = paymentMethod ?? order.PaymentMethod;
             order.PaymentStatus = paymentStatus ?? "paid";
             order.Status = status ?? "completed";
@@ -466,10 +464,10 @@ namespace RetailPointBackend.Controllers
             {
                 _context.SaveChanges();
                 
-                // Tạo thông báo thanh toán thành công
+                // Táº¡o thÃ´ng bÃ¡o thanh toÃ¡n thÃ nh cÃ´ng
                 await _notificationService.CreatePaymentSuccessNotificationAsync(order.OrderId, order.TotalAmount, order.PaymentMethod ?? "cash");
                 
-                // Xử lý tích điểm khi đơn hàng chuyển sang completed
+                // Xá»­ lÃ½ tÃ­ch Ä‘iá»ƒm khi Ä‘Æ¡n hÃ ng chuyá»ƒn sang completed
                 if (oldStatus != "completed" && order.Status == "completed" && order.CustomerId.HasValue)
                 {
                     _ = Task.Run(async () =>
@@ -487,21 +485,21 @@ namespace RetailPointBackend.Controllers
                                 _logger.LogWarning("Failed to process loyalty points for completed order {OrderId}", order.OrderId);
                             }
                             
-                            // CRITICAL FIX: Đảm bảo không có discount tự động nào được áp dụng
-                            // sau khi xử lý tích điểm, chờ một khoảng thời gian để các process khác hoàn thành 
-                            await Task.Delay(3000); // Chờ 3 giây để các background job hoàn thành
+                            // CRITICAL FIX: Äáº£m báº£o khÃ´ng cÃ³ discount tá»± Ä‘á»™ng nÃ o Ä‘Æ°á»£c Ã¡p dá»¥ng
+                            // sau khi xá»­ lÃ½ tÃ­ch Ä‘iá»ƒm, chá» má»™t khoáº£ng thá»i gian Ä‘á»ƒ cÃ¡c process khÃ¡c hoÃ n thÃ nh 
+                            await Task.Delay(3000); // Chá» 3 giÃ¢y Ä‘á»ƒ cÃ¡c background job hoÃ n thÃ nh
                             
-                            // Reload order từ database để kiểm tra có discount tự động nào được áp dụng không
+                            // Reload order tá»« database Ä‘á»ƒ kiá»ƒm tra cÃ³ discount tá»± Ä‘á»™ng nÃ o Ä‘Æ°á»£c Ã¡p dá»¥ng khÃ´ng
                             var orderToCheck = await _context.Orders.FindAsync(order.OrderId);
                             if (orderToCheck != null && orderToCheck.DiscountAmount > 0)
                             {
-                                // Kiểm tra xem có discount record rõ ràng nào được tạo không
-                                var hasExplicitDiscount = await _notificationContext.OrderDiscounts
+                                // Kiá»ƒm tra xem cÃ³ discount record rÃµ rÃ ng nÃ o Ä‘Æ°á»£c táº¡o khÃ´ng
+                                var hasExplicitDiscount = await _context.OrderDiscounts
                                     .AnyAsync(od => od.OrderId == order.OrderId);
                                 
                                 if (!hasExplicitDiscount)
                                 {
-                                    // Không có discount rõ ràng được chọn, reset về 0
+                                    // KhÃ´ng cÃ³ discount rÃµ rÃ ng Ä‘Æ°á»£c chá»n, reset vá» 0
                                     var originalDiscountAmount = orderToCheck.DiscountAmount;
                                     orderToCheck.DiscountAmount = 0;
                                     orderToCheck.TotalAmount = orderToCheck.SubTotal + orderToCheck.TaxAmount;
@@ -523,15 +521,15 @@ namespace RetailPointBackend.Controllers
                     });
                 }
                 
-                return Ok(new { message = "Đơn hàng đã được cập nhật thành công", orderId = order.OrderId });
+                return Ok(new { message = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t thÃ nh cÃ´ng", orderId = order.OrderId });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi cập nhật đơn hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi cáº­p nháº­t Ä‘Æ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // Cập nhật đơn hàng
+        // Cáº­p nháº­t Ä‘Æ¡n hÃ ng
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order updatedOrder)
         {
@@ -540,7 +538,7 @@ namespace RetailPointBackend.Controllers
             
             var oldStatus = order.Status;
             
-            // Cập nhật các field được gửi lên
+            // Cáº­p nháº­t cÃ¡c field Ä‘Æ°á»£c gá»­i lÃªn
             if (updatedOrder.CustomerId.HasValue) order.CustomerId = updatedOrder.CustomerId;
             if (!string.IsNullOrEmpty(updatedOrder.CustomerName)) order.CustomerName = updatedOrder.CustomerName;
             if (updatedOrder.TotalAmount > 0) order.TotalAmount = updatedOrder.TotalAmount;
@@ -548,7 +546,7 @@ namespace RetailPointBackend.Controllers
             if (!string.IsNullOrEmpty(updatedOrder.PaymentStatus)) order.PaymentStatus = updatedOrder.PaymentStatus;
             if (!string.IsNullOrEmpty(updatedOrder.PaymentMethod)) order.PaymentMethod = updatedOrder.PaymentMethod;
             
-            // Cập nhật lý do hủy nếu trạng thái là cancelled
+            // Cáº­p nháº­t lÃ½ do há»§y náº¿u tráº¡ng thÃ¡i lÃ  cancelled
             if (!string.IsNullOrEmpty(updatedOrder.CancellationReason)) 
             {
                 order.CancellationReason = updatedOrder.CancellationReason;
@@ -557,12 +555,12 @@ namespace RetailPointBackend.Controllers
             Console.WriteLine($"Updating order {id}: Status = {updatedOrder.Status}, CancellationReason = {updatedOrder.CancellationReason}");
             _context.SaveChanges();
             
-            // Xử lý tích điểm khi đơn hàng được hoàn thành hoặc hủy
+            // Xá»­ lÃ½ tÃ­ch Ä‘iá»ƒm khi Ä‘Æ¡n hÃ ng Ä‘Æ°á»£c hoÃ n thÃ nh hoáº·c há»§y
             if (order.CustomerId.HasValue)
             {
                 if (oldStatus != "completed" && order.Status == "completed")
                 {
-                    // Đơn hàng mới hoàn thành - tích điểm
+                    // ÄÆ¡n hÃ ng má»›i hoÃ n thÃ nh - tÃ­ch Ä‘iá»ƒm
                     _ = Task.Run(async () =>
                     {
                         try
@@ -570,13 +568,13 @@ namespace RetailPointBackend.Controllers
                             _logger.LogInformation("Processing loyalty points for order {OrderId} status change to completed", order.OrderId);
                             await _loyaltyService.ProcessOrderPointsAsync(order.OrderId);
                             
-                            // CRITICAL FIX: Đảm bảo không có discount tự động nào được áp dụng
-                            await Task.Delay(3000); // Chờ 3 giây để các background job hoàn thành
+                            // CRITICAL FIX: Äáº£m báº£o khÃ´ng cÃ³ discount tá»± Ä‘á»™ng nÃ o Ä‘Æ°á»£c Ã¡p dá»¥ng
+                            await Task.Delay(3000); // Chá» 3 giÃ¢y Ä‘á»ƒ cÃ¡c background job hoÃ n thÃ nh
                             
                             var orderToCheck = await _context.Orders.FindAsync(order.OrderId);
                             if (orderToCheck != null && orderToCheck.DiscountAmount > 0)
                             {
-                                var hasExplicitDiscount = await _notificationContext.OrderDiscounts
+                                var hasExplicitDiscount = await _context.OrderDiscounts
                                     .AnyAsync(od => od.OrderId == order.OrderId);
                                 
                                 if (!hasExplicitDiscount)
@@ -598,7 +596,7 @@ namespace RetailPointBackend.Controllers
                 }
                 else if (oldStatus == "completed" && (order.Status == "cancelled" || order.Status == "refunded"))
                 {
-                    // Đơn hàng bị hủy hoặc hoàn trả - hoàn điểm
+                    // ÄÆ¡n hÃ ng bá»‹ há»§y hoáº·c hoÃ n tráº£ - hoÃ n Ä‘iá»ƒm
                     _ = Task.Run(async () =>
                     {
                         try
@@ -617,7 +615,7 @@ namespace RetailPointBackend.Controllers
             return Ok(new { order.OrderId, Status = "Updated", NewStatus = order.Status, CancellationReason = order.CancellationReason });
         }
 
-        // Xóa đơn hàng
+        // XÃ³a Ä‘Æ¡n hÃ ng
         [HttpDelete("{id}")]
         public IActionResult DeleteOrder(int id)
         {
@@ -625,27 +623,27 @@ namespace RetailPointBackend.Controllers
             {
                 Console.WriteLine($"Attempting to delete order {id}");
                 
-                // Tìm order trước
+                // TÃ¬m order trÆ°á»›c
                 var order = _context.Orders.Find(id);
                 if (order == null) 
                 {
                     Console.WriteLine($"Order {id} not found");
-                    return NotFound(new { message = $"Đơn hàng #{id} không tồn tại" });
+                    return NotFound(new { message = $"ÄÆ¡n hÃ ng #{id} khÃ´ng tá»“n táº¡i" });
                 }
                 
                 Console.WriteLine($"Found order {id}, deleting in correct order...");
                 
-                // Bước 1: Xóa Notifications liên quan đến order này trước
-                var notifications = _notificationContext.Notifications.Where(n => n.OrderId == id).ToList();
+                // BÆ°á»›c 1: XÃ³a Notifications liÃªn quan Ä‘áº¿n order nÃ y trÆ°á»›c
+                var notifications = _context.Notifications.Where(n => n.OrderId == id).ToList();
                 Console.WriteLine($"Found {notifications.Count} notifications to delete");
                 
                 if (notifications.Any())
                 {
-                    _notificationContext.Notifications.RemoveRange(notifications);
-                    _notificationContext.SaveChanges();
+                    _context.Notifications.RemoveRange(notifications);
+                    _context.SaveChanges();
                 }
                 
-                // Bước 2: Xóa OrderItems
+                // BÆ°á»›c 2: XÃ³a OrderItems
                 var orderItems = _context.OrderItems.Where(oi => oi.OrderId == id).ToList();
                 Console.WriteLine($"Found {orderItems.Count} order items to delete");
                 
@@ -654,26 +652,26 @@ namespace RetailPointBackend.Controllers
                     _context.OrderItems.RemoveRange(orderItems);
                 }
                 
-                // Bước 3: Cuối cùng xóa Order
+                // BÆ°á»›c 3: Cuá»‘i cÃ¹ng xÃ³a Order
                 _context.Orders.Remove(order);
                 _context.SaveChanges();
                 
                 Console.WriteLine($"Successfully deleted order {id}");
-                return Ok(new { Status = "Deleted", OrderId = id, Message = $"Đã xóa đơn hàng #{id}" });
+                return Ok(new { Status = "Deleted", OrderId = id, Message = $"ÄÃ£ xÃ³a Ä‘Æ¡n hÃ ng #{id}" });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error deleting order {id}: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return StatusCode(500, new { 
-                    message = "Lỗi khi xóa đơn hàng", 
+                    message = "Lá»—i khi xÃ³a Ä‘Æ¡n hÃ ng", 
                     error = ex.Message, 
                     orderId = id 
                 });
             }
         }
 
-        // Phương thức POST JSON để tạo đơn hàng
+        // PhÆ°Æ¡ng thá»©c POST JSON Ä‘á»ƒ táº¡o Ä‘Æ¡n hÃ ng
         [HttpPost("json")]
         public async Task<IActionResult> CreateOrderFromJson([FromBody] CreateOrderRequest request)
         {
@@ -681,47 +679,47 @@ namespace RetailPointBackend.Controllers
             {
                 if (request?.OrderItems == null || !request.OrderItems.Any())
                 {
-                    return BadRequest(new { message = "Đơn hàng phải có ít nhất một sản phẩm" });
+                    return BadRequest(new { message = "ÄÆ¡n hÃ ng pháº£i cÃ³ Ã­t nháº¥t má»™t sáº£n pháº©m" });
                 }
 
                 var insufficientStockProducts = new List<string>();
                 var lowStockProducts = new List<string>();
 
-                // Kiểm tra và trừ tồn kho cho từng sản phẩm
+                // Kiá»ƒm tra vÃ  trá»« tá»“n kho cho tá»«ng sáº£n pháº©m
                 foreach (var orderItem in request.OrderItems)
                 {
                     var product = await _context.Products.FindAsync(orderItem.ProductId);
                     if (product != null)
                     {
-                        // Kiểm tra xem có đủ tồn kho hay không
+                        // Kiá»ƒm tra xem cÃ³ Ä‘á»§ tá»“n kho hay khÃ´ng
                         if (product.StockQuantity < orderItem.Quantity)
                         {
-                            insufficientStockProducts.Add($"{product.Name} (còn {product.StockQuantity}, cần {orderItem.Quantity})");
+                            insufficientStockProducts.Add($"{product.Name} (cÃ²n {product.StockQuantity}, cáº§n {orderItem.Quantity})");
                             continue;
                         }
 
-                        // Trừ tồn kho
+                        // Trá»« tá»“n kho
                         product.StockQuantity -= orderItem.Quantity;
 
-                        // Kiểm tra tồn kho thấp sau khi trừ
+                        // Kiá»ƒm tra tá»“n kho tháº¥p sau khi trá»«
                         if (product.StockQuantity <= product.MinStockLevel)
                         {
-                            lowStockProducts.Add($"{product.Name} (còn {product.StockQuantity})");
+                            lowStockProducts.Add($"{product.Name} (cÃ²n {product.StockQuantity})");
                         }
                     }
                 }
 
-                // Nếu có sản phẩm không đủ tồn kho, trả về lỗi
+                // Náº¿u cÃ³ sáº£n pháº©m khÃ´ng Ä‘á»§ tá»“n kho, tráº£ vá» lá»—i
                 if (insufficientStockProducts.Any())
                 {
                     return BadRequest(new 
                     { 
-                        message = "Không đủ tồn kho cho các sản phẩm", 
+                        message = "KhÃ´ng Ä‘á»§ tá»“n kho cho cÃ¡c sáº£n pháº©m", 
                         products = insufficientStockProducts 
                     });
                 }
 
-                // Tạo đơn hàng
+                // Táº¡o Ä‘Æ¡n hÃ ng
                 var order = new Order
                 {
                     CustomerName = request.CustomerName,
@@ -742,7 +740,7 @@ namespace RetailPointBackend.Controllers
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync();
 
-                // Thêm OrderItems
+                // ThÃªm OrderItems
                 foreach (var orderItem in request.OrderItems)
                 {
                     var product = await _context.Products.FindAsync(orderItem.ProductId);
@@ -760,20 +758,20 @@ namespace RetailPointBackend.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Tạo thông báo đơn hàng mới
+                // Táº¡o thÃ´ng bÃ¡o Ä‘Æ¡n hÃ ng má»›i
                 try
                 {
                     var notification = new Notification
                     {
                         Type = NotificationType.NewOrder,
-                        Title = "Đơn hàng mới",
-                        Message = $"Khách hàng {order.CustomerName ?? "Vãng lai"} vừa đặt đơn hàng #{order.OrderId}",
+                        Title = "ÄÆ¡n hÃ ng má»›i",
+                        Message = $"KhÃ¡ch hÃ ng {order.CustomerName ?? "VÃ£ng lai"} vá»«a Ä‘áº·t Ä‘Æ¡n hÃ ng #{order.OrderId}",
                         OrderId = order.OrderId,
                         Metadata = JsonSerializer.Serialize(new
                         {
-                            CustomerName = order.CustomerName ?? "Vãng lai",
+                            CustomerName = order.CustomerName ?? "VÃ£ng lai",
                             TotalAmount = order.TotalAmount,
-                            FormattedTotal = order.TotalAmount.ToString("N0") + "đ",
+                            FormattedTotal = order.TotalAmount.ToString("N0") + "Ä‘",
                             ItemCount = request.OrderItems.Count
                         })
                     };
@@ -786,7 +784,7 @@ namespace RetailPointBackend.Controllers
                     Console.WriteLine($"Warning: Failed to create order notification: {ex.Message}");
                 }
 
-                // Tạo thông báo tồn kho thấp nếu có
+                // Táº¡o thÃ´ng bÃ¡o tá»“n kho tháº¥p náº¿u cÃ³
                 if (lowStockProducts.Any())
                 {
                     try
@@ -794,8 +792,8 @@ namespace RetailPointBackend.Controllers
                         var lowStockNotification = new Notification
                         {
                             Type = NotificationType.LowStock,
-                            Title = "Cảnh báo tồn kho thấp",
-                            Message = $"Các sản phẩm sau có tồn kho thấp: {string.Join(", ", lowStockProducts)}",
+                            Title = "Cáº£nh bÃ¡o tá»“n kho tháº¥p",
+                            Message = $"CÃ¡c sáº£n pháº©m sau cÃ³ tá»“n kho tháº¥p: {string.Join(", ", lowStockProducts)}",
                             Metadata = JsonSerializer.Serialize(new
                             {
                                 LowStockProducts = lowStockProducts,
@@ -814,7 +812,7 @@ namespace RetailPointBackend.Controllers
 
                 return Ok(new 
                 { 
-                    message = "Đơn hàng được tạo thành công",
+                    message = "ÄÆ¡n hÃ ng Ä‘Æ°á»£c táº¡o thÃ nh cÃ´ng",
                     orderId = order.OrderId,
                     totalAmount = order.TotalAmount,
                     lowStockWarnings = lowStockProducts.Any() ? lowStockProducts : null
@@ -825,7 +823,7 @@ namespace RetailPointBackend.Controllers
                 Console.WriteLine($"Error creating order: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return StatusCode(500, new { 
-                    message = "Lỗi khi tạo đơn hàng", 
+                    message = "Lá»—i khi táº¡o Ä‘Æ¡n hÃ ng", 
                     error = ex.Message 
                 });
             }
@@ -853,3 +851,4 @@ namespace RetailPointBackend.Controllers
         public decimal UnitPrice { get; set; }
     }
 }
+

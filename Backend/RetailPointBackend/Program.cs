@@ -6,8 +6,8 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cấu hình server listen trên tất cả IP addresses - chỉ HTTP
-builder.WebHost.UseUrls("http://0.0.0.0:5273");
+// Cấu hình server listen trên IP production - chỉ HTTP
+builder.WebHost.UseUrls("http://101.53.9.76:5273");
 
 // Cấu hình encoding UTF-8
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -17,20 +17,10 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:5173", 
-            "http://localhost:5174", 
-            "http://localhost:5175", 
-            "http://101.53.9.76", 
-            "http://101.53.9.76:80",
-            "http://101.53.9.76:3000",
-            "http://101.53.9.76:8080",
-            "https://101.53.9.76",
-            "https://101.53.9.76:443"
-        )
+        policy.SetIsOriginAllowed(origin => true) // Cho phép mọi origin
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowCredentials(); // Hỗ trợ credentials
     });
 });
 
@@ -64,12 +54,8 @@ builder.Services.AddControllers()
 
 builder.Services.AddOpenApi();
 
-// Add DbContext for EF Core
+// Add DbContext for EF Core - chỉ sử dụng AppDbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Đăng ký thêm RetailPointContext cho các controller cũ
-builder.Services.AddDbContext<RetailPointContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Đăng ký NotificationService
