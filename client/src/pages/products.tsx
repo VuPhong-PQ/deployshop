@@ -227,7 +227,7 @@ export default function Products() {
         productId: parseInt(id),
         name: data.name,
         barcode: data.barcode,
-        categoryId: data.categoryId ? parseInt(data.categoryId as string) : null,
+        productGroupId: data.productGroupId ? parseInt(data.productGroupId as string) : null,
         price: data.price !== undefined ? Number(data.price) : 0,
         costPrice: data.costPrice !== undefined ? Number(data.costPrice) : 0,
         stockQuantity: data.stockQuantity !== undefined ? Number(data.stockQuantity) : 0,
