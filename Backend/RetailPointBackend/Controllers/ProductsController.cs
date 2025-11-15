@@ -109,7 +109,7 @@ namespace RetailPointBackend.Controllers
 
         // GET: api/products
         [HttpGet]
-        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? productGroupId = null, [FromQuery] string search = null)
+        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? productGroupId = null, [FromQuery] string search = null, [FromQuery] bool? isActive = null)
         {
             var query = _context.Products.AsQueryable();
             
@@ -133,6 +133,17 @@ namespace RetailPointBackend.Controllers
                 query = query.Where(p => p.Name.ToLower().Contains(searchTerm) || 
                                        (p.Barcode != null && p.Barcode.ToLower().Contains(searchTerm)) ||
                                        (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
+            }
+
+            // Filter by active status if provided
+            if (isActive.HasValue)
+            {
+                query = query.Where(p => p.IsActive == isActive.Value);
+            }
+            else
+            {
+                // Mặc định chỉ hiển thị sản phẩm active
+                query = query.Where(p => p.IsActive == true);
             }
             
             // Get total count for pagination
@@ -298,14 +309,49 @@ namespace RetailPointBackend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            try
             {
-                return NotFound();
+                Console.WriteLine($"[DeleteProduct] Deleting product ID: {id}");
+
+                // Tìm sản phẩm cần xóa
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    Console.WriteLine($"[DeleteProduct] Product not found: {id}");
+                    return NotFound(new { message = "Sản phẩm không tồn tại" });
+                }
+
+                // Kiểm tra xem sản phẩm có đang được sử dụng trong đơn hàng không
+                var hasOrders = await _context.OrderItems.AnyAsync(oi => oi.ProductId == id);
+                var hasInventoryTransactions = await _context.InventoryTransactions.AnyAsync(it => it.ProductId == id);
+                
+                if (hasOrders || hasInventoryTransactions)
+                {
+                    // Không thể xóa, chuyển sang vô hiệu hóa
+                    Console.WriteLine($"[DeleteProduct] Product {id} has constraints, deactivating instead of deleting");
+                    product.IsActive = false;
+                    await _context.SaveChangesAsync();
+                    
+                    string reason = hasOrders ? "có trong đơn hàng" : "có lịch sử giao dịch kho";
+                    return Ok(new { 
+                        message = $"Sản phẩm {reason}, đã vô hiệu hóa thay vì xóa. Có thể khôi phục lại sau.", 
+                        productId = id,
+                        action = "deactivated"
+                    });
+                }
+
+                // Có thể xóa hoàn toàn
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"[DeleteProduct] Product deleted successfully: {id}");
+                return Ok(new { message = "Xóa sản phẩm thành công", productId = id, action = "deleted" });
             }
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DeleteProduct] Error: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi xóa sản phẩm", error = ex.Message });
+            }
         }
 
         // POST: api/products/{id}/adjust-stock
@@ -976,6 +1022,42 @@ namespace RetailPointBackend.Controllers
             {
                 Console.WriteLine($"[UpdateProduct] Error: {ex.Message}");
                 return StatusCode(500, new { message = "Lỗi khi cập nhật sản phẩm", error = ex.Message });
+            }
+        }
+
+        // PUT: api/products/{id}/toggle-active
+        [HttpPut("{id}/toggle-active")]
+        public async Task<IActionResult> ToggleProductActive(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[ToggleProductActive] Toggling active status for product ID: {id}");
+
+                var product = await _context.Products.FindAsync(id);
+                if (product == null)
+                {
+                    Console.WriteLine($"[ToggleProductActive] Product not found: {id}");
+                    return NotFound(new { message = "Sản phẩm không tồn tại" });
+                }
+
+                // Toggle trạng thái
+                product.IsActive = !product.IsActive;
+                await _context.SaveChangesAsync();
+
+                string action = product.IsActive ? "Kích hoạt" : "Vô hiệu hóa";
+                Console.WriteLine($"[ToggleProductActive] Product {id} {action.ToLower()} successfully");
+                
+                return Ok(new { 
+                    message = $"{action} sản phẩm thành công", 
+                    productId = id,
+                    isActive = product.IsActive,
+                    action = product.IsActive ? "activated" : "deactivated"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ToggleProductActive] Error: {ex.Message}");
+                return StatusCode(500, new { message = "Lỗi khi thay đổi trạng thái sản phẩm", error = ex.Message });
             }
         }
     }

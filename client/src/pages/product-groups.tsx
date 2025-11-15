@@ -79,7 +79,7 @@ export default function ProductGroups() {
   });
   
   // Extract products array from API response
-  const products = productsResponse?.Products || productsResponse?.products || [];
+  const products = (productsResponse as any)?.Products || (productsResponse as any)?.products || [];
   
   // Debug logs
   console.log('Product Groups - productsResponse:', productsResponse);
@@ -134,7 +134,7 @@ export default function ProductGroups() {
 
   const updateProductGroupMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProductGroupFormData> }) => {
-      const response = await fetch(`/api/productgroups/${id}`, {
+      const response = await apiRequest(`/api/productgroups/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ export default function ProductGroups() {
           isVisible: data.isActive,
         }),
       });
-      return response.ok;
+      return response;
     },
     onSuccess: () => {
       toast({
@@ -169,23 +169,56 @@ export default function ProductGroups() {
   });
 
   const deleteProductGroupMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/productgroups/${id}`, {
-        method: 'DELETE'
-      });
-      return response.ok;
+    mutationFn: async ({ id, force = false }: { id: number; force?: boolean }) => {
+      try {
+        const response = await apiRequest(`/api/productgroups/${id}?force=${force}`, {
+          method: 'DELETE'
+        });
+        return response;
+      } catch (error: any) {
+        // Thêm id vào error để có thể retry
+        error.productGroupId = id;
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Thành công",
-        description: "Nhóm sản phẩm đã được xóa",
+        description: data?.forced ? 
+          `Đã xóa cưỡng bức nhóm sản phẩm và xử lý ${data.productsHandled} sản phẩm` : 
+          "Nhóm sản phẩm đã được xóa",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/productgroups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
     },
-    onError: () => {
+    onError: (error: any, variables) => {
+      // Kiểm tra nếu lỗi chứa thông tin có thể force delete
+      if (error.message?.includes('canForceDelete') || error.message?.includes('Bạn có muốn xóa cưỡng bức không')) {
+        let errorData;
+        try {
+          const jsonMatch = error.message.match(/\{.*\}/);
+          if (jsonMatch) {
+            errorData = JSON.parse(jsonMatch[0]);
+          }
+        } catch (e) {
+          // Nếu không parse được JSON, tạo object mặc định
+          errorData = { canForceDelete: true, message: error.message };
+        }
+        
+        if (errorData?.canForceDelete) {
+          const confirmMessage = `${errorData.message}\n\nCác sản phẩm sẽ được xử lý như sau:\n- Sản phẩm có đơn hàng/giao dịch: chuyển về "Không phân loại"\n- Sản phẩm không có ràng buộc: xóa hoàn toàn\n\nBạn có chắc chắn muốn tiếp tục?`;
+          
+          if (confirm(confirmMessage)) {
+            // Gọi lại với force = true
+            deleteProductGroupMutation.mutate({ id: variables.id, force: true });
+          }
+          return;
+        }
+      }
+      
       toast({
         title: "Lỗi",
-        description: "Không thể xóa nhóm sản phẩm",
+        description: error.message || "Không thể xóa nhóm sản phẩm",
         variant: "destructive",
       });
     }
@@ -307,17 +340,9 @@ export default function ProductGroups() {
     if (typeof idOrGroup === 'object' && idOrGroup !== null) {
       id = idOrGroup.productGroupId ?? idOrGroup.ProductGroupId ?? idOrGroup.id;
     }
-    const productsInGroup = Array.isArray(products) ? products.filter((p: any) => p.productGroupId === id || p.productGroupId === Number(id)).length : 0;
-    if (productsInGroup > 0) {
-      toast({
-        title: "Không thể xóa",
-        description: `Nhóm này còn ${productsInGroup} sản phẩm. Hãy di chuyển sản phẩm trước khi xóa.`,
-        variant: "destructive",
-      });
-      return;
-    }
+    
     if (confirm("Bạn có chắc muốn xóa nhóm sản phẩm này?")) {
-      deleteProductGroupMutation.mutate(Number(id));
+      deleteProductGroupMutation.mutate({ id: Number(id) });
     }
   };
 

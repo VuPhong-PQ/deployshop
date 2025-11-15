@@ -1,6 +1,6 @@
 import { Textarea } from "@/components/ui/textarea";
 // Hàm upload ảnh lên server, trả về url
-async function uploadImage(file) {
+async function uploadImage(file: File) {
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch("http://101.53.9.76:5273/api/upload/image", {
@@ -13,7 +13,7 @@ async function uploadImage(file) {
 }
 
 // Hàm AI tìm kiếm và tải hình ảnh tự động
-async function searchAndDownloadImage(productName) {
+async function searchAndDownloadImage(productName: string) {
   const res = await fetch("http://101.53.9.76:5273/api/products/search-image", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { cn, normalizeSearchText } from "@/lib/utils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, Download, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, Download, Upload, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -75,6 +75,7 @@ export default function Products() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useState<string>("active"); // "active", "inactive", "all"
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -87,7 +88,7 @@ export default function Products() {
 
   // Fetch products with pagination
   const { data: productsResponse, isLoading } = useQuery({
-    queryKey: ['/api/products', currentPage, pageSize, searchTerm, selectedGroup],
+    queryKey: ['/api/products', currentPage, pageSize, searchTerm, selectedGroup, activeFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -103,6 +104,14 @@ export default function Products() {
       if (selectedGroup && selectedGroup !== 'all') {
         params.append('productGroupId', selectedGroup);
       }
+
+      // Add active filter
+      if (activeFilter === 'active') {
+        params.append('isActive', 'true');
+      } else if (activeFilter === 'inactive') {
+        params.append('isActive', 'false');
+      }
+      // If 'all', don't add isActive parameter
       
       const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
       if (!response.ok) {
@@ -323,6 +332,35 @@ export default function Products() {
     }
   });
 
+  // Toggle product active mutation
+  const toggleActiveProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`http://101.53.9.76:5273/api/products/${id}/toggle-active`, {
+        method: 'PUT'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to toggle product active status');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Thành công",
+        description: data.message || (data.isActive ? "Đã kích hoạt sản phẩm" : "Đã vô hiệu hóa sản phẩm"),
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    },
+    onError: () => {
+      toast({
+        title: "Lỗi",
+        description: "Không thể thay đổi trạng thái sản phẩm",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Export all products mutation
   const exportAllProductsMutation = useMutation({
     mutationFn: async () => {
@@ -434,7 +472,7 @@ export default function Products() {
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedGroup]);
+  }, [searchTerm, selectedGroup, activeFilter]);
 
   // Debug products
   console.log('Products data:', products);
@@ -500,7 +538,7 @@ export default function Products() {
         setAvailableImages(images);
         setShowImageSelector(true);
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Lỗi",
         description: error.message || "Không thể tìm kiếm hình ảnh phù hợp. Vui lòng thử lại sau.",
@@ -525,7 +563,7 @@ export default function Products() {
   const onSubmit = (data: ProductFormData) => {
     if (editingProduct) {
       // Đảm bảo lấy đúng id (string hoặc số đều được, backend nhận uuid hoặc int)
-      const productId = editingProduct.id || editingProduct.productId || editingProduct._id;
+      const productId = (editingProduct as any).id || (editingProduct as any).productId || (editingProduct as any)._id;
       if (!productId) {
         toast({ title: 'Lỗi', description: 'Không xác định được ID sản phẩm để cập nhật', variant: 'destructive' });
         return;
@@ -533,8 +571,8 @@ export default function Products() {
       editProductMutation.mutate({ id: String(productId), data });
     } else {
       // Loại bỏ categoryId nếu không cần thiết, ép productGroupId về số
-      const { categoryId, ...rest } = data;
-      const payload = { ...rest, productGroupId: Number(data.productGroupId) };
+      const { categoryId, ...rest } = data as any;
+      const payload = { ...rest, productGroupId: String(data.productGroupId) };
       addProductMutation.mutate(payload);
     }
   };
@@ -548,13 +586,13 @@ export default function Products() {
       barcode: product.barcode || "",
       price: Number(product.price),
       costPrice: product.costPrice ? Number(product.costPrice) : 0,
-      categoryId: product.categoryId ? String(product.categoryId) : "",
+      productGroupId: (product as any).productGroupId ? String((product as any).productGroupId) : "",
       storeId: product.storeId,
       stockQuantity: Number(product.stockQuantity),
       minStockLevel: Number(product.minStockLevel),
       unit: product.unit,
       image: product.image || "",
-      isFeatured: Boolean(product.isFeatured),
+      isFeatured: Boolean((product as any).isFeatured),
     });
     setIsAddDialogOpen(true);
   };
@@ -563,6 +601,13 @@ export default function Products() {
   const handleDeleteProduct = (id: string) => {
     if (confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
       deleteProductMutation.mutate(id);
+    }
+  };
+
+  const handleToggleActive = (id: string, currentStatus: boolean) => {
+    const action = currentStatus ? "vô hiệu hóa" : "kích hoạt";
+    if (confirm(`Bạn có chắc chắn muốn ${action} sản phẩm này?`)) {
+      toggleActiveProductMutation.mutate(id);
     }
   };
 
@@ -604,6 +649,17 @@ export default function Products() {
     {option.label}
   </SelectItem>
 ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={activeFilter} onValueChange={setActiveFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Đang bán</SelectItem>
+                <SelectItem value="inactive">Đã dừng</SelectItem>
+                <SelectItem value="all">Tất cả</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -961,7 +1017,7 @@ export default function Products() {
                       alt={`Option ${index + 1}`}
                       className="w-full h-32 object-cover"
                       onError={(e) => {
-                        e.target.style.display = 'none';
+                        (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all flex items-center justify-center">
@@ -1017,7 +1073,7 @@ export default function Products() {
               </CardContent>
             </Card>
           ) : (
-            products.map((product) => {
+            products.map((product: any) => {
               const stockStatus = getStockStatus(product);
               // Ưu tiên imageUrl, sau đó đến image, cuối cùng là ảnh mặc định
               let imageUrl = product.imageUrl || product.image || "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=200&fit=crop";
@@ -1025,10 +1081,18 @@ export default function Products() {
                 imageUrl = `http://101.53.9.76:5273${imageUrl}`;
               }
               const key = product.productId || product.id;
+              const isInactive = (product as any).isActive === false;
               return (
-                <Card key={key} className="overflow-hidden" data-testid={`product-card-${key}`}> 
+                <Card key={key} className={`overflow-hidden ${isInactive ? 'opacity-60 border-gray-300' : ''}`} data-testid={`product-card-${key}`}> 
                   <CardContent className="p-0">
                     <div className="relative">
+                      {isInactive && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <Badge variant="secondary" className="bg-gray-500 text-white">
+                            Đã dừng
+                          </Badge>
+                        </div>
+                      )}
                       <div className="w-full h-48 bg-gray-100 flex items-center justify-center overflow-hidden">
                         <img
                           src={imageUrl}
@@ -1083,6 +1147,27 @@ export default function Products() {
                           <Edit className="w-4 h-4 mr-2" />
                           Sửa
                         </Button>
+                        {(product as any).isActive !== false ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-orange-600 hover:text-orange-700"
+                            onClick={() => handleToggleActive(key, true)}
+                            title="Vô hiệu hóa sản phẩm"
+                          >
+                            <EyeOff className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                            onClick={() => handleToggleActive(key, false)}
+                            title="Kích hoạt sản phẩm"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

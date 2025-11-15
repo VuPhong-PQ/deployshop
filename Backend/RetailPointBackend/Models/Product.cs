@@ -21,6 +21,7 @@ namespace RetailPointBackend.Models
         public string? ImageUrl { get; set; }
         public string? Description { get; set; }
         public bool IsFeatured { get; set; } = false; // Sản phẩm hay bán
+        public bool IsActive { get; set; } = true; // Sản phẩm có hoạt động không
         
         // Multi-store support
         public int? StoreId { get; set; }

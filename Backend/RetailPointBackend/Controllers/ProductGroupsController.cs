@@ -71,7 +71,7 @@ namespace RetailPointBackend.Controllers
 
         // DELETE: api/productgroups/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProductGroup(int id)
+        public async Task<IActionResult> DeleteProductGroup(int id, [FromQuery] bool force = false)
         {
             try
             {
@@ -81,18 +81,52 @@ namespace RetailPointBackend.Controllers
                     return NotFound(new { message = "Nhóm sản phẩm không tồn tại" });
                 }
 
-                // Kiểm tra xem có sản phẩm nào thuộc nhóm này không
-                var productsInGroup = await _context.Products.CountAsync(p => p.ProductGroupId == id);
-                if (productsInGroup > 0)
+                // Lấy danh sách sản phẩm trong nhóm
+                var productsInGroup = await _context.Products.Where(p => p.ProductGroupId == id).ToListAsync();
+                
+                if (productsInGroup.Count > 0 && !force)
                 {
-                    return BadRequest(new { message = $"Không thể xóa nhóm này vì còn {productsInGroup} sản phẩm. Hãy di chuyển sản phẩm trước khi xóa." });
+                    return BadRequest(new { 
+                        message = $"Nhóm này còn {productsInGroup.Count} sản phẩm. Bạn có muốn xóa cưỡng bức không?",
+                        productCount = productsInGroup.Count,
+                        canForceDelete = true
+                    });
+                }
+
+                if (force && productsInGroup.Count > 0)
+                {
+                    // Xóa cưỡng bức: gán sản phẩm về null hoặc xóa sản phẩm
+                    foreach (var product in productsInGroup)
+                    {
+                        // Kiểm tra xem sản phẩm có thể xóa hoàn toàn không
+                        var hasOrders = await _context.OrderItems.AnyAsync(oi => oi.ProductId == product.ProductId);
+                        var hasInventoryTransactions = await _context.InventoryTransactions.AnyAsync(it => it.ProductId == product.ProductId);
+                        
+                        if (hasOrders || hasInventoryTransactions)
+                        {
+                            // Chỉ gán về null nếu có ràng buộc
+                            product.ProductGroupId = null;
+                        }
+                        else
+                        {
+                            // Xóa hoàn toàn nếu không có ràng buộc
+                            _context.Products.Remove(product);
+                        }
+                    }
                 }
 
                 _context.ProductGroups.Remove(group);
                 await _context.SaveChangesAsync();
 
-                Console.WriteLine($"Product group deleted: {id}");
-                return NoContent();
+                Console.WriteLine($"Product group deleted: {id}, force: {force}, products handled: {productsInGroup.Count}");
+                return Ok(new { 
+                    message = force ? 
+                        $"Đã xóa cưỡng bức nhóm sản phẩm và xử lý {productsInGroup.Count} sản phẩm" : 
+                        "Xóa nhóm sản phẩm thành công",
+                    productGroupId = id,
+                    productsHandled = productsInGroup.Count,
+                    forced = force
+                });
             }
             catch (Exception ex)
             {
