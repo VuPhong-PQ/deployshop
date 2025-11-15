@@ -74,7 +74,6 @@ type ProductFormData = z.infer<typeof productFormSchema>;
 export default function Products() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -94,6 +93,16 @@ export default function Products() {
         page: currentPage.toString(),
         pageSize: pageSize.toString()
       });
+      
+      // Add search term if exists
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      // Add productGroupId filter if a specific group is selected
+      if (selectedGroup && selectedGroup !== 'all') {
+        params.append('productGroupId', selectedGroup);
+      }
       
       const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
       if (!response.ok) {
@@ -584,12 +593,12 @@ export default function Products() {
               />
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
               <SelectTrigger className="w-48" data-testid="select-category-filter">
-                <SelectValue placeholder="Tất cả danh mục" />
+                <SelectValue placeholder="Tất cả nhóm sản phẩm" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả danh mục</SelectItem>
+                <SelectItem value="all">Tất cả nhóm sản phẩm</SelectItem>
                 {productGroupOptions.map((option) => (
   <SelectItem key={option.value} value={option.value}>
     {option.label}
@@ -1000,7 +1009,7 @@ export default function Products() {
                   Không tìm thấy sản phẩm
                 </h3>
                 <p className="text-gray-500">
-                  {searchTerm || selectedCategory !== "all" 
+                  {searchTerm || selectedGroup !== "all" 
                     ? "Thử thay đổi bộ lọc tìm kiếm"
                     : "Bắt đầu bằng cách thêm sản phẩm đầu tiên"
                   }

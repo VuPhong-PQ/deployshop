@@ -109,7 +109,7 @@ namespace RetailPointBackend.Controllers
 
         // GET: api/products
         [HttpGet]
-        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? productGroupId = null, [FromQuery] string search = null)
         {
             var query = _context.Products.AsQueryable();
             
@@ -118,6 +118,21 @@ namespace RetailPointBackend.Controllers
             if (storeId.HasValue)
             {
                 query = query.Where(p => p.StoreId == storeId.Value || p.StoreId == null);
+            }
+            
+            // Filter by product group if provided
+            if (productGroupId.HasValue)
+            {
+                query = query.Where(p => p.ProductGroupId == productGroupId.Value);
+            }
+            
+            // Filter by search term if provided
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.ToLower().Trim();
+                query = query.Where(p => p.Name.ToLower().Contains(searchTerm) || 
+                                       (p.Barcode != null && p.Barcode.ToLower().Contains(searchTerm)) ||
+                                       (p.Description != null && p.Description.ToLower().Contains(searchTerm)));
             }
             
             // Get total count for pagination

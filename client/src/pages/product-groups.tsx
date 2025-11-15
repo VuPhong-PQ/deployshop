@@ -74,9 +74,17 @@ export default function ProductGroups() {
   }) as { data: any[]; isLoading: boolean };
 
   // Fetch products to count items per category
-  const { data: products = [] } = useQuery({
+  const { data: productsResponse } = useQuery({
     queryKey: ['/api/products'],
-  }) as { data: any[] };
+  });
+  
+  // Extract products array from API response
+  const products = productsResponse?.Products || productsResponse?.products || [];
+  
+  // Debug logs
+  console.log('Product Groups - productsResponse:', productsResponse);
+  console.log('Product Groups - products:', products);
+  console.log('Product Groups - products length:', products?.length);
 
   // Form
   const form = useForm<ProductGroupFormData>({
@@ -313,8 +321,26 @@ export default function ProductGroups() {
     }
   };
 
-  const getProductCount = (groupId: string) => {
-    return Array.isArray(products) ? products.filter((p: any) => (p.productGroupId === groupId || p.productGroupId === Number(groupId))).length : 0;
+  const getProductCount = (groupId: string | number) => {
+    if (!Array.isArray(products)) {
+      console.log('getProductCount - products is not array:', products);
+      return 0;
+    }
+    
+    const groupIdNum = typeof groupId === 'string' ? parseInt(groupId) : groupId;
+    const groupIdStr = String(groupId);
+    
+    const matchedProducts = products.filter((p: any) => {
+      const productGroupId = p.productGroupId || p.ProductGroupId;
+      const matches = productGroupId === groupId || 
+                     productGroupId === groupIdNum || 
+                     productGroupId === groupIdStr;
+      return matches;
+    });
+    
+    console.log(`getProductCount - groupId: ${groupId}, found: ${matchedProducts.length} products`);
+    
+    return matchedProducts.length;
   };
 
   return (
