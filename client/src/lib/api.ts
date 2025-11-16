@@ -61,25 +61,78 @@ export const api = {
     apiRequest<any>(`/dashboard/metrics?storeId=${storeId}&_t=${Date.now()}`),
   
   getLowStockProducts: async (storeId?: number) => {
-    // Get all products and filter low stock ones
-    const response = await api.getProducts(storeId);
-    if (response.success && response.data && (response.data as any).products) {
-      const products = (response.data as any).products;
+    try {
+      // Call API directly with full parameters to ensure we get product group info
+      const params = new URLSearchParams({
+        page: '1',
+        pageSize: '9999' // Get all products to filter locally
+      });
+      
+      if (storeId) {
+        params.append('storeId', storeId.toString());
+      }
+      
+      const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      
+      const data = await response.json();
+      const products = data?.products || data?.Products || [];
+      
+      console.log('🔍 DEBUG - Raw products from API:', products);
+      if (products.length > 0) {
+        console.log('🔍 DEBUG - Sample product structure:', products[0]);
+        console.log('🔍 DEBUG - Available keys:', Object.keys(products[0]));
+      }
+      
       const lowStockProducts = products
         .filter((product: any) => product.stockQuantity <= 10)
         .sort((a: any, b: any) => a.stockQuantity - b.stockQuantity)
         .slice(0, 20)
-        .map((product: any) => ({
-          id: product.productId || product.id,
-          name: product.name,
-          stockQuantity: product.stockQuantity,
-          price: product.price,
-          category: product.productGroupName || product.categoryName || product.category || product.groupName || 'Chưa phân loại',
-          minStockLevel: product.minStockLevel || 5
-        }));
+        .map((product: any) => {
+          // Try multiple possible field names for product group/category
+          const possibleCategoryFields = [
+            'productGroupName',
+            'categoryName', 
+            'category',
+            'groupName',
+            'ProductGroupName',
+            'CategoryName',
+            'Group',
+            'productGroup',
+            'ProductGroup'
+          ];
+          
+          let categoryValue = 'Chưa phân loại';
+          for (const field of possibleCategoryFields) {
+            if (product[field] && product[field].trim()) {
+              categoryValue = product[field];
+              console.log(`🎯 DEBUG - Found category in field "${field}": "${categoryValue}" for product: ${product.name}`);
+              break;
+            }
+          }
+          
+          if (categoryValue === 'Chưa phân loại') {
+            console.log(`❌ DEBUG - No category found for product: ${product.name}, available fields:`, Object.keys(product));
+          }
+          
+          return {
+            id: product.productId || product.id,
+            name: product.name,
+            stockQuantity: product.stockQuantity,
+            price: product.price,
+            category: categoryValue,
+            minStockLevel: product.minStockLevel || 5
+          };
+        });
+      
+      console.log('📊 DEBUG - Final low stock products with categories:', lowStockProducts);
       return { success: true, data: lowStockProducts };
+    } catch (error) {
+      console.error('❌ DEBUG - Error in getLowStockProducts:', error);
+      return { success: false, error: error };
     }
-    return response;
   },
 
   // Stores

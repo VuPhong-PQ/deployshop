@@ -109,7 +109,7 @@ namespace RetailPointBackend.Controllers
 
         // GET: api/products
         [HttpGet]
-        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? productGroupId = null, [FromQuery] string search = null, [FromQuery] bool? isActive = null)
+        public async Task<ActionResult> GetProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] int? productGroupId = null, [FromQuery] string search = null, [FromQuery] bool? isActive = null, [FromQuery] string stockStatus = null)
         {
             var query = _context.Products.AsQueryable();
             
@@ -145,15 +145,53 @@ namespace RetailPointBackend.Controllers
                 // Mặc định chỉ hiển thị sản phẩm active
                 query = query.Where(p => p.IsActive == true);
             }
+
+            // Filter by stock status if provided
+            if (!string.IsNullOrWhiteSpace(stockStatus))
+            {
+                switch (stockStatus.ToLower())
+                {
+                    case "out-of-stock":
+                        query = query.Where(p => p.StockQuantity == 0);
+                        break;
+                    case "low-stock":
+                        query = query.Where(p => p.StockQuantity > 0 && p.StockQuantity <= p.MinStockLevel);
+                        break;
+                    case "in-stock":
+                        query = query.Where(p => p.StockQuantity > p.MinStockLevel);
+                        break;
+                    // "all" hoặc giá trị khác thì không filter
+                }
+            }
             
             // Get total count for pagination
             var totalCount = await query.CountAsync();
             
-            // Apply pagination
+            // Apply pagination with ProductGroup information
             var products = await query
+                .Include(p => p.ProductGroup)
                 .OrderBy(p => p.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(p => new {
+                    p.ProductId,
+                    p.Name,
+                    p.Description,
+                    p.Barcode,
+                    p.Price,
+                    p.CostPrice,
+                    p.ProductGroupId,
+                    ProductGroupName = p.ProductGroup != null ? p.ProductGroup.Name : "Chưa phân loại",
+                    p.StockQuantity,
+                    p.MinStockLevel,
+                    p.Unit,
+                    p.ImageUrl,
+                    p.IsFeatured,
+                    p.IsActive,
+                    p.StoreId,
+                    StockStatus = p.StockQuantity == 0 ? "Hết hàng" : 
+                                 p.StockQuantity <= p.MinStockLevel ? "Sắp hết" : "Còn hàng"
+                })
                 .ToListAsync();
             
             return Ok(new 
@@ -197,7 +235,7 @@ namespace RetailPointBackend.Controllers
 
         // GET: api/products/featured
         [HttpGet("featured")]
-        public async Task<ActionResult> GetFeaturedProducts([FromQuery] int? storeId = null)
+        public async Task<ActionResult> GetFeaturedProducts([FromQuery] int? storeId = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 9999)
         {
             var query = _context.Products.AsQueryable();
             
@@ -208,19 +246,29 @@ namespace RetailPointBackend.Controllers
             }
             
             var featuredProducts = await query
-                .Where(p => p.IsFeatured)
+                .Where(p => p.IsFeatured && p.IsActive)
+                .Include(p => p.ProductGroup)
                 .OrderBy(p => p.Name)
-                .Take(20) // Tối đa 20 sản phẩm hay bán
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new {
                     p.ProductId,
                     p.Name,
+                    p.Description,
                     p.Barcode,
                     p.Price,
+                    p.CostPrice,
+                    p.ProductGroupId,
+                    ProductGroupName = p.ProductGroup != null ? p.ProductGroup.Name : "Chưa phân loại",
                     p.StockQuantity,
+                    p.MinStockLevel,
                     p.Unit,
                     p.ImageUrl,
-                    p.Description,
-                    p.IsFeatured
+                    p.IsFeatured,
+                    p.IsActive,
+                    p.StoreId,
+                    StockStatus = p.StockQuantity == 0 ? "Hết hàng" : 
+                                 p.StockQuantity <= p.MinStockLevel ? "Sắp hết" : "Còn hàng"
                 })
                 .ToListAsync();
 

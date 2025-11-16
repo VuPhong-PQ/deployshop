@@ -13,6 +13,11 @@ namespace RetailPointBackend.Models
         public int? CategoryId { get; set; }
         [JsonPropertyName("productGroupId")]
         public int? ProductGroupId { get; set; } // Nhóm sản phẩm
+        
+        // Navigation property
+        [ForeignKey("ProductGroupId")]
+        public virtual ProductGroup? ProductGroup { get; set; }
+        
         public decimal Price { get; set; }
         public decimal? CostPrice { get; set; }
         public int StockQuantity { get; set; }

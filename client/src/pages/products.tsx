@@ -76,6 +76,7 @@ export default function Products() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<string>("active"); // "active", "inactive", "all"
+  const [stockFilter, setStockFilter] = useState<string>("all"); // "all", "in-stock", "low-stock", "out-of-stock"
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -88,7 +89,7 @@ export default function Products() {
 
   // Fetch products with pagination
   const { data: productsResponse, isLoading } = useQuery({
-    queryKey: ['/api/products', currentPage, pageSize, searchTerm, selectedGroup, activeFilter],
+    queryKey: ['/api/products', currentPage, pageSize, searchTerm, selectedGroup, activeFilter, stockFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -112,6 +113,16 @@ export default function Products() {
         params.append('isActive', 'false');
       }
       // If 'all', don't add isActive parameter
+
+      // Add stock filter
+      if (stockFilter === 'out-of-stock') {
+        params.append('stockStatus', 'out-of-stock');
+      } else if (stockFilter === 'low-stock') {
+        params.append('stockStatus', 'low-stock');
+      } else if (stockFilter === 'in-stock') {
+        params.append('stockStatus', 'in-stock');
+      }
+      // If 'all', don't add stockStatus parameter
       
       const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
       if (!response.ok) {
@@ -472,7 +483,7 @@ export default function Products() {
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedGroup, activeFilter]);
+  }, [searchTerm, selectedGroup, activeFilter, stockFilter]);
 
   // Debug products
   console.log('Products data:', products);
@@ -660,6 +671,18 @@ export default function Products() {
                 <SelectItem value="active">Đang bán</SelectItem>
                 <SelectItem value="inactive">Đã dừng</SelectItem>
                 <SelectItem value="all">Tất cả</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={stockFilter} onValueChange={setStockFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Tồn kho" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="in-stock">Còn hàng</SelectItem>
+                <SelectItem value="low-stock">Sắp hết</SelectItem>
+                <SelectItem value="out-of-stock">Hết hàng</SelectItem>
               </SelectContent>
             </Select>
           </div>
