@@ -74,7 +74,8 @@ export const api = {
           name: product.name,
           stockQuantity: product.stockQuantity,
           price: product.price,
-          category: product.categoryName || product.category || 'Chưa phân loại'
+          category: product.productGroupName || product.categoryName || product.category || product.groupName || 'Chưa phân loại',
+          minStockLevel: product.minStockLevel || 5
         }));
       return { success: true, data: lowStockProducts };
     }

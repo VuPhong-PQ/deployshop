@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Force Delete All Orders API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background-color: #fff5f5;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .warning h3 {
+            color: #dc2626;
+            margin-top: 0;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #dc2626;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #b91c1c;
+        }
+        .test-btn {
+            background-color: #3b82f6;
+        }
+        .test-btn:hover {
+            background-color: #2563eb;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .error {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Test Force Delete All Orders API</h1>
+        
+        <div class="warning">
+            <h3>⚠️ CẢNH BÁO NGHIÊM TRỌNG</h3>
+            <p>Chức năng này sẽ XÓA TẤT CẢ đơn hàng trong hệ thống!</p>
+            <p>Chỉ sử dụng khi thực sự cần thiết và đã backup dữ liệu!</p>
+        </div>
+
+        <div class="form-group">
+            <label>API Base URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:5000/api">
+        </div>
+
+        <div class="form-group">
+            <label>Staff ID (Admin):</label>
+            <input type="number" id="staffId" value="1">
+        </div>
+
+        <button class="test-btn" onclick="testOrdersCount()">📊 Kiểm tra số lượng đơn hàng hiện tại</button>
+
+        <hr>
+
+        <h3>Force Delete All Orders</h3>
+        
+        <div class="form-group">
+            <label>Confirmation 1 (phải nhập: FORCE DELETE ALL ORDERS):</label>
+            <input type="text" id="confirmation1" placeholder="FORCE DELETE ALL ORDERS">
+        </div>
+
+        <div class="form-group">
+            <label>Confirmation 2 (phải nhập: YES I UNDERSTAND):</label>
+            <input type="text" id="confirmation2" placeholder="YES I UNDERSTAND">
+        </div>
+
+        <div class="form-group">
+            <label>Confirmation 3 (phải nhập: ADMIN123):</label>
+            <input type="text" id="confirmation3" placeholder="ADMIN123">
+        </div>
+
+        <button onclick="forceDeleteAllOrders()">🗑️ FORCE DELETE ALL ORDERS</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function showResult(message, isError = false) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = isError ? 'error' : 'success';
+        }
+
+        async function testOrdersCount() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const staffId = document.getElementById('staffId').value;
+            
+            try {
+                const response = await fetch(`${apiUrl}/orders`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'StaffId': staffId
+                    }
+                });
+
+                if (response.ok) {
+                    const orders = await response.json();
+                    showResult(`📊 Hiện tại có ${orders.length} đơn hàng trong hệ thống\n\n${JSON.stringify(orders.slice(0, 3), null, 2)}${orders.length > 3 ? '\n... và ' + (orders.length - 3) + ' đơn hàng khác' : ''}`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ Lỗi khi lấy danh sách đơn hàng: ${response.status}\n${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Lỗi kết nối: ${error.message}`, true);
+            }
+        }
+
+        async function forceDeleteAllOrders() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const staffId = document.getElementById('staffId').value;
+            const confirmation1 = document.getElementById('confirmation1').value;
+            const confirmation2 = document.getElementById('confirmation2').value;
+            const confirmation3 = document.getElementById('confirmation3').value;
+
+            if (!confirmation1 || !confirmation2 || !confirmation3) {
+                showResult('❌ Vui lòng nhập đầy đủ tất cả 3 mã xác nhận!', true);
+                return;
+            }
+
+            if (!confirm('⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA TẤT CẢ ĐON HÀNG?\n\nHành động này KHÔNG THẾ HOÀN TÁC!')) {
+                return;
+            }
+
+            if (!confirm('🚨 LẦN CUỐI CÙNG XÁC NHẬN!\n\nTẤT CẢ DỮ LIỆU ĐƠN HÀNG SẼ BỊ XÓA VĨNH VIỄN!')) {
+                return;
+            }
+
+            try {
+                showResult('⏳ Đang thực hiện xóa tất cả đơn hàng...');
+                
+                const response = await fetch(`${apiUrl}/datamanagement/force-delete-all-orders`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'StaffId': staffId
+                    },
+                    body: JSON.stringify({
+                        confirmation1: confirmation1,
+                        confirmation2: confirmation2,
+                        confirmation3: confirmation3
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showResult(`✅ THÀNH CÔNG!\n\n${result.message}\nSố đơn hàng đã xóa: ${result.deletedOrdersCount}\nSố order items đã xóa: ${result.deletedOrderItemsCount}\nThời gian thực hiện: ${result.executionTimeMs}ms`);
+                } else {
+                    const error = await response.text();
+                    showResult(`❌ LỖI: ${response.status}\n${error}`, true);
+                }
+            } catch (error) {
+                showResult(`❌ Lỗi kết nối: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

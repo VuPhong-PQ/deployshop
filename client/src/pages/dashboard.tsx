@@ -25,6 +25,17 @@ interface DashboardMetrics {
   totalCustomers: number;
   totalProducts: number;
   lowStockCount: number;
+  // Additional properties
+  lowStockItems?: number;
+  ordersCount?: number;
+  monthRevenue?: number | string;
+  newCustomers?: number;
+  ordersByStatus?: {
+    completed: number;
+    paid: number;
+    pending: number;
+    cancelled: number;
+  };
 }
 
 export default function Dashboard() {
@@ -329,9 +340,25 @@ export default function Dashboard() {
               )}
 
               {/* Low Stock Products List */}
-              {lowStockProducts && lowStockProducts.length > 0 && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-4">Danh sách sản phẩm sắp hết</h3>
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Danh sách sản phẩm sắp hết</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/products')}
+                    className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                  >
+                    Quản lý sản phẩm
+                  </Button>
+                </div>
+
+                {isLoadingLowStock ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-500">Đang tải danh sách sản phẩm...</p>
+                  </div>
+                ) : lowStockProducts && lowStockProducts.length > 0 ? (
                   <div className="bg-white border rounded-lg overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full">
@@ -341,10 +368,13 @@ export default function Dashboard() {
                               Tên sản phẩm
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                              Danh mục
+                              Nhóm sản phẩm
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                               Tồn kho
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                              Tối thiểu
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                               Giá bán
@@ -358,7 +388,13 @@ export default function Dashboard() {
                                 {product.name}
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-500">
-                                {product.category}
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                  product.category === 'Chưa phân loại' 
+                                    ? 'bg-gray-100 text-gray-600' 
+                                    : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {product.category}
+                                </span>
                               </td>
                               <td className="px-4 py-3 text-sm">
                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -368,7 +404,12 @@ export default function Dashboard() {
                                     ? 'bg-yellow-100 text-yellow-800' 
                                     : 'bg-orange-100 text-orange-800'
                                 }`}>
-                                  {product.stockQuantity} sản phẩm
+                                  {product.stockQuantity}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500">
+                                <span className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                  {product.minStockLevel || 5}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-sm text-gray-900">
@@ -379,14 +420,33 @@ export default function Dashboard() {
                         </tbody>
                       </table>
                     </div>
+                    
+                    {/* Info about categories */}
+                    {lowStockProducts.some((p: any) => p.category === 'Chưa phân loại') && (
+                      <div className="px-4 py-3 bg-yellow-50 border-t border-yellow-200">
+                        <div className="flex items-center">
+                          <AlertTriangle className="w-4 h-4 text-yellow-500 mr-2" />
+                          <p className="text-sm text-yellow-700">
+                            <span className="font-medium">Lưu ý:</span> Một số sản phẩm chưa được phân loại. 
+                            Hãy vào <button 
+                              onClick={() => navigate('/products')} 
+                              className="text-blue-600 underline hover:text-blue-800"
+                            >
+                              trang quản lý sản phẩm
+                            </button> để gán nhóm sản phẩm.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  {isLoadingLowStock && (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500">Đang tải danh sách sản phẩm...</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-8 bg-green-50 rounded-lg border border-green-200">
+                    <Package className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                    <h4 className="text-lg font-medium text-green-800 mb-1">Tuyệt vời!</h4>
+                    <p className="text-green-600">Không có sản phẩm nào sắp hết hàng.</p>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

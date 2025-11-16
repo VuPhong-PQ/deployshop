@@ -448,10 +448,20 @@ export default function Sales() {
     queryKey: ['products-sales', currentStore?.storeId], // Fixed: removed Date.now()
     queryFn: async () => {
       try {
-        const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
-        console.log('PRODUCTS QUERY - Starting fetch with param:', storeParam);
+        // Tạo tham số URL để lấy tất cả sản phẩm
+        const params = new URLSearchParams({
+          pageSize: '9999', // Lấy tất cả sản phẩm (số lớn để không bị giới hạn)
+          page: '1'
+        });
         
-        const response = await fetch(`http://101.53.9.76:5273/api/products${storeParam}`);
+        if (currentStore?.storeId) {
+          params.append('storeId', currentStore.storeId.toString());
+        }
+        
+        const url = `http://101.53.9.76:5273/api/products?${params.toString()}`;
+        console.log('PRODUCTS QUERY - Starting fetch with URL:', url);
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -460,7 +470,17 @@ export default function Sales() {
         const result = await response.json();
         console.log('PRODUCTS QUERY - Success! Got result:', result);
         
-        return result.products || result.Products || [];
+        // Xử lý cả 2 trường hợp: response trực tiếp là array hoặc có thuộc tính products/Products
+        if (Array.isArray(result)) {
+          return result;
+        } else if (result.products) {
+          return result.products;
+        } else if (result.Products) {
+          return result.Products;
+        } else {
+          console.warn('PRODUCTS QUERY - Unexpected response format:', result);
+          return [];
+        }
       } catch (error) {
         console.error('PRODUCTS QUERY - Error:', error);
         throw error;
@@ -484,20 +504,32 @@ export default function Sales() {
     enabled: !!currentStore?.storeId, // Enable when store is available
     queryFn: async () => {
       try {
-        const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
-        console.log('FEATURED PRODUCTS QUERY - Fetching with param:', storeParam);
+        // Tạo tham số URL để lấy tất cả sản phẩm hay bán
+        const params = new URLSearchParams({
+          pageSize: '9999', // Lấy tất cả sản phẩm hay bán
+          page: '1'
+        });
         
-        const response = await apiRequest(`/api/products/featured${storeParam}`, {
+        if (currentStore?.storeId) {
+          params.append('storeId', currentStore.storeId.toString());
+        }
+        
+        const url = `/api/products/featured?${params.toString()}`;
+        console.log('FEATURED PRODUCTS QUERY - Fetching with URL:', url);
+        
+        const response = await apiRequest(url, {
           method: 'GET'
         });
         
         console.log('FEATURED PRODUCTS QUERY - Success! Got result:', response);
         
-        // Expect response format: { products: [...], count: number }
+        // Xử lý nhiều format response khác nhau
         if (response && Array.isArray(response.products)) {
           return response.products;
         } else if (Array.isArray(response)) {
           return response;
+        } else if (response && response.Products && Array.isArray(response.Products)) {
+          return response.Products;
         } else {
           console.warn('FEATURED PRODUCTS QUERY - Unexpected response format:', response);
           return [];
@@ -1034,10 +1066,10 @@ export default function Sales() {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-xs text-gray-600">
             <span className="hidden sm:inline">
-              {startItem}-{endItem}/{totalItems}
+              Hiển thị {startItem}-{endItem} trong tổng số {totalItems} sản phẩm
             </span>
             <span className="sm:hidden">
-              {currentPage}/{totalPages}
+              Trang {currentPage}/{totalPages} ({totalItems} sp)
             </span>
           </div>
           <div className="flex items-center space-x-1">
@@ -1047,6 +1079,7 @@ export default function Sales() {
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="h-7 w-7 p-0"
+              title="Trang trước"
             >
               <ChevronLeft className="h-3 w-3" />
             </Button>
@@ -1061,6 +1094,7 @@ export default function Sales() {
                   size="sm"
                   onClick={() => onPageChange(page)}
                   className="h-7 w-7 p-0 text-xs"
+                  title={`Trang ${page}`}
                 >
                   {page}
                 </Button>
@@ -1075,6 +1109,7 @@ export default function Sales() {
                       size="sm"
                       onClick={() => onPageChange(1)}
                       className="h-7 w-7 p-0 text-xs"
+                      title="Trang đầu"
                     >
                       1
                     </Button>
@@ -1090,6 +1125,7 @@ export default function Sales() {
                     size="sm"
                     onClick={() => onPageChange(currentPage - 1)}
                     className="h-7 w-7 p-0 text-xs"
+                    title={`Trang ${currentPage - 1}`}
                   >
                     {currentPage - 1}
                   </Button>
@@ -1099,6 +1135,7 @@ export default function Sales() {
                   variant="default"
                   size="sm"
                   className="h-7 w-7 p-0 text-xs"
+                  title={`Trang hiện tại: ${currentPage}`}
                 >
                   {currentPage}
                 </Button>
@@ -1109,6 +1146,7 @@ export default function Sales() {
                     size="sm"
                     onClick={() => onPageChange(currentPage + 1)}
                     className="h-7 w-7 p-0 text-xs"
+                    title={`Trang ${currentPage + 1}`}
                   >
                     {currentPage + 1}
                   </Button>
@@ -1124,6 +1162,7 @@ export default function Sales() {
                       size="sm"
                       onClick={() => onPageChange(totalPages)}
                       className="h-7 w-7 p-0 text-xs"
+                      title="Trang cuối"
                     >
                       {totalPages}
                     </Button>
@@ -1138,6 +1177,7 @@ export default function Sales() {
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="h-7 w-7 p-0"
+              title="Trang sau"
             >
               <ChevronRight className="h-3 w-3" />
             </Button>
@@ -2014,15 +2054,73 @@ export default function Sales() {
 
               <Tabs value={activeProductTab} onValueChange={setActiveProductTab} className="w-full flex flex-col flex-1 min-h-0">
                 <TabsList className="grid w-full grid-cols-2 flex-shrink-0 mb-3">
-                  <TabsTrigger value="all" className="text-sm">Tất cả sản phẩm</TabsTrigger>
-                  <TabsTrigger value="featured" className="text-sm">Sản phẩm hay bán</TabsTrigger>
+                  <TabsTrigger value="all" className="text-sm">
+                    Tất cả sản phẩm 
+                    {products.length > 0 && (
+                      <span className="ml-1 text-xs bg-blue-100 text-blue-600 px-1 rounded">
+                        {products.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="featured" className="text-sm">
+                    Sản phẩm hay bán
+                    {featuredProducts.length > 0 && (
+                      <span className="ml-1 text-xs bg-yellow-100 text-yellow-600 px-1 rounded">
+                        {featuredProducts.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="all" className="flex-1 overflow-hidden">
                   <div className="h-full flex flex-col">
+                    {/* Loading state */}
+                    {productsLoading && (
+                      <div className="flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-sm text-gray-600">Đang tải sản phẩm...</span>
+                      </div>
+                    )}
+
+                    {/* Search results info */}
+                    {!productsLoading && searchTerm && (
+                      <div className="px-3 py-2 bg-blue-50 border-b text-sm text-blue-700">
+                        {filteredProducts.length > 0 ? (
+                          <>Tìm thấy <strong>{filteredProducts.length}</strong> sản phẩm cho "{searchTerm}"</>
+                        ) : (
+                          <>Không tìm thấy sản phẩm nào cho "{searchTerm}"</>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex-1 overflow-y-auto">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-3">
-                        {paginatedAllProducts.map((product) => {
+                      {!productsLoading && paginatedAllProducts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                          <div className="text-4xl mb-4">📦</div>
+                          <div className="text-lg font-medium mb-2">
+                            {searchTerm ? 'Không tìm thấy sản phẩm' : 'Chưa có sản phẩm nào'}
+                          </div>
+                          <div className="text-sm text-center">
+                            {searchTerm ? (
+                              <>Thử tìm kiếm với từ khóa khác hoặc <button 
+                                onClick={() => setSearchTerm('')} 
+                                className="text-blue-600 underline"
+                              >
+                                xóa bộ lọc
+                              </button></>
+                            ) : (
+                              <>Hãy thêm sản phẩm mới trong trang <button 
+                                onClick={() => navigate('/products')} 
+                                className="text-blue-600 underline"
+                              >
+                                Quản lý sản phẩm
+                              </button></>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-3">
+                          {paginatedAllProducts.map((product) => {
                           const stockQty = product.stockQuantity || 0;
                           const minStock = product.minStockLevel || 0;
                           
@@ -2105,7 +2203,8 @@ export default function Sales() {
                             </div>
                           );
                         })}
-                      </div>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Pagination for all products */}

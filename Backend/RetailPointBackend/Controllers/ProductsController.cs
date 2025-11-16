@@ -962,68 +962,7 @@ namespace RetailPointBackend.Controllers
             }
         }
 
-        // PUT: api/products/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] UpdateProductRequest request)
-        {
-            try
-            {
-                Console.WriteLine($"[UpdateProduct] Updating product ID: {id}");
-                Console.WriteLine($"[UpdateProduct] Request data: {System.Text.Json.JsonSerializer.Serialize(request)}");
 
-                // Tìm sản phẩm cần cập nhật
-                var product = await _context.Products.FindAsync(id);
-                if (product == null)
-                {
-                    Console.WriteLine($"[UpdateProduct] Product not found: {id}");
-                    return NotFound(new { message = "Sản phẩm không tồn tại" });
-                }
-
-                // Validate ProductGroup nếu có
-                if (request.ProductGroupId.HasValue)
-                {
-                    var productGroup = await _context.ProductGroups.FindAsync(request.ProductGroupId.Value);
-                    if (productGroup == null)
-                    {
-                        return BadRequest(new { message = "Nhóm sản phẩm không tồn tại" });
-                    }
-                }
-
-                // Cập nhật các trường
-                if (!string.IsNullOrEmpty(request.Name))
-                    product.Name = request.Name;
-                if (request.Description != null)
-                    product.Description = request.Description;
-                if (request.Barcode != null)
-                    product.Barcode = request.Barcode;
-                if (request.Price.HasValue)
-                    product.Price = request.Price.Value;
-                if (request.CostPrice.HasValue)
-                    product.CostPrice = request.CostPrice;
-                if (request.ProductGroupId.HasValue)
-                    product.ProductGroupId = request.ProductGroupId.Value;
-                if (request.StockQuantity.HasValue)
-                    product.StockQuantity = request.StockQuantity.Value;
-                if (request.MinStockLevel.HasValue)
-                    product.MinStockLevel = request.MinStockLevel.Value;
-                if (request.Unit != null)
-                    product.Unit = request.Unit;
-                if (request.ImageUrl != null)
-                    product.ImageUrl = request.ImageUrl;
-                if (request.IsFeatured.HasValue)
-                    product.IsFeatured = request.IsFeatured.Value;
-
-                await _context.SaveChangesAsync();
-
-                Console.WriteLine($"[UpdateProduct] Product updated successfully: {id}");
-                return Ok(product);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[UpdateProduct] Error: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi cập nhật sản phẩm", error = ex.Message });
-            }
-        }
 
         // PUT: api/products/{id}/toggle-active
         [HttpPut("{id}/toggle-active")]
