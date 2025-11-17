@@ -156,7 +156,7 @@ export default function PrintOrder() {
               margin: 0;
               padding: 0;
               font-family: "Courier New", monospace;
-              font-size: 9px;
+              font-size: 11px;
               line-height: 1.1;
               width: 80mm;
               max-width: 80mm;
@@ -215,7 +215,7 @@ export default function PrintOrder() {
               padding: 2mm;
               background: white;
               box-sizing: border-box;
-              font-size: 9px;
+              font-size: 11px;
               overflow-x: hidden;
               word-wrap: break-word;
             }
@@ -224,7 +224,7 @@ export default function PrintOrder() {
             }
             .store-info {
               text-align: center;
-              font-size: 10px;
+              font-size: 12px;
               margin-bottom: 2mm;
               border-bottom: 1px dashed #000;
               padding-bottom: 2mm;
@@ -233,24 +233,24 @@ export default function PrintOrder() {
             }
             .store-info .store-name {
               font-weight: bold;
-              font-size: 12px;
+              font-size: 14px;
               margin-bottom: 1mm;
               word-wrap: break-word;
             }
             .store-info div {
-              font-size: 8px;
+              font-size: 10px;
               margin: 0.5mm 0;
               word-wrap: break-word;
             }
             .order-header {
               text-align: center;
               font-weight: bold;
-              font-size: 11px;
+              font-size: 13px;
               margin: 2mm 0;
               word-wrap: break-word;
             }
             .order-details {
-              font-size: 8px;
+              font-size: 10px;
               margin-bottom: 2mm;
               border-bottom: 1px dashed #666;
               padding-bottom: 2mm;
@@ -266,7 +266,7 @@ export default function PrintOrder() {
             }
             .item {
               margin-bottom: 2mm;
-              font-size: 8px;
+              font-size: 10px;
               border-bottom: 1px dotted #ccc;
               padding-bottom: 1mm;
               width: 100%;
@@ -283,7 +283,7 @@ export default function PrintOrder() {
             .item-line {
               display: flex;
               justify-content: space-between;
-              font-size: 7px;
+              font-size: 9px;
               width: 100%;
               max-width: 76mm;
               flex-wrap: nowrap;
@@ -298,7 +298,7 @@ export default function PrintOrder() {
             .total-line {
               display: flex;
               justify-content: space-between;
-              font-size: 8px;
+              font-size: 10px;
               margin: 0.5mm 0;
               width: 100%;
               max-width: 76mm;
@@ -307,7 +307,7 @@ export default function PrintOrder() {
               display: flex;
               justify-content: space-between;
               font-weight: bold;
-              font-size: 10px;
+              font-size: 12px;
               border-top: 2px solid #000;
               border-bottom: 2px solid #000;
               width: 100%;
@@ -317,7 +317,7 @@ export default function PrintOrder() {
             }
             .footer {
               text-align: center;
-              font-size: 8px;
+              font-size: 10px;
               margin-top: 3mm;
               border-top: 1px dashed #000;
               padding-top: 2mm;
@@ -335,12 +335,12 @@ export default function PrintOrder() {
               padding: 1mm;
               margin: 0.5mm 0;
               display: inline-block;
-              font-size: 7px;
+              font-size: 9px;
             }
             .bank-info {
               font-weight: bold;
               color: #000 !important;
-              font-size: 7px;
+              font-size: 9px;
               text-align: center;
               margin: 1mm 0;
             }
