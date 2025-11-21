@@ -38,7 +38,8 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? total,
             [FromForm] string? paymentMethod,
             [FromForm] string? paymentStatus,
-            [FromForm] string? status)
+            [FromForm] string? status,
+            [FromForm] string? currency)
         {
             // Láº¥y danh sÃ¡ch sáº£n pháº©m tá»« form-data
             var items = new List<OrderItem>();
@@ -447,7 +448,8 @@ namespace RetailPointBackend.Controllers
         public async Task<IActionResult> CompleteOrder(int id,
             [FromForm] string? paymentMethod,
             [FromForm] string? paymentStatus,
-            [FromForm] string? status)
+            [FromForm] string? status,
+            [FromForm] string? currency)
         {
             var order = _context.Orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
@@ -458,6 +460,7 @@ namespace RetailPointBackend.Controllers
             order.PaymentMethod = paymentMethod ?? order.PaymentMethod;
             order.PaymentStatus = paymentStatus ?? "paid";
             order.Status = status ?? "completed";
+            order.Currency = currency ?? order.Currency;
             order.OrderNumber = $"ORD{DateTimeOffset.Now.ToUnixTimeSeconds()}";
             
             try

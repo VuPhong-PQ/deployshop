@@ -66,7 +66,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BackupHistories");
+                    b.ToTable("BackupHistories", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.BackupSettings", b =>
@@ -95,7 +95,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BackupSettings");
+                    b.ToTable("BackupSettings", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Category", b =>
@@ -120,7 +120,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("CategoryId");
 
-                    b.ToTable("Category");
+                    b.ToTable("Category", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.CategoryLoyaltyRule", b =>
@@ -157,7 +157,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("CategoryLoyaltyRules");
+                    b.ToTable("CategoryLoyaltyRules", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Customer", b =>
@@ -214,7 +214,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("TierId");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.CustomerTier", b =>
@@ -262,7 +262,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("TierId");
 
-                    b.ToTable("CustomerTiers");
+                    b.ToTable("CustomerTiers", (string)null);
 
                     b.HasData(
                         new
@@ -391,7 +391,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Discounts");
+                    b.ToTable("Discounts", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.EInvoice", b =>
@@ -543,7 +543,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("EInvoices");
+                    b.ToTable("EInvoices", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.EInvoiceConfig", b =>
@@ -655,7 +655,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("CreatedByStaffId");
 
-                    b.ToTable("EInvoiceConfigs");
+                    b.ToTable("EInvoiceConfigs", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.EInvoiceItem", b =>
@@ -729,7 +729,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("EInvoiceItems");
+                    b.ToTable("EInvoiceItems", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.InventoryTransaction", b =>
@@ -798,7 +798,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("InventoryTransactions");
+                    b.ToTable("InventoryTransactions", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.LoyaltyConfig", b =>
@@ -878,7 +878,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("LoyaltyConfigId");
 
-                    b.ToTable("LoyaltyConfigs");
+                    b.ToTable("LoyaltyConfigs", (string)null);
 
                     b.HasData(
                         new
@@ -971,7 +971,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("TargetCustomerTier");
 
-                    b.ToTable("LoyaltyPromotions");
+                    b.ToTable("LoyaltyPromotions", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.LoyaltySettings", b =>
@@ -1023,7 +1023,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LoyaltySettings");
+                    b.ToTable("LoyaltySettings", (string)null);
 
                     b.HasData(
                         new
@@ -1087,7 +1087,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("ProcessedBy");
 
-                    b.ToTable("LoyaltyTransactions");
+                    b.ToTable("LoyaltyTransactions", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Notification", b =>
@@ -1135,7 +1135,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Order", b =>
@@ -1151,6 +1151,9 @@ namespace RetailPointBackend.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("CustomerId")
                         .HasColumnType("int");
@@ -1201,7 +1204,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.OrderDiscount", b =>
@@ -1250,7 +1253,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("OrderItemId");
 
-                    b.ToTable("OrderDiscounts");
+                    b.ToTable("OrderDiscounts", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.OrderItem", b =>
@@ -1300,7 +1303,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.PaymentMethodConfig", b =>
@@ -1338,7 +1341,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PaymentMethodConfigs");
+                    b.ToTable("PaymentMethodConfigs", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.PaymentSettings", b =>
@@ -1373,7 +1376,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PaymentSettings");
+                    b.ToTable("PaymentSettings", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Permission", b =>
@@ -1402,7 +1405,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("PermissionId");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.PrintConfig", b =>
@@ -1446,7 +1449,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PrintConfigs");
+                    b.ToTable("PrintConfigs", (string)null);
 
                     b.HasData(
                         new
@@ -1488,6 +1491,9 @@ namespace RetailPointBackend.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsFeatured")
                         .HasColumnType("bit");
 
@@ -1516,9 +1522,11 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("ProductId");
 
+                    b.HasIndex("ProductGroupId");
+
                     b.HasIndex("StoreId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.ProductGroup", b =>
@@ -1535,7 +1543,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("ProductGroupId");
 
-                    b.ToTable("ProductGroups");
+                    b.ToTable("ProductGroups", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.ProductLoyaltyRule", b =>
@@ -1575,7 +1583,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductLoyaltyRules");
+                    b.ToTable("ProductLoyaltyRules", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.QRSettings", b =>
@@ -1651,7 +1659,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("QRSettings");
+                    b.ToTable("QRSettings", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Role", b =>
@@ -1676,7 +1684,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("RoleId");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.RolePermission", b =>
@@ -1702,7 +1710,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Staff", b =>
@@ -1761,7 +1769,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("StoreId");
 
-                    b.ToTable("Staffs");
+                    b.ToTable("Staffs", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.StaffStore", b =>
@@ -1787,7 +1795,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasIndex("StoreId");
 
-                    b.ToTable("StaffStores");
+                    b.ToTable("StaffStores", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.Store", b =>
@@ -1838,7 +1846,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("StoreId");
 
-                    b.ToTable("Stores");
+                    b.ToTable("Stores", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.StoreInfo", b =>
@@ -1879,7 +1887,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("StoreInfos");
+                    b.ToTable("StoreInfos", (string)null);
                 });
 
             modelBuilder.Entity("RetailPointBackend.Models.TaxConfig", b =>
@@ -1913,7 +1921,7 @@ namespace RetailPointBackend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TaxConfigs");
+                    b.ToTable("TaxConfigs", (string)null);
 
                     b.HasData(
                         new
@@ -2167,9 +2175,15 @@ namespace RetailPointBackend.Migrations
 
             modelBuilder.Entity("RetailPointBackend.Models.Product", b =>
                 {
+                    b.HasOne("RetailPointBackend.Models.ProductGroup", "ProductGroup")
+                        .WithMany()
+                        .HasForeignKey("ProductGroupId");
+
                     b.HasOne("RetailPointBackend.Models.Store", "Store")
                         .WithMany()
                         .HasForeignKey("StoreId");
+
+                    b.Navigation("ProductGroup");
 
                     b.Navigation("Store");
                 });

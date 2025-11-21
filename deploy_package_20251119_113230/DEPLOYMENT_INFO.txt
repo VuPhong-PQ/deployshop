@@ -1,0 +1,16 @@
+﻿DEPLOYMENT PACKAGE INFO
+=======================
+Created: 11/19/2025 11:33:30
+Fix Applied: Removed ActivityLogs/AuditLogs references from DataManagementController
+Backend Port: 5273
+Frontend URL: http://101.53.9.76
+Backend URL: http://101.53.9.76:5273
+
+DEPLOYMENT STEPS:
+1. Stop IIS Application Pool on server 101.53.9.76
+2. Copy all files to server backend directory
+3. Run SQL script: Backend/restore_missing_tables.sql
+4. Start IIS Application Pool
+5. Test URLs above
+
+FILES IN PACKAGE: 54
