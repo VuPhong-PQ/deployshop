@@ -68,9 +68,13 @@ export function OrderDetailModal({ orderId, show, onClose, onReopenOrder }: Orde
       case 'card': return 'Thẻ ngân hàng';
       case 'qr': return 'QR Code';
       case 'ewallet': return 'Ví điện tử';
+<<<<<<< HEAD
       case 'banktransfer': return 'Chuyển khoản';
       case 'foreignusd': return 'Ngoại tệ USD';
       case 'foreigneur': return 'Ngoại tệ EUR';
+=======
+      case 'banktransfer': return 'Ngoại tệ';
+>>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
       default: return 'Tiền mặt';
     }
   };

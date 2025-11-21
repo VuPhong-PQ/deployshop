@@ -37,14 +37,17 @@ namespace RetailPointBackend.Controllers
 
                 // Debug: Log số lượng orders và payment methods
                 Console.WriteLine($"Found {orders.Count} completed orders");
+                Console.WriteLine($"Date range: {startDate} to {endDate}");
                 foreach (var order in orders)
                 {
-                    Console.WriteLine($"Order {order.OrderId}: PaymentMethod = '{order.PaymentMethod}', Amount = {order.TotalAmount}");
+                    Console.WriteLine($"Order {order.OrderId}: PaymentMethod = '{order.PaymentMethod}', Currency = '{order.Currency}', Amount = {order.TotalAmount}");
+                    var key = GetPaymentMethodKey(order.PaymentMethod, order.Currency);
+                    Console.WriteLine($"  -> Final Key: '{key}'");
                 }
 
-                // Nhóm theo phương thức thanh toán và tính tổng
+                // Nhóm theo phương thức thanh toán + currency cho banktransfer và tính tổng
                 var paymentStats = orders
-                    .GroupBy(o => o.PaymentMethod ?? "cash")
+                    .GroupBy(o => GetPaymentMethodKey(o.PaymentMethod, o.Currency))
                     .Select(g => new
                     {
                         PaymentMethod = FormatPaymentMethodName(g.Key),
@@ -59,6 +62,7 @@ namespace RetailPointBackend.Controllers
                             CustomerName = order.CustomerName ?? "Khách lẻ",
                             TotalAmount = order.TotalAmount,
                             CreatedAt = order.CreatedAt,
+                            Currency = order.Currency, // Thêm currency vào response
                             Items = order.Items.Select(item => new
                             {
                                 ProductName = item.ProductName,
@@ -115,7 +119,7 @@ namespace RetailPointBackend.Controllers
                     .ToListAsync();
 
                 var summary = orders
-                    .GroupBy(o => o.PaymentMethod ?? "cash")
+                    .GroupBy(o => GetPaymentMethodKey(o.PaymentMethod, o.Currency))
                     .Select(g => new
                     {
                         Method = FormatPaymentMethodName(g.Key),
@@ -142,11 +146,39 @@ namespace RetailPointBackend.Controllers
                 "card" => "Thẻ ngân hàng",
                 "qr" => "QR Code",
                 "ewallet" => "Ví điện tử",
+<<<<<<< HEAD
                 "banktransfer" => "Chuyển khoản",
                 "foreignusd" => "Ngoại tệ USD",
                 "foreigneur" => "Ngoại tệ EUR",
+=======
+                "banktransfer" => "Ngoại tệ",
+                "ngoại tệ" => "Ngoại tệ",
+                "banktransfer_USD" => "USD",
+                "banktransfer_EUR" => "EUR", 
+                "ngoại tệ_USD" => "USD",
+                "ngoại tệ_EUR" => "EUR",
+>>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
                 _ => "Tiền mặt"
             };
+        }
+
+        private string GetPaymentMethodKey(string? paymentMethod, string? currency)
+        {
+            var method = paymentMethod ?? "cash";
+            
+            // Debug log để kiểm tra
+            Console.WriteLine($"GetPaymentMethodKey: method='{method}', currency='{currency}'");
+            
+            // Tách ngoại tệ theo loại tiền tệ (xử lý cả "banktransfer" và "ngoại tệ")
+            if ((method == "banktransfer" || method == "ngoại tệ") && !string.IsNullOrEmpty(currency))
+            {
+                var result = $"ngoại tệ_{currency}";
+                Console.WriteLine($"  -> Returning: '{result}'");
+                return result;
+            }
+            
+            Console.WriteLine($"  -> Returning: '{method}'");
+            return method;
         }
     }
 }

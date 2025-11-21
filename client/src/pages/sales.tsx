@@ -12,7 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+<<<<<<< HEAD
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock, DollarSign, Euro } from "lucide-react";
+=======
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock, ChevronDown } from "lucide-react";
+>>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
@@ -89,6 +93,7 @@ export default function Sales() {
   const barcodeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>("cash");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("USD");
   const [showPayment, setShowPayment] = useState(false);
   const [pendingOrderToReopen, setPendingOrderToReopen] = useState<any>(null);
   const [currentReopenedOrder, setCurrentReopenedOrder] = useState<any>(null);
@@ -110,6 +115,9 @@ export default function Sales() {
   // Customer search state
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+  // Invoice notes state
+  const [invoiceNotes, setInvoiceNotes] = useState("");
 
   // State for quick customer creation
   const [showQuickCustomerForm, setShowQuickCustomerForm] = useState(false);
@@ -706,7 +714,8 @@ export default function Sales() {
         paymentMethod: availablePaymentMethods.find(m => m.id === selectedPayment)?.name || selectedPayment,
         paymentStatus: 'paid',
         status: 'completed',
-        cashierName: 'Admin'
+        cashierName: 'Admin',
+        notes: invoiceNotes.trim() || null // Thêm notes từ form
       };
       
       // Hiển thị popup chi tiết hóa đơn
@@ -732,6 +741,7 @@ export default function Sales() {
       setSelectedDiscount(null);
       setDiscountCalculation(null);
       clearManualDiscount(); // Clear manual discount state
+      setInvoiceNotes(""); // Clear invoice notes
       
       // Refetch tất cả dữ liệu liên quan
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -784,6 +794,7 @@ export default function Sales() {
       setSelectedCustomer(null);
       setCustomerSearchTerm("");
       setShowPayment(false);
+      setInvoiceNotes(""); // Clear invoice notes
       
       // Refetch danh sách đơn hàng và notifications
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -837,7 +848,8 @@ export default function Sales() {
         paymentMethod: availablePaymentMethods.find(m => m.id === selectedPayment)?.name || selectedPayment,
         paymentStatus: 'paid',
         status: 'completed',
-        cashierName: 'Admin'
+        cashierName: 'Admin',
+        notes: invoiceNotes.trim() || null // Thêm notes từ form
       };
       
       // Hiển thị popup chi tiết hóa đơn
@@ -863,6 +875,7 @@ export default function Sales() {
       setSelectedCustomer(null);
       setShowPayment(false);
       setCurrentReopenedOrder(null); // Clear reopened order
+      setInvoiceNotes(""); // Clear invoice notes
       
       // Refetch tất cả dữ liệu liên quan
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -1576,6 +1589,7 @@ export default function Sales() {
     setSelectedDiscount(null); // Clear selected discount
     setDiscountCalculation(null); // Clear discount calculation
     clearManualDiscount(); // Clear manual discount
+    setInvoiceNotes(""); // Clear invoice notes
   };
 
   // Handle discount selection
@@ -1711,6 +1725,15 @@ export default function Sales() {
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', 'paid');
     formData.append('status', 'completed');
+    
+    // Thêm currency nếu chọn ngoại tệ
+    if (selectedPayment === 'banktransfer') {
+      formData.append('currency', selectedCurrency);
+    }
+    
+    if (invoiceNotes.trim()) {
+      formData.append('notes', invoiceNotes);
+    }
 
     // Sử dụng mutation để cập nhật đơn hàng
     completeOrderMutation.mutate({ orderId: currentReopenedOrder.orderId, formData });
@@ -1733,6 +1756,15 @@ export default function Sales() {
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', "paid");
     formData.append('status', "completed");
+    
+    // Thêm currency nếu chọn ngoại tệ
+    if (selectedPayment === 'banktransfer') {
+      formData.append('currency', selectedCurrency);
+    }
+    
+    if (invoiceNotes.trim()) {
+      formData.append('notes', invoiceNotes);
+    }
     // Gửi từng item dưới dạng items[0].productId, items[0].productName, ...
     cart.forEach((item, idx) => {
       // Luôn lấy đúng productId, không để undefined
@@ -1766,8 +1798,14 @@ export default function Sales() {
         buyerAddress: selectedCustomer.address || "",
         buyerPhone: selectedCustomer.phone || "",
         buyerEmail: selectedCustomer.email || "",
-        notes: ""
+        notes: invoiceNotes || "" // Pre-fill with invoice notes
       });
+    } else {
+      // Pre-fill notes even without customer
+      setEInvoiceData(prev => ({
+        ...prev,
+        notes: invoiceNotes || ""
+      }));
     }
 
     setIsCreateOrderWithEInvoice(false);
@@ -1845,6 +1883,11 @@ export default function Sales() {
       formData.append('paymentMethod', selectedPayment);
       formData.append('paymentStatus', "completed");
       formData.append('status', "completed");
+      
+      // Thêm currency nếu chọn ngoại tệ
+      if (selectedPayment === 'banktransfer') {
+        formData.append('currency', selectedCurrency);
+      }
       
       cart.forEach((item, idx) => {
         const productId = item.productId?.toString() || "";
@@ -1938,7 +1981,13 @@ export default function Sales() {
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', "pending");
     formData.append('status', "pending");
-    formData.append('notes', `Đơn hàng chờ thanh toán cho ${customerName} - Tổng: ${orderTotal}₫`);
+    
+    // Tạo notes với thông tin đơn hàng và ghi chú tùy chọn
+    let orderNotes = `Đơn hàng chờ thanh toán cho ${customerName} - Tổng: ${orderTotal}₫`;
+    if (invoiceNotes.trim()) {
+      orderNotes += `\n\nGhi chú: ${invoiceNotes}`;
+    }
+    formData.append('notes', orderNotes);
     
     // Gửi từng item
     cart.forEach((item, idx) => {
@@ -2924,6 +2973,25 @@ export default function Sales() {
                 </div>
               )}
 
+              {/* Invoice Notes */}
+              {cart.length > 0 && (
+                <div className="space-y-3">
+                  <p className="font-medium">Ghi chú hóa đơn:</p>
+                  <textarea
+                    placeholder="Nhập ghi chú cho hóa đơn (tùy chọn)..."
+                    value={invoiceNotes}
+                    onChange={(e) => setInvoiceNotes(e.target.value)}
+                    className="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    maxLength={500}
+                    data-testid="invoice-notes"
+                  />
+                  <div className="text-xs text-gray-500 text-right">
+                    {invoiceNotes.length}/500 ký tự
+                  </div>
+                </div>
+              )}
+
               {/* Payment Methods */}
               {cart.length > 0 && (
                 <div className="space-y-3">
@@ -2947,6 +3015,25 @@ export default function Sales() {
                       );
                     })}
                   </div>
+                  
+                  {/* Currency Selection for Foreign Currency */}
+                  {selectedPayment === 'banktransfer' && (
+                    <div className="space-y-2">
+                      <p className="font-medium text-sm">Loại ngoại tệ:</p>
+                      <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Chọn loại ngoại tệ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD - Đô la Mỹ</SelectItem>
+                          <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">
+                        Ngoại tệ được chọn: <span className="font-semibold">{selectedCurrency}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3152,6 +3239,14 @@ export default function Sales() {
             <div className="mt-4 text-right font-bold text-lg border-t pt-2 print:no-break">
               Tổng cộng: {Number(orderDetailData.totalAmount).toLocaleString('vi-VN')}₫
             </div>
+            
+            {/* Ghi chú hóa đơn */}
+            {orderDetailData.notes && (
+              <div className="mt-4 print:mt-2 print:no-break border-t pt-2">
+                <div className="text-sm font-medium mb-1 print:text-xs">Ghi chú:</div>
+                <div className="text-sm text-gray-700 print:text-xs print:text-black">{orderDetailData.notes}</div>
+              </div>
+            )}
             
             {/* QR Code cho thanh toán QR - Đặt sau tổng cộng */}
             {(orderDetailData.paymentMethod === 'qr' || orderDetailData.paymentMethod === 'QR Code' || orderDetailData.paymentMethod?.toLowerCase().includes('qr')) && (
