@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock, DollarSign, Euro } from "lucide-react";
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
@@ -57,6 +57,8 @@ const getPaymentIcon = (id: string) => {
     case 'qr': return QrCode;
     case 'ewallet': return Smartphone;
     case 'banktransfer': return CreditCard;
+    case 'foreignusd': return DollarSign;
+    case 'foreigneur': return Euro;
     default: return Banknote;
   }
 };
@@ -69,6 +71,8 @@ const getPaymentColor = (id: string) => {
     case 'qr': return 'bg-purple-500';
     case 'ewallet': return 'bg-orange-500';
     case 'banktransfer': return 'bg-indigo-500';
+    case 'foreignusd': return 'bg-emerald-500';
+    case 'foreigneur': return 'bg-yellow-500';
     default: return 'bg-gray-500';
   }
 };

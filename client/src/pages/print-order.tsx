@@ -80,6 +80,9 @@ export default function PrintOrder() {
       case 'card': return 'Thẻ ngân hàng';
       case 'qr': return 'QR Code';
       case 'ewallet': return 'Ví điện tử';
+      case 'banktransfer': return 'Chuyển khoản';
+      case 'foreignusd': return 'Ngoại tệ USD';
+      case 'foreigneur': return 'Ngoại tệ EUR';
       default: return 'Tiền mặt';
     }
   };

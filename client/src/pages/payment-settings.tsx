@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CreditCard, QrCode, Wallet, Banknote, BanknoteIcon, Split, Archive } from "lucide-react";
+import { CreditCard, QrCode, Wallet, Banknote, BanknoteIcon, Split, Archive, DollarSign, Euro } from "lucide-react";
 
 export type PaymentMethodConfig = {
   enableCash: boolean;
@@ -11,6 +11,8 @@ export type PaymentMethodConfig = {
   enableQRCode: boolean;
   enableEWallet: boolean;
   enableBankTransfer: boolean;
+  enableForeignUSD: boolean;
+  enableForeignEUR: boolean;
   enablePartialPayment: boolean;
   enableDrawer: boolean;
   defaultMethod: string;
@@ -22,6 +24,8 @@ const paymentOptions = [
   { value: "qrcode", label: "QR Code", icon: <QrCode className="w-4 h-4 inline" /> },
   { value: "ewallet", label: "Ví điện tử", icon: <Wallet className="w-4 h-4 inline" /> },
   { value: "banktransfer", label: "Chuyển khoản", icon: <Banknote className="w-4 h-4 inline" /> },
+  { value: "foreignusd", label: "Ngoại tệ USD", icon: <DollarSign className="w-4 h-4 inline" /> },
+  { value: "foreigneur", label: "Ngoại tệ EUR", icon: <Euro className="w-4 h-4 inline" /> },
   { value: "partial", label: "Thanh toán một phần", icon: <Split className="w-4 h-4 inline" /> },
 ];
 
@@ -41,6 +45,8 @@ export function PaymentSettings() {
     enableQRCode: true,
     enableEWallet: true,
     enableBankTransfer: true,
+    enableForeignUSD: false,
+    enableForeignEUR: false,
     enablePartialPayment: false,
     enableDrawer: true,
     defaultMethod: "cash",
@@ -124,6 +130,20 @@ export function PaymentSettings() {
                 <div className="text-gray-500 text-sm">Chuyển khoản ngân hàng</div>
               </div>
               <input type="checkbox" name="enableBankTransfer" checked={form.enableBankTransfer} onChange={handleChange} className="w-10 h-5 accent-blue-600" />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <div className="font-semibold flex items-center gap-2"><DollarSign /> Ngoại tệ USD</div>
+                <div className="text-gray-500 text-sm">Thanh toán bằng đô la Mỹ</div>
+              </div>
+              <input type="checkbox" name="enableForeignUSD" checked={form.enableForeignUSD} onChange={handleChange} className="w-10 h-5 accent-blue-600" />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <div className="font-semibold flex items-center gap-2"><Euro /> Ngoại tệ EUR</div>
+                <div className="text-gray-500 text-sm">Thanh toán bằng Euro</div>
+              </div>
+              <input type="checkbox" name="enableForeignEUR" checked={form.enableForeignEUR} onChange={handleChange} className="w-10 h-5 accent-blue-600" />
             </div>
             <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
               <div>

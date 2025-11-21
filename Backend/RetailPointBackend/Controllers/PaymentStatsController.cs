@@ -143,6 +143,8 @@ namespace RetailPointBackend.Controllers
                 "qr" => "QR Code",
                 "ewallet" => "Ví điện tử",
                 "banktransfer" => "Chuyển khoản",
+                "foreignusd" => "Ngoại tệ USD",
+                "foreigneur" => "Ngoại tệ EUR",
                 _ => "Tiền mặt"
             };
         }

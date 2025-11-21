@@ -57,6 +57,12 @@ namespace RetailPointBackend.Controllers
             
             if (config.EnableBankTransfer)
                 enabledMethods.Add(new { id = "banktransfer", name = "Chuyển khoản", enabled = true });
+            
+            if (config.EnableForeignUSD)
+                enabledMethods.Add(new { id = "foreignusd", name = "Ngoại tệ USD", enabled = true });
+            
+            if (config.EnableForeignEUR)
+                enabledMethods.Add(new { id = "foreigneur", name = "Ngoại tệ EUR", enabled = true });
 
             return Ok(new
             {
@@ -79,6 +85,8 @@ namespace RetailPointBackend.Controllers
                 existing.EnableQRCode = model.EnableQRCode;
                 existing.EnableEWallet = model.EnableEWallet;
                 existing.EnableBankTransfer = model.EnableBankTransfer;
+                existing.EnableForeignUSD = model.EnableForeignUSD;
+                existing.EnableForeignEUR = model.EnableForeignEUR;
                 existing.EnablePartialPayment = model.EnablePartialPayment;
                 existing.EnableDrawer = model.EnableDrawer;
                 existing.DefaultMethod = model.DefaultMethod;

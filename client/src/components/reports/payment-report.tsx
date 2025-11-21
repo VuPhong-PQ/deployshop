@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
-import { Banknote, CreditCard, QrCode, Smartphone, TrendingUp, Calendar, RefreshCw, ChevronDown, ChevronRight, Eye, Package, User, Clock, Download, Receipt } from "lucide-react";
+import { Banknote, CreditCard, QrCode, Smartphone, TrendingUp, Calendar, RefreshCw, ChevronDown, ChevronRight, Eye, Package, User, Clock, Download, Receipt, DollarSign, Euro } from "lucide-react";
 import * as XLSX from 'xlsx';
 
 interface OrderItem {
@@ -77,6 +77,9 @@ export function PaymentReport() {
       case 'card': return <CreditCard className="w-5 h-5 text-blue-600" />;
       case 'qr': return <QrCode className="w-5 h-5 text-purple-600" />;
       case 'ewallet': return <Smartphone className="w-5 h-5 text-orange-600" />;
+      case 'banktransfer': return <CreditCard className="w-5 h-5 text-indigo-600" />;
+      case 'foreignusd': return <DollarSign className="w-5 h-5 text-emerald-600" />;
+      case 'foreigneur': return <Euro className="w-5 h-5 text-yellow-600" />;
       default: return <Banknote className="w-5 h-5 text-gray-600" />;
     }
   };
@@ -87,6 +90,9 @@ export function PaymentReport() {
       case 'card': return 'bg-blue-500';
       case 'qr': return 'bg-purple-500';
       case 'ewallet': return 'bg-orange-500';
+      case 'banktransfer': return 'bg-indigo-500';
+      case 'foreignusd': return 'bg-emerald-500';
+      case 'foreigneur': return 'bg-yellow-500';
       default: return 'bg-gray-500';
     }
   };

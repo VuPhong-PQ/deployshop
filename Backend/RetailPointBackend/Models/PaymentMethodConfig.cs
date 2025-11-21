@@ -11,6 +11,8 @@ namespace RetailPointBackend.Models
         public bool EnableQRCode { get; set; } = true;
         public bool EnableEWallet { get; set; } = true;
         public bool EnableBankTransfer { get; set; } = true;
+        public bool EnableForeignUSD { get; set; } = false;
+        public bool EnableForeignEUR { get; set; } = false;
         public bool EnablePartialPayment { get; set; } = false;
         public bool EnableDrawer { get; set; } = true;
         public string DefaultMethod { get; set; } = "cash";
