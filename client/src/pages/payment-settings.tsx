@@ -23,13 +23,9 @@ const paymentOptions = [
   { value: "bankcard", label: "Thẻ ngân hàng", icon: <CreditCard className="w-4 h-4 inline" /> },
   { value: "qrcode", label: "QR Code", icon: <QrCode className="w-4 h-4 inline" /> },
   { value: "ewallet", label: "Ví điện tử", icon: <Wallet className="w-4 h-4 inline" /> },
-<<<<<<< HEAD
   { value: "banktransfer", label: "Chuyển khoản", icon: <Banknote className="w-4 h-4 inline" /> },
   { value: "foreignusd", label: "Ngoại tệ USD", icon: <DollarSign className="w-4 h-4 inline" /> },
   { value: "foreigneur", label: "Ngoại tệ EUR", icon: <Euro className="w-4 h-4 inline" /> },
-=======
-  { value: "banktransfer", label: "Ngoại tệ", icon: <Banknote className="w-4 h-4 inline" /> },
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
   { value: "partial", label: "Thanh toán một phần", icon: <Split className="w-4 h-4 inline" /> },
 ];
 

@@ -68,13 +68,9 @@ export function OrderDetailModal({ orderId, show, onClose, onReopenOrder }: Orde
       case 'card': return 'Thẻ ngân hàng';
       case 'qr': return 'QR Code';
       case 'ewallet': return 'Ví điện tử';
-<<<<<<< HEAD
-      case 'banktransfer': return 'Chuyển khoản';
-      case 'foreignusd': return 'Ngoại tệ USD';
-      case 'foreigneur': return 'Ngoại tệ EUR';
-=======
-      case 'banktransfer': return 'Ngoại tệ';
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
+  case 'banktransfer': return 'Chuyển khoản';
+  case 'foreignusd': return 'Ngoại tệ USD';
+  case 'foreigneur': return 'Ngoại tệ EUR';
       default: return 'Tiền mặt';
     }
   };
@@ -124,10 +120,20 @@ export function OrderDetailModal({ orderId, show, onClose, onReopenOrder }: Orde
     }
   };
 
-  // Handle print - navigate to print page
+  // Handle print - navigate to new invoice print page
   const handlePrint = () => {
     if (orderDetail) {
-      navigate(`/print-order/${orderDetail.orderId}`);
+      // Add timestamp to prevent caching issues
+      const timestamp = Date.now();
+      const url = `${window.location.origin}/invoice-print/${orderDetail.orderId}?autoPrint=1&t=${timestamp}`;
+      
+      const w = window.open(url, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+      if (w) {
+        w.focus();
+      } else {
+        // Fallback to navigation in same window if popup blocked
+        navigate(`/invoice-print/${orderDetail.orderId}?t=${timestamp}`);
+      }
     }
   };
 

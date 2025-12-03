@@ -646,7 +646,17 @@ export default function OrdersPage() {
                   </div>
                   
                   <div className="ml-4">
-                    <Button onClick={() => setSelectedOrder(order)} size="sm" className="mb-2">
+                    <Button 
+                      onClick={() => {
+                        const url = `${window.location.origin}/invoice-print/${order.orderId}?autoPrint=1&t=${Date.now()}`;
+                        const w = window.open(url, '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+                        if (w) {
+                          w.focus();
+                        }
+                      }} 
+                      size="sm" 
+                      className="mb-2"
+                    >
                       Xem & In
                     </Button>
                   </div>
@@ -657,8 +667,9 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Modal xem & in đơn hàng */}
-      {selectedOrder && (
+
+      {/* Modal xem & in đơn hàng - SẼ XÓA SAU */}
+      {false && selectedOrder && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 print:bg-white print:p-0">
           <div
             className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative print:w-full print:max-w-full max-h-[90vh] overflow-y-auto print:overflow-visible print:max-h-none print:shadow-none print:rounded-none print:relative print:block print:no-break"

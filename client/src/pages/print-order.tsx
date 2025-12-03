@@ -56,6 +56,27 @@ export default function PrintOrder() {
   
   const orderId = params?.orderId ? parseInt(params.orderId) : null;
 
+  // Auto-print if requested via query param (used when opened from the orders modal)
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('autoPrint') === '1') {
+        // give the page a moment to render assets/styles
+        setIsPrinting(true);
+        setTimeout(() => {
+          window.print();
+          // after printing, try to close the window (may be blocked by browser)
+          setTimeout(() => {
+            setIsPrinting(false);
+            try { window.close(); } catch (e) { /* ignore */ }
+          }, 600);
+        }, 400);
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, []);
+
   // Fetch print configuration
   const { data: printConfig } = useQuery<PrintConfig>({
     queryKey: ['/api/printconfig'],
@@ -356,31 +377,67 @@ export default function PrintOrder() {
         <style>{`
           @media print {
             @page {
-              size: A4;
-              margin: 15mm;
+              size: A4 portrait;
+              margin: 8mm;
             }
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: Arial, sans-serif;
-              font-size: 12px;
-              line-height: 1.4;
+            /* Reset everything */
+            * {
+              margin: 0 !important;
+              padding: 0 !important;
+              border: none !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              text-shadow: none !important;
+              color: #000 !important;
+              font-family: Arial, sans-serif !important;
             }
-            body * {
-              visibility: hidden;
+            html, body {
+              width: 100% !important;
+              height: auto !important;
+              overflow: visible !important;
+              font-size: 12px !important;
+              line-height: 1.3 !important;
             }
-            .print-content, .print-content * {
-              visibility: visible;
-            }
-            .print-content {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              background: white;
-            }
-            .no-print {
+            /* Hide EVERYTHING first */
+            body > * {
               display: none !important;
+            }
+            /* Only show the print content container */
+            .print-content {
+              display: block !important;
+              position: static !important;
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
+              color: #000 !important;
+            }
+            /* Show print content children */
+            .print-content * {
+              display: block !important;
+            }
+            /* Table specific styling */
+            .print-content table {
+              display: table !important;
+              width: 100% !important;
+              border-collapse: collapse !important;
+            }
+            .print-content tr {
+              display: table-row !important;
+            }
+            .print-content td, .print-content th {
+              display: table-cell !important;
+              padding: 2mm !important;
+              border: 1px solid #000 !important;
+              font-size: 10px !important;
+            }
+            /* Prevent page breaks */
+            .print-content {
+              page-break-inside: avoid !important;
+            }
+            .print-content > * {
+              page-break-inside: avoid !important;
             }
             .payment-status, .order-status {
               font-weight: bold;
@@ -403,7 +460,7 @@ export default function PrintOrder() {
               color: #000 !important;
               font-weight: bold;
             }
-            /* Force all green colors to black for thermal printing */
+            /* Force all green colors to black for printing */
             .text-green-600,
             .text-green-700,
             .text-green-800,
@@ -412,7 +469,7 @@ export default function PrintOrder() {
             [class*="text-green"] {
               color: #000 !important;
             }
-            /* Force all gray colors to black for thermal printing */
+            /* Force all gray colors to black for printing */
             .text-gray-500,
             .text-gray-600,
             .text-gray-700,
@@ -432,14 +489,28 @@ export default function PrintOrder() {
             [class*="border-green"] {
               border-color: #000 !important;
             }
-            /* Force ALL text to black for thermal printing */
+            /* Force ALL text to black for printing */
             * {
               color: #000 !important;
               background-color: transparent !important;
             }
-            /* Ensure strong contrast for thermal printing */
+            /* Ensure strong contrast for printing */
             p, span, div, label, input, button, a {
               color: #000 !important;
+            }
+            /* Optimize table for printing */
+            table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              margin: 0 !important;
+              page-break-inside: avoid !important;
+            }
+            .w-full {
+              width: 100% !important;
+            }
+            /* Prevent content overflow */
+            .overflow-hidden {
+              overflow: visible !important;
             }
           }
         `}</style>
@@ -457,6 +528,7 @@ export default function PrintOrder() {
             padding: 20px;
             overflow-x: ${isPOSPrinter ? 'hidden' : 'auto'};
             word-wrap: break-word;
+            min-height: fit-content;
           }
           ${isPOSPrinter ? `
           .print-content * {
@@ -471,7 +543,12 @@ export default function PrintOrder() {
           .print-content .item-line {
             font-size: 0.9em;
           }
-          ` : ''}
+          ` : `
+          .print-content {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+          }
+          `}
         }
       `}</style>
 
@@ -504,120 +581,106 @@ export default function PrintOrder() {
           </div>
         </div>
 
-        {/* Print content */}
-        <div className="print-content p-8">
-          {/* Store info */}
-          <div className="store-info">
-            <div className="store-name">Pinkwish Shop</div>
-            <div>Đ/c: Phú quốc - An giang</div>
-            <div>MST: 0123456789</div>
-            <div>ĐT: 0907999841</div>
-            <div>Email: pwshop@gmail.com</div>
+        {/* Print content - Clean invoice layout */}
+        <div className="print-content">
+          {/* Store header */}
+          <div style={{ textAlign: 'center', marginBottom: '5mm', borderBottom: '2px solid #000', paddingBottom: '3mm' }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '2mm' }}>PINKWISH SHOP</div>
+            <div style={{ fontSize: '11px' }}>Địa chỉ: Phú Quốc - An Giang</div>
+            <div style={{ fontSize: '11px' }}>MST: 0123456789 | ĐT: 0907999841</div>
+            <div style={{ fontSize: '11px' }}>Email: pwshop@gmail.com</div>
           </div>
 
-          {/* Order header */}
-          <div className="order-header">
-            Đơn hàng #{orderDetail.orderId}
+          {/* Invoice title */}
+          <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: 'bold', margin: '5mm 0' }}>
+            HÓA ĐƠN BÁN HÀNG #{orderDetail.orderId}
           </div>
 
-          {/* Order details */}
-          <div className="order-details">
-            <div>Khách hàng: {orderDetail.customerName || orderDetail.customer?.hoTen || 'Khách lẻ'}</div>
-            <div>Ngày: {new Date(orderDetail.createdAt).toLocaleDateString('vi-VN')}</div>
-            <div>Giờ: {new Date(orderDetail.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
-            <div>Thanh toán: {formatPaymentMethod(orderDetail.paymentMethod)}</div>
-            <div>Thu ngân: Admin</div>
-            
-            {/* Trạng thái thanh toán và đơn hàng */}
-            <div style={{ marginTop: '2mm' }}>
-              <span className="payment-status">
-                {formatPaymentStatus(orderDetail.paymentStatus)}
-              </span>
-              <span style={{ margin: '0 2mm' }}></span>
-              <span className="order-status">
-                {formatOrderStatus(orderDetail.status)}
-              </span>
+          {/* Order info */}
+          <div style={{ marginBottom: '5mm', fontSize: '11px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1mm' }}>
+              <span>Khách hàng: {orderDetail.customerName || orderDetail.customer?.hoTen || 'Khách lẻ'}</span>
+              <span>Ngày: {new Date(orderDetail.createdAt).toLocaleDateString('vi-VN')}</span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1mm' }}>
+              <span>Thanh toán: {formatPaymentMethod(orderDetail.paymentMethod)}</span>
+              <span>Giờ: {new Date(orderDetail.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div>Thu ngân: Admin | Trạng thái: {formatPaymentStatus(orderDetail.paymentStatus)} - {formatOrderStatus(orderDetail.status)}</div>
           </div>
 
-          {/* Items */}
-          {isPOSPrinter ? (
-            /* POS format - simple list */
-            <div className="item-list">
+          {/* Products table */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '5mm' }}>
+            <thead>
+              <tr>
+                <th style={{ border: '1px solid #000', padding: '3mm', textAlign: 'left', fontSize: '11px', backgroundColor: '#f0f0f0' }}>Sản phẩm</th>
+                <th style={{ border: '1px solid #000', padding: '3mm', textAlign: 'center', fontSize: '11px', width: '12%', backgroundColor: '#f0f0f0' }}>SL</th>
+                <th style={{ border: '1px solid #000', padding: '3mm', textAlign: 'right', fontSize: '11px', width: '18%', backgroundColor: '#f0f0f0' }}>Đơn giá</th>
+                <th style={{ border: '1px solid #000', padding: '3mm', textAlign: 'right', fontSize: '11px', width: '20%', backgroundColor: '#f0f0f0' }}>Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
               {orderDetail.items.map((item, index) => (
-                <div key={index} className="item">
-                  <div className="item-name">{item.productName}</div>
-                  <div className="item-line">
-                    <span>{item.quantity} x {(item.totalPrice / item.quantity).toLocaleString('vi-VN')}₫</span>
-                    <span>{item.totalPrice.toLocaleString('vi-VN')}₫</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* A4 format - table */
-            <table className="w-full border-collapse border border-gray-300 my-4">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-2 text-left">Sản phẩm</th>
-                  <th className="border border-gray-300 px-3 py-2 text-center">SL</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right">Đơn giá</th>
-                  <th className="border border-gray-300 px-3 py-2 text-right">Thành tiền</th>
+                <tr key={index}>
+                  <td style={{ border: '1px solid #000', padding: '2mm', fontSize: '10px' }}>{item.productName}</td>
+                  <td style={{ border: '1px solid #000', padding: '2mm', textAlign: 'center', fontSize: '10px' }}>{item.quantity}</td>
+                  <td style={{ border: '1px solid #000', padding: '2mm', textAlign: 'right', fontSize: '10px' }}>
+                    {(item.totalPrice / item.quantity).toLocaleString('vi-VN')}₫
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '2mm', textAlign: 'right', fontSize: '10px', fontWeight: 'bold' }}>
+                    {item.totalPrice.toLocaleString('vi-VN')}₫
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {orderDetail.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="border border-gray-300 px-3 py-2">{item.productName}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-center">{item.quantity}</td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">
-                      {(item.totalPrice / item.quantity).toLocaleString('vi-VN')}₫
-                    </td>
-                    <td className="border border-gray-300 px-3 py-2 text-right">
-                      {item.totalPrice.toLocaleString('vi-VN')}₫
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+              ))}
+            </tbody>
+          </table>
 
-          {/* Totals */}
-          <div className="totals">
-            <div className="total-line">
+          {/* Summary totals */}
+          <div style={{ borderTop: '2px solid #000', paddingTop: '3mm', marginBottom: '5mm' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '1mm' }}>
               <span>Tạm tính:</span>
               <span>{orderDetail.subTotal.toLocaleString('vi-VN')}₫</span>
             </div>
             {orderDetail.taxAmount > 0 && (
-              <div className="total-line">
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '1mm' }}>
                 <span>VAT 10%:</span>
                 <span>{orderDetail.taxAmount.toLocaleString('vi-VN')}₫</span>
               </div>
             )}
             {orderDetail.discountAmount > 0 && (
-              <div className="total-line">
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '1mm', color: '#d00' }}>
                 <span>Giảm giá:</span>
                 <span>-{orderDetail.discountAmount.toLocaleString('vi-VN')}₫</span>
               </div>
             )}
-            <div className="grand-total">
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              fontSize: '14px', 
+              fontWeight: 'bold',
+              borderTop: '1px solid #000',
+              borderBottom: '2px solid #000',
+              padding: '2mm 0',
+              marginTop: '2mm'
+            }}>
               <span>TỔNG CỘNG:</span>
               <span>{orderDetail.totalAmount.toLocaleString('vi-VN')}₫</span>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="footer">
-            {/* Thông tin ngân hàng cho thanh toán QR/chuyển khoản */}
+          <div style={{ marginTop: '5mm', fontSize: '10px' }}>
+            {/* Bank info for QR payments */}
             {(orderDetail.paymentMethod === 'qr' || orderDetail.paymentMethod === 'QR Code' || orderDetail.paymentMethod?.toLowerCase().includes('qr')) && (
-              <div className="bank-info">
+              <div style={{ textAlign: 'center', marginBottom: '3mm', padding: '2mm', border: '1px solid #000' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '1mm' }}>THÔNG TIN CHUYỂN KHOẢN</div>
                 <div>Số TK: 8811192753</div>
                 <div>Ngân hàng TMCP Đầu tư và Phát triển Việt Nam</div>
                 <div>Tên chủ TK: HO KINH DOANH PINK WISH SHOP</div>
               </div>
             )}
-            <div style={{ marginTop: '2mm', fontSize: '9px', fontWeight: 'bold', color: '#000' }}>
-              Cảm ơn - Hẹn gặp lại!
+            <div style={{ textAlign: 'center', fontSize: '12px', fontWeight: 'bold', marginTop: '3mm' }}>
+              ★ Cảm ơn quý khách - Hẹn gặp lại! ★
             </div>
           </div>
         </div>

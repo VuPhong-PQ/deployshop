@@ -18,6 +18,8 @@ import Staff from "@/pages/staff";
 import Settings from "@/pages/settings";
 import OrdersPage from "@/pages/orders";
 import PrintOrder from "@/pages/print-order";
+import InvoicePrint from "@/pages/invoice-print";
+import TestPrint from "@/pages/test-print";
 import EInvoiceSettings from "@/pages/einvoice-settings";
 import VNPTTest from "@/pages/vnpt-test";
 import DataManagement from "@/pages/data-management";
@@ -111,6 +113,16 @@ function Router() {
       <Route path="/print-order/:orderId">
         <ProtectedRoute requiredPermission="ViewOrders">
           <PrintOrder />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/invoice-print/:orderId">
+        <ProtectedRoute requiredPermission="ViewOrders">
+          <InvoicePrint />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/test-print">
+        <ProtectedRoute requiredPermission="ViewOrders">
+          <TestPrint />
         </ProtectedRoute>
       </Route>
       <Route path="/einvoice-settings">

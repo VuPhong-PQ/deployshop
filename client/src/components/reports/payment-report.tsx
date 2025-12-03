@@ -76,19 +76,10 @@ export function PaymentReport() {
       case 'cash': return <Banknote className="w-5 h-5 text-green-600" />;
       case 'card': return <CreditCard className="w-5 h-5 text-blue-600" />;
       case 'qr': return <QrCode className="w-5 h-5 text-purple-600" />;
-      case 'ewallet': return <Smartphone className="w-5 h-5 text-orange-600" />;
-<<<<<<< HEAD
-      case 'banktransfer': return <CreditCard className="w-5 h-5 text-indigo-600" />;
-      case 'foreignusd': return <DollarSign className="w-5 h-5 text-emerald-600" />;
-      case 'foreigneur': return <Euro className="w-5 h-5 text-yellow-600" />;
-=======
-      case 'banktransfer': return <DollarSign className="w-5 h-5 text-indigo-600" />;
-      case 'ngoại tệ': return <DollarSign className="w-5 h-5 text-indigo-600" />;
-      case 'banktransfer_USD': return <DollarSign className="w-5 h-5 text-green-600" />;
-      case 'banktransfer_EUR': return <Euro className="w-5 h-5 text-blue-600" />;
-      case 'ngoại tệ_USD': return <DollarSign className="w-5 h-5 text-green-600" />;
-      case 'ngoại tệ_EUR': return <Euro className="w-5 h-5 text-blue-600" />;
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
+  case 'ewallet': return <Smartphone className="w-5 h-5 text-orange-600" />;
+  case 'banktransfer': return <CreditCard className="w-5 h-5 text-indigo-600" />;
+  case 'foreignusd': return <DollarSign className="w-5 h-5 text-emerald-600" />;
+  case 'foreigneur': return <Euro className="w-5 h-5 text-yellow-600" />;
       default: return <Banknote className="w-5 h-5 text-gray-600" />;
     }
   };
@@ -99,17 +90,9 @@ export function PaymentReport() {
       case 'card': return 'bg-blue-500';
       case 'qr': return 'bg-purple-500';
       case 'ewallet': return 'bg-orange-500';
-      case 'banktransfer': return 'bg-indigo-500';
-<<<<<<< HEAD
-      case 'foreignusd': return 'bg-emerald-500';
-      case 'foreigneur': return 'bg-yellow-500';
-=======
-      case 'ngoại tệ': return 'bg-indigo-500';
-      case 'banktransfer_USD': return 'bg-green-500';
-      case 'banktransfer_EUR': return 'bg-blue-500';
-      case 'ngoại tệ_USD': return 'bg-green-500';
-      case 'ngoại tệ_EUR': return 'bg-blue-500';
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
+  case 'banktransfer': return 'bg-indigo-500';
+  case 'foreignusd': return 'bg-emerald-500';
+  case 'foreigneur': return 'bg-yellow-500';
       default: return 'bg-gray-500';
     }
   };
