@@ -677,10 +677,7 @@ export default function Sales() {
         }
       }
       
-      toast({
-        title: "Thành công",
-        description: "Đơn hàng đã được tạo thành công",
-      });
+      // Toast notification removed
       
       // Tạo object order detail để hiển thị trong popup
       const orderDetail = {
@@ -718,17 +715,7 @@ export default function Sales() {
       setOrderDetailData(orderDetail);
       setShowOrderDetail(true);
       
-      // Auto print if enabled
-      if (printConfig?.autoPrintBill || printConfig?.autoPrintOnOrder) {
-        toast({
-          title: "In tự động",
-          description: "Đang in đơn hàng...",
-          duration: 2000,
-        });
-        setTimeout(() => {
-          window.print();
-        }, 1000); // Delay 1 giây để popup hiển thị đầy đủ
-      }
+      // Removed auto print functionality
       
       // Clear cart và state
       setCart([]);
@@ -3288,13 +3275,7 @@ export default function Sales() {
               Cảm ơn - Hẹn gặp lại
             </div>
             
-            {/* Auto print status indicator */}
-            {(printConfig?.autoPrintBill || printConfig?.autoPrintOnOrder) && (
-              <div className="mt-2 text-center text-xs text-green-600 print:hidden">
-                <Printer className="w-3 h-3 inline mr-1" />
-                In tự động đã được kích hoạt
-              </div>
-            )}
+            {/* Auto print status indicator removed */}
             
             <div className="mt-4 print:hidden">
               {/* Other Actions */}
