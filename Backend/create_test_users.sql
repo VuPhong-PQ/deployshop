@@ -25,16 +25,17 @@ WHERE NOT EXISTS (SELECT 1 FROM Staffs WHERE Username = 'test');
 INSERT INTO Permissions (PermissionName, Description, IsActive) 
 VALUES 
 ('ViewSales', 'Xem bán hàng', 1),
+('ViewReSales', 'Xem bán hàng bổ sung', 1),
 ('ManageProducts', 'Quản lý sản phẩm', 1),
 ('ManageStaff', 'Quản lý nhân viên', 1),
 ('ViewReports', 'Xem báo cáo', 1)
-WHERE NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionName IN ('ViewSales', 'ManageProducts', 'ManageStaff', 'ViewReports'));
+WHERE NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionName IN ('ViewSales', 'ViewReSales', 'ManageProducts', 'ManageStaff', 'ViewReports'));
 
 -- Gán quyền cho role Admin
 INSERT INTO RolePermissions (RoleId, PermissionId)
 SELECT @AdminRoleId, PermissionId 
 FROM Permissions 
-WHERE PermissionName IN ('ViewSales', 'ManageProducts', 'ManageStaff', 'ViewReports')
+WHERE (PermissionName IN ('ViewSales', 'ViewReSales', 'ManageProducts', 'ManageStaff', 'ViewReports'))
 AND NOT EXISTS (
     SELECT 1 FROM RolePermissions 
     WHERE RoleId = @AdminRoleId AND PermissionId = Permissions.PermissionId

@@ -89,19 +89,75 @@ export default function OrdersPage() {
   const [selectedStoreId, setSelectedStoreId] = useState<string>("all");
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>("all");
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string>("all");
+  // Date range filter (YYYY-MM-DD)
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  // Pagination
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(50); // options: 10,50,100,200,500,1000,0(all)
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
   
   const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ["/api/orders", startDate, endDate, page, pageSize],
     queryFn: async () => {
-      const res = await apiRequest("/api/orders", { method: "GET" });
-      // Nếu trả về string, parse lại
+      const parts: string[] = [];
+      if (startDate) parts.push(`startDate=${encodeURIComponent(startDate)}`);
+      if (endDate) parts.push(`endDate=${encodeURIComponent(endDate)}`);
+      parts.push(`page=${page}`);
+      parts.push(`pageSize=${pageSize}`);
+      const query = parts.length ? `?${parts.join("&")}` : "";
+      const res = await apiRequest(`/api/orders${query}`, { method: "GET" });
+
+      // API may return two shapes:
+      // 1) legacy: array of orders
+      // 2) new: { items: [...], pagination: { total, page, pageSize, totalPages } }
       const raw = typeof res === "string" ? JSON.parse(res) : res;
-      // Sửa lại items nếu là chuỗi JSON
-      const mapped = raw.map((order: any) => ({
-        ...order,
-        items: typeof order.items === "string" ? JSON.parse(order.items) : order.items
+
+      let extracted: any[] = [];
+      if (Array.isArray(raw)) {
+        extracted = raw;
+        setTotalItems(extracted.length);
+        setTotalPages(1);
+      } else if (raw && raw.items) {
+        // raw.items may contain wrapped objects depending on server shape
+        extracted = raw.items.map((it: any) => {
+          // it could be { Order: {...}, StoreName: '...' } or direct order-like object
+          if (it.Order) {
+            return { ...it.Order, storeName: it.StoreName || it.StoreName };
+          }
+          // ensure items field is parsed
+          return it;
+        });
+        // set pagination info if available
+        if (raw.pagination) {
+          setTotalItems(raw.pagination.total || extracted.length);
+          setTotalPages(raw.pagination.totalPages || 1);
+        } else {
+          setTotalItems(extracted.length);
+          setTotalPages(1);
+        }
+      }
+
+      // Normalize items: ensure .items is array, and camelCase props
+      const mapped = extracted.map((order: any) => ({
+        orderId: order.orderId ?? order.OrderId ?? order.Order?.OrderId,
+        customerName: order.customerName ?? order.CustomerName ?? order.Order?.CustomerName,
+        createdAt: order.createdAt ?? order.CreatedAt ?? order.Order?.CreatedAt,
+        totalAmount: order.totalAmount ?? order.TotalAmount ?? order.Order?.TotalAmount ?? 0,
+        items: typeof order.items === "string" ? JSON.parse(order.items) : (order.items ?? order.Order?.Items ?? []),
+        taxAmount: order.taxAmount ?? order.TaxAmount ?? order.Order?.TaxAmount,
+        paymentMethod: order.paymentMethod ?? order.PaymentMethod ?? order.Order?.PaymentMethod,
+        paymentStatus: order.paymentStatus ?? order.PaymentStatus ?? order.Order?.PaymentStatus,
+        status: order.status ?? order.Status ?? order.Order?.Status,
+        cashierName: order.cashierName ?? order.CashierName ?? order.Order?.CashierName,
+        subtotal: order.subtotal ?? order.SubTotal ?? order.Order?.SubTotal,
+        discountAmount: order.discountAmount ?? order.DiscountAmount ?? order.Order?.DiscountAmount,
+        cancellationReason: order.cancellationReason ?? order.CancellationReason ?? order.Order?.CancellationReason,
+        storeId: order.storeId ?? order.StoreId ?? order.Order?.StoreId,
+        storeName: order.storeName ?? order.StoreName ?? order.StoreName ?? (order.Order ? order.Order.StoreName : undefined)
       }));
-      console.log("orders:", mapped);
+
       return mapped;
     },
     refetchInterval: 5000, // Auto-refresh every 5 seconds for real-time updates
@@ -295,8 +351,6 @@ export default function OrdersPage() {
       });
       refetch(); // Refresh danh sách
     } catch (error: any) {
-      console.log("Delete error:", error);
-      
       // Hiển thị lỗi chi tiết cho user
       toast({
         variant: "destructive",
@@ -377,8 +431,8 @@ export default function OrdersPage() {
       
       {/* Filter và Search */}
       <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <CardContent className="p-4 overflow-visible">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 overflow-visible">
             {/* Search box */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -428,6 +482,38 @@ export default function OrdersPage() {
                 <SelectItem value="completed">Hoàn thành</SelectItem>
                 <SelectItem value="pending">Đang xử lý</SelectItem>
                 <SelectItem value="cancelled">Đã hủy</SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Date range filter */}
+            <div className="flex gap-2 items-center overflow-visible min-w-0">
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md relative z-50 min-w-0"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
+                placeholder="Start date"
+              />
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md relative z-50 min-w-0"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
+                placeholder="End date"
+              />
+            </div>
+            {/* Page size selector */}
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Số hàng / trang" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="500">500</SelectItem>
+                <SelectItem value="1000">1000</SelectItem>
+                <SelectItem value="0">Tất cả</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -512,6 +598,7 @@ export default function OrdersPage() {
       {isLoading ? (
         <div>Đang tải...</div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredOrders.map((order) => (
             <Card key={order.orderId} className={getCardBorderClass(order.paymentStatus, order.status)}>
@@ -665,6 +752,21 @@ export default function OrdersPage() {
             </Card>
           ))}
         </div>
+
+          {/* Pagination controls */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Tổng: <span className="font-medium">{totalItems}</span> đơn
+              {pageSize > 0 && (
+                <span> • Trang <span className="font-medium">{page}</span> / <span className="font-medium">{totalPages}</span></span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={() => { if (page > 1) setPage(p => p-1); }} disabled={page <= 1}>Prev</Button>
+              <Button size="sm" onClick={() => { if (page < totalPages) setPage(p => p+1); }} disabled={page >= totalPages || pageSize === 0}>Next</Button>
+            </div>
+          </div>
+        </>
       )}
 
 

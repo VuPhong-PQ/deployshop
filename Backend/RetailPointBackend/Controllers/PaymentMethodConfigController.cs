@@ -56,17 +56,13 @@ namespace RetailPointBackend.Controllers
                 enabledMethods.Add(new { id = "ewallet", name = "USD Ngoại Tệ", enabled = true });
             
             if (config.EnableBankTransfer)
-<<<<<<< HEAD
                 enabledMethods.Add(new { id = "banktransfer", name = "Chuyển khoản", enabled = true });
-            
+
             if (config.EnableForeignUSD)
                 enabledMethods.Add(new { id = "foreignusd", name = "Ngoại tệ USD", enabled = true });
-            
+
             if (config.EnableForeignEUR)
                 enabledMethods.Add(new { id = "foreigneur", name = "Ngoại tệ EUR", enabled = true });
-=======
-                enabledMethods.Add(new { id = "banktransfer", name = "Ngoại tệ", enabled = true });
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
 
             return Ok(new
             {

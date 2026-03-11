@@ -7,7 +7,13 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Cấu hình server listen trên IP production - chỉ HTTP
-builder.WebHost.UseUrls("http://101.53.9.76:5273");
+// NOTE: Don't force a fixed URL when running under IIS (in-process or out-of-process).
+// When the app is hosted by IIS/ANCM, ANCM controls the address/port. For local
+// self-host scenarios (not under IIS) we keep the explicit binding.
+if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_IIS_PHYSICAL_PATH")))
+{
+    builder.WebHost.UseUrls("http://101.53.9.76:5273");
+}
 
 // Cấu hình encoding UTF-8
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

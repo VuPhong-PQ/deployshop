@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { normalizeSearchText } from "@/lib/utils";
 import { queryClient } from "@/lib/queryClient";
 import {
   Users,
@@ -112,6 +113,7 @@ export default function Staff() {
   // Role management state
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any | null>(null);
+  const [permissionSearch, setPermissionSearch] = useState("");
 
   // Fetch data
   const { data: staff = [], isLoading: staffLoading } = useQuery<any[]>({
@@ -666,10 +668,18 @@ export default function Staff() {
 
   // Filter staff
   const filteredStaff = staff.filter((member: any) => {
-    const matchesSearch = member.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.phoneNumber?.includes(searchTerm);
+    const q = normalizeSearchText(searchTerm || "");
+    const name = normalizeSearchText(member.fullName || "");
+    const email = normalizeSearchText(member.email || "");
+    const username = normalizeSearchText(member.username || "");
+    const phone = (member.phoneNumber || "").toString();
+
+    const matchesSearch = q === "" ||
+      name.includes(q) ||
+      email.includes(q) ||
+      username.includes(q) ||
+      phone.includes(q);
+
     const matchesRole = selectedRole === "all" || member.roleId?.toString() === selectedRole;
     return matchesSearch && matchesRole;
   });
@@ -1446,8 +1456,23 @@ export default function Staff() {
           </div>
           
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {permissions.map((permission: any) => {
+                <div className="mb-2">
+                  <Input
+                    placeholder="Tìm quyền hạn (gõ không dấu)..."
+                    value={permissionSearch}
+                    onChange={(e) => setPermissionSearch(e.target.value)}
+                    className="mb-3"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {permissions.filter((permission: any) => {
+                    if (!permissionSearch) return true;
+                    const q = normalizeSearchText(permissionSearch || "");
+                    const name = normalizeSearchText(permission.permissionName || "");
+                    const desc = normalizeSearchText(permission.description || "");
+                    return name.includes(q) || desc.includes(q);
+                  }).map((permission: any) => {
                 const hasPermission = selectedConfigRole?.permissions?.some(
                   (p: any) => p.permissionId === permission.permissionId
                 );

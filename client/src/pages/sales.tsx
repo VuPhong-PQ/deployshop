@@ -163,18 +163,16 @@ export default function Sales() {
     const urlParams = new URLSearchParams(window.location.search);
     const storeId = urlParams.get('storeId');
     
-    console.log('Sales page - URL storeId:', storeId);
-    console.log('Sales page - Current store:', currentStore);
-    console.log('Sales page - Available stores:', availableStores);
+  // debug logs removed for production cleanliness
     
     if (storeId && parseInt(storeId) !== currentStore?.storeId) {
       // Kiểm tra xem user có quyền truy cập store này không
       const targetStore = availableStores?.find(store => store.storeId === parseInt(storeId));
-      console.log('Sales page - Target store found:', targetStore);
+  // debug: target store found (log removed)
       
       if (targetStore) {
         // Chỉ switch nếu store này nằm trong danh sách availableStores (đã được filter theo permissions)
-        console.log('Sales page - Switching to authorized store:', parseInt(storeId));
+  // debug: switching to authorized store (log removed)
         switchStore(parseInt(storeId));
         // Remove storeId from URL after switching
         const newUrl = window.location.pathname;
@@ -237,7 +235,7 @@ export default function Sales() {
     queryKey: ["/api/PaymentMethodConfig/enabled"],
     queryFn: async () => {
       const res = await apiRequest("/api/PaymentMethodConfig/enabled", { method: "GET" });
-      console.log('Payment config fetched:', res);
+  // Payment config fetched - debug log removed
       return res;
     },
     staleTime: 0, // Always refetch to get latest config
@@ -274,7 +272,7 @@ export default function Sales() {
   // Listen for payment config changes from settings page
   useEffect(() => {
     const handlePaymentConfigChange = () => {
-      console.log('Payment config changed, refetching...');
+      // Payment config changed - debug log removed
       refetchPaymentConfig();
     };
 
@@ -297,7 +295,7 @@ export default function Sales() {
 
   // Debug log for payment methods
   useEffect(() => {
-    console.log('Available payment methods updated:', availablePaymentMethods);
+    // Available payment methods updated - debug log removed
   }, [availablePaymentMethods]);
 
   // Generate QR URL based on settings
@@ -339,32 +337,32 @@ export default function Sales() {
 
   // Utility function để dispatch event và debug
   const dispatchReportsUpdate = (source: string) => {
-    console.log(`Dispatching newOrderCreated event from ${source}...`);
+    // dispatch event (debug log removed)
     window.dispatchEvent(new CustomEvent('newOrderCreated'));
   };
 
   // Check localStorage when location changes (when navigating to this page)
   useEffect(() => {
     if (location === '/sales') {
-      console.log('Navigated to sales page, checking localStorage...'); // Debug log
+      // navigated to sales page - debug log removed
       setCheckLocalStorage(prev => prev + 1);
     }
   }, [location]);
 
   // Also check localStorage immediately when component mounts
   useEffect(() => {
-    console.log('Sales component mounted, checking localStorage immediately...'); // Debug log
+    // Sales component mounted - debug log removed
     setCheckLocalStorage(prev => prev + 1);
   }, []);
 
   // Check for order to reopen from localStorage
   useEffect(() => {
     const reopenOrderData = localStorage.getItem('reopenOrder');
-    console.log('Checking for reopen order data:', reopenOrderData); // Debug log
+  // Checking for reopen order data - debug log removed
     if (reopenOrderData) {
       try {
         const orderDetail = JSON.parse(reopenOrderData);
-        console.log('Parsed order detail:', orderDetail); // Debug log
+  // Parsed order detail - debug log removed
         loadOrderIntoCart(orderDetail);
         // Clear the data after loading
         localStorage.removeItem('reopenOrder');
@@ -378,20 +376,20 @@ export default function Sales() {
   // Listen for focus events to check localStorage when user returns to tab
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Window focused, checking localStorage...'); // Debug log
+      // Window focused - debug log removed
       setCheckLocalStorage(prev => prev + 1); // Trigger localStorage check
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Tab became visible, checking localStorage...'); // Debug log
+  // Tab became visible - debug log removed
         setCheckLocalStorage(prev => prev + 1); // Trigger localStorage check
       }
     };
 
     // Listen for custom event from reopen order actions
     const handleReopenOrderSet = () => {
-      console.log('Reopen order event received, checking localStorage...'); // Debug log
+      // Reopen order event received - debug log removed
       setCheckLocalStorage(prev => prev + 1); // Trigger localStorage check
     };
 
@@ -408,7 +406,7 @@ export default function Sales() {
 
   // Function to load pending order into cart
   const loadOrderIntoCart = (orderDetail: any) => {
-    console.log('Loading order into cart:', orderDetail); // Debug log
+    // Loading order into cart - debug log removed
     
     // Store the current reopened order info
     setCurrentReopenedOrder(orderDetail);
@@ -431,8 +429,8 @@ export default function Sales() {
       cartItemId: `cart-${Date.now()}-${index}`,
     }));
     
-    console.log('Cart items created:', cartItems); // Debug log
-    setCart(cartItems);
+  // Cart items created - debug log removed
+  setCart(cartItems);
     
     // Set customer if available
     if (orderDetail.customer) {
@@ -467,7 +465,7 @@ export default function Sales() {
         }
         
         const url = `http://101.53.9.76:5273/api/products?${params.toString()}`;
-        console.log('PRODUCTS QUERY - Starting fetch with URL:', url);
+  // PRODUCTS QUERY - starting fetch (debug log removed)
         
         const response = await fetch(url);
         
@@ -476,7 +474,7 @@ export default function Sales() {
         }
         
         const result = await response.json();
-        console.log('PRODUCTS QUERY - Success! Got result:', result);
+  // PRODUCTS QUERY - success (debug log removed)
         
         // Xử lý cả 2 trường hợp: response trực tiếp là array hoặc có thuộc tính products/Products
         if (Array.isArray(result)) {
@@ -497,14 +495,7 @@ export default function Sales() {
     enabled: !!currentStore?.storeId, // Only when we have storeId
   });
 
-  // Debug logs for products
-  console.log('Sales page - Products data:', products);
-  console.log('Sales page - Products count:', products.length);
-  console.log('Sales page - Products loading:', productsLoading);
-  console.log('Sales page - Products error:', productsError);
-  console.log('Sales page - Current store for products:', currentStore);
-  console.log('Sales page - currentStore?.storeId:', currentStore?.storeId);
-  console.log('Sales page - Query enabled?:', !!currentStore?.storeId);
+  // Product debug logs removed to reduce console noise
 
   // Fetch featured products
   const { data: featuredProducts = [], isLoading: featuredLoading } = useQuery<Product[]>({
@@ -522,14 +513,14 @@ export default function Sales() {
           params.append('storeId', currentStore.storeId.toString());
         }
         
-        const url = `/api/products/featured?${params.toString()}`;
-        console.log('FEATURED PRODUCTS QUERY - Fetching with URL:', url);
+  const url = `/api/products/featured?${params.toString()}`;
+  // FEATURED PRODUCTS QUERY - fetching URL (debug log removed)
         
         const response = await apiRequest(url, {
           method: 'GET'
         });
         
-        console.log('FEATURED PRODUCTS QUERY - Success! Got result:', response);
+  // FEATURED PRODUCTS QUERY - success (debug log removed)
         
         // Xử lý nhiều format response khác nhau
         if (response && Array.isArray(response.products)) {
@@ -638,7 +629,7 @@ export default function Sales() {
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log('Gửi đơn hàng lên backend:', formData);
+  // Sending order data to backend (debug log removed)
       return await apiRequest('/api/orders', { method: 'POST', body: formData });
     },
     onSuccess: async (response) => {
@@ -646,7 +637,7 @@ export default function Sales() {
       if (selectedDiscount && response?.orderId) {
         try {
           await applyDiscount(response.orderId, selectedDiscount.id);
-          console.log('Discount applied successfully to order:', response.orderId);
+          // Discount applied successfully - debug log removed
         } catch (error) {
           console.error('Failed to apply discount:', error);
           // Still show success for order creation even if discount fails
@@ -661,7 +652,7 @@ export default function Sales() {
       // For manual discount, we'll store it in order notes/description for now
       // (since it's ad-hoc and doesn't need to be tracked like predefined discounts)
       if (manualDiscountAmount > 0 && response?.orderId) {
-        console.log('Manual discount applied to order:', response.orderId, manualDiscountAmount);
+        // Manual discount applied - debug log removed
       }
       
       // Process loyalty points for the order
@@ -670,7 +661,7 @@ export default function Sales() {
           const loyaltyResponse = await apiRequest(`/api/LoyaltyProcess/process-order/${response.orderId}`, { 
             method: 'POST' 
           });
-          console.log('Loyalty points processed for order:', response.orderId, loyaltyResponse);
+          // Loyalty points processed - debug log removed
         } catch (error) {
           console.error('Failed to process loyalty points:', error);
           // Don't show error to user since order creation was successful
@@ -746,7 +737,7 @@ export default function Sales() {
   // Save order for later mutation (for pending orders)
   const saveOrderForLaterMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log('Gửi đơn hàng chờ thanh toán lên backend:', formData);
+      // Sending pending order to backend (debug log removed)
       return await apiRequest('/api/orders', { method: 'POST', body: formData });
     },
     onSuccess: () => {
@@ -801,7 +792,7 @@ export default function Sales() {
   // Complete order mutation (for reopened orders)
   const completeOrderMutation = useMutation({
     mutationFn: async ({ orderId, formData }: { orderId: number, formData: FormData }) => {
-      console.log('Cập nhật đơn hàng:', orderId, formData);
+      // Updating order (complete) - debug log removed
       return await apiRequest(`/api/orders/${orderId}/complete`, { method: 'PUT', body: formData });
     },
     onSuccess: () => {
@@ -842,14 +833,14 @@ export default function Sales() {
       // Process loyalty points for the completed order
       if (currentReopenedOrder?.orderId) {
         (async () => {
-          try {
-            const loyaltyResponse = await apiRequest(`/api/LoyaltyProcess/process-order/${currentReopenedOrder.orderId}`, { 
-              method: 'POST' 
-            });
-            console.log('Loyalty points processed for completed order:', currentReopenedOrder.orderId, loyaltyResponse);
-          } catch (error) {
-            console.error('Failed to process loyalty points for completed order:', error);
-          }
+            try {
+              const loyaltyResponse = await apiRequest(`/api/LoyaltyProcess/process-order/${currentReopenedOrder.orderId}`, { 
+                method: 'POST' 
+              });
+              // Loyalty points processed for completed order - debug log removed
+            } catch (error) {
+              console.error('Failed to process loyalty points for completed order:', error);
+            }
         })();
       }
       
@@ -921,7 +912,7 @@ export default function Sales() {
                      customerData.hangKhachHang === 'Premium' ? 'premium' : 'regular'
       };
       
-      console.log('Creating customer with data:', requestData);
+  // Creating customer - debug log removed
       
       return await apiRequest(`/api/customers${storeParam}`, { 
         method: 'POST', 
@@ -1231,7 +1222,7 @@ export default function Sales() {
 
   // Add product to cart
   const addToCart = (product: Product) => {
-    console.log('Adding product to cart:', product);
+    // Adding product to cart - debug log removed
     
     // Kiểm tra tồn kho trước khi thêm vào giỏ hàng
     if (product.stockQuantity <= 0) {
@@ -1256,20 +1247,18 @@ export default function Sales() {
       totalPrice: Number(product.price)
     };
     setCart([...cart, newItem]);
-    console.log('Cart after adding:', [...cart, newItem]);
   };
 
   // Handle barcode scan
   const handleBarcodeSubmit = (barcode: string) => {
-    console.log('🔍 Scanning barcode:', barcode);
+    // Scanning barcode - debug log removed
     
     if (!barcode.trim()) {
       return;
     }
     
     // Normalize barcode for search (remove spaces, lowercase)
-    const normalizedBarcode = barcode.trim().toLowerCase().replace(/\s+/g, '');
-    console.log('📝 Normalized barcode:', normalizedBarcode);
+  const normalizedBarcode = barcode.trim().toLowerCase().replace(/\s+/g, '');
     
     // Combine all products and featured products for comprehensive search
     const allProductsForSearch = [
@@ -1282,34 +1271,9 @@ export default function Sales() {
       index === self.findIndex((p) => p.productId === product.productId)
     );
     
-    // Debug: Log all products and their barcodes
-    console.log('📦 Total products loaded:', (products || []).length);
-    console.log('⭐ Total featured products loaded:', (featuredProducts || []).length);
-    console.log('🔗 Combined unique products for search:', uniqueProducts.length);
-    console.log('🏷️ All products with barcodes:', uniqueProducts
-      .filter(p => p.barcode)
-      .map(p => ({
-        id: p.productId,
-        name: p.name,
-        barcode: p.barcode,
-        normalized: p.barcode?.trim().toLowerCase().replace(/\s+/g, ''),
-        source: (products || []).find(prod => prod.productId === p.productId) ? 'products' : 'featured'
-      }))
-    );
+    // Product debug logs removed (counts and barcode listing)
     
-    // Special debug for SP002322
-    if (normalizedBarcode === 'sp002322') {
-      console.log('🔍 Special debug for SP002322:');
-      const sp002322Products = uniqueProducts.filter(p => 
-        p.barcode && p.barcode.toLowerCase().includes('sp002322')
-      );
-      console.log('Found SP002322 products in combined search:', sp002322Products);
-      
-      const exactMatch = uniqueProducts.find(p => 
-        p.barcode && p.barcode.trim().toLowerCase() === 'sp002322'
-      );
-      console.log('Exact match for SP002322 in combined search:', exactMatch);
-    }
+    // Special-case debug removed for SP002322
     
     // Find product by barcode with flexible matching - now searching in combined array
     const product = uniqueProducts.find(p => {
@@ -1318,24 +1282,24 @@ export default function Sales() {
       // Normalize product barcode too
       const normalizedProductBarcode = p.barcode.trim().toLowerCase().replace(/\s+/g, '');
       
-      console.log(`🔄 Comparing: "${normalizedBarcode}" vs "${normalizedProductBarcode}"`);
+  // Comparing normalized barcodes (debug log removed)
       
       // Try exact match first
       if (normalizedProductBarcode === normalizedBarcode) {
-        console.log('✅ Exact match found!');
+        // Exact match found (debug log removed)
         return true;
       }
       
       // Try partial match (contains)
       if (normalizedProductBarcode.includes(normalizedBarcode) || normalizedBarcode.includes(normalizedProductBarcode)) {
-        console.log('🎯 Partial match found!');
+        // Partial match found (debug log removed)
         return true;
       }
       
       return false;
     });
     
-    console.log('🎁 Found product:', product);
+  // Found product - debug log removed
     
     if (product) {
       addToCart(product);
@@ -1355,11 +1319,9 @@ export default function Sales() {
         setTimeout(() => barcodeInputRef.focus(), 100);
       }
     } else {
-      console.log('❌ No product found for barcode:', barcode);
-      console.log('💡 Suggestion: Check if product exists or create new product with this barcode');
+      // No product found for barcode - debug logs removed
       
       // Try to refresh products data first
-      console.log('🔄 Refreshing products data to check for recently added products...');
       queryClient.invalidateQueries({ queryKey: ['products-sales'] });
       queryClient.invalidateQueries({ queryKey: ['/api/products/featured'] });
       
@@ -1380,17 +1342,14 @@ export default function Sales() {
           index === self.findIndex((p) => p.productId === product.productId)
         );
         
-        console.log('🔄 After refresh - Total products:', refreshedProducts.length);
-        console.log('🔄 After refresh - Featured products:', refreshedFeatured.length);
-        console.log('🔄 After refresh - Combined unique products:', uniqueRefreshedProducts.length);
-        console.log('🔄 After refresh - Products with barcodes:', uniqueRefreshedProducts.filter(p => p.barcode).length);
+  // After refresh - debug logs removed
         
         // Try to find the product again with refreshed data
         const productAfterRefresh = uniqueRefreshedProducts.find(p => {
           if (!p.barcode) return false;
           
           const normalizedProductBarcode = p.barcode.trim().toLowerCase().replace(/\s+/g, '');
-          console.log(`🔄 Re-checking: "${normalizedBarcode}" vs "${normalizedProductBarcode}"`);
+          // Re-checking normalized barcodes - debug log removed
           
           return normalizedProductBarcode === normalizedBarcode || 
                  normalizedProductBarcode.includes(normalizedBarcode) || 
@@ -1398,7 +1357,7 @@ export default function Sales() {
         });
         
         if (productAfterRefresh) {
-          console.log('✅ Found product after refresh!', productAfterRefresh);
+          // Found product after refresh - debug log removed
           addToCart(productAfterRefresh);
           playNotificationSound();
           toast({
@@ -1413,15 +1372,14 @@ export default function Sales() {
           return;
         }
         
-        // Still not found after refresh
-        console.log('❌ Still not found after refresh. Product might not exist.');
+  // Still not found after refresh - debug log removed
         
         // Check if we can find any similar products to suggest
         const similarProducts = (products || []).filter(p => 
           p.barcode && p.barcode.toLowerCase().includes(normalizedBarcode.substring(0, 3))
         );
         
-        console.log('🔍 Similar products found:', similarProducts);
+  // Similar products found - debug log removed
         
         toast({
           title: "❌ Không tìm thấy sản phẩm",
@@ -1459,10 +1417,8 @@ export default function Sales() {
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    // Show similar products in console and potentially add first one
-                    console.log('🎯 Similar products for', barcode, ':', similarProducts);
+                    // Show similar products and auto-add if only one result (debug logs removed)
                     if (similarProducts.length === 1) {
-                      console.log('🎯 Auto-adding the only similar product:', similarProducts[0]);
                       addToCart(similarProducts[0]);
                       playNotificationSound();
                       toast({
@@ -1495,7 +1451,7 @@ export default function Sales() {
 
   // Handle camera scan
   const handleCameraScan = (code: string) => {
-    console.log('📷 Camera scanned:', code);
+    // Camera scanned - debug log removed
     setShowCameraScanner(false);
     
     // Use the same logic as barcode input
@@ -1703,7 +1659,7 @@ export default function Sales() {
 
   // Complete reopened order (update existing order)
   const completeReopenedOrder = () => {
-    console.log('Complete reopened order with payment method:', selectedPayment); // Debug log
+    // Completing reopened order - debug log removed
     const formData = new FormData();
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', 'paid');
@@ -1724,7 +1680,7 @@ export default function Sales() {
 
   // Create new order
   const createNewOrder = () => {
-    console.log('Creating new order with payment method:', selectedPayment); // Debug log
+    // Creating new order - debug log removed
     // Tạo form-data đúng chuẩn cho backend
     const formData = new FormData();
     formData.append('orderNumber', `ORD${Date.now()}`);
@@ -1758,7 +1714,7 @@ export default function Sales() {
       formData.append(`items[${idx}].unitPrice`, item.price?.toString() || "0");
       formData.append(`items[${idx}].totalPrice`, item.totalPrice?.toString() || "0");
     });
-    console.log('FormData gửi lên:', Array.from(formData.entries()));
+  // FormData prepared for submission (debug log removed)
     createOrderMutation.mutate(formData);
   };
 
@@ -1848,10 +1804,7 @@ export default function Sales() {
   // Modified function to handle e-invoice submission with order creation
   const handleEInvoiceSubmit = async () => {
     try {
-      console.log('=== Creating order with e-invoice ===');
-      console.log('Cart:', cart);
-      console.log('Selected customer:', selectedCustomer);
-      console.log('E-invoice data:', eInvoiceData);
+  // Creating order with e-invoice - debug logs removed
       
       // First create the order
       const formData = new FormData();
@@ -1881,7 +1834,7 @@ export default function Sales() {
         formData.append(`items[${idx}].totalPrice`, item.totalPrice?.toString() || "0");
       });
 
-      console.log('Order FormData:', Array.from(formData.entries()));
+  // Order FormData prepared (debug log removed)
 
       // Create order and get order ID
       const orderResponse = await apiRequest('/api/orders', { 
@@ -1889,10 +1842,10 @@ export default function Sales() {
         body: formData 
       });
 
-      console.log('Order response:', orderResponse);
+  // Order response received (debug log removed)
 
       if (orderResponse && orderResponse.orderId) {
-        console.log('Creating e-invoice for order:', orderResponse.orderId);
+  // Creating e-invoice for order - debug log removed
         
         // Then create e-invoice for the order
         const eInvoicePayload = {
@@ -1900,7 +1853,7 @@ export default function Sales() {
           buyerInfo: eInvoiceData
         };
         
-        console.log('E-invoice payload:', eInvoicePayload);
+  // E-invoice payload prepared (debug log removed)
         
         await createEInvoiceMutation.mutateAsync({
           orderId: orderResponse.orderId,
@@ -1982,7 +1935,7 @@ export default function Sales() {
       formData.append(`items[${idx}].totalPrice`, item.totalPrice?.toString() || "0");
     });
     
-    console.log('FormData đơn hàng chờ:', Array.from(formData.entries()));
+  // FormData for pending order prepared (debug log removed)
     
     // Show loading toast
     toast({
@@ -2072,7 +2025,7 @@ export default function Sales() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      console.log('🔄 Manual refresh products...');
+                      // Manual refresh products triggered (debug log removed)
                       queryClient.invalidateQueries({ queryKey: ['products-sales'] });
                       toast({
                         title: "🔄 Đang cập nhật",
@@ -2711,7 +2664,7 @@ export default function Sales() {
                       <div className="w-8"></div> {/* Space cho nút xóa */}
                     </div>
                     
-                    {console.log('Rendering cart items:', cart)}
+                    {/* Cart render debug removed */}
                     {cart.map((item, index) => (
                       <div 
                         key={item.cartItemId} 

@@ -18,6 +18,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
 import type { ApiCustomer, CustomerFormData, ApiStore, Customer, Order, OrderItem, CustomerDetailData } from "@/types/api";
+import { useAuth } from "@/contexts/auth-context";
 
 const customerFormSchema = z.object({
   name: z.string().min(1, "Họ tên là bắt buộc"),
@@ -36,6 +37,7 @@ type CustomerFormData = z.infer<typeof customerFormSchema>;
 
 export default function Customers() {
   // ...existing code...
+  const { currentStore } = useAuth();
   // Add customer mutation
   const addCustomerMutation = useMutation({
     mutationFn: async (customerData: CustomerFormData) => {
@@ -102,14 +104,18 @@ export default function Customers() {
 
   // Fetch customers and orders
   const { data: rawCustomers = [], isLoading, refetch } = useQuery<ApiCustomer[]>({
-    queryKey: ['/api/customers', { showInactive }],
+    queryKey: ['/api/customers', currentStore?.storeId, showInactive],
     queryFn: async () => {
-      const endpoint = showInactive ? '/api/customers/inactive' : '/api/customers';
+      const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
+      const endpointBase = showInactive ? '/api/customers/inactive' : '/api/customers';
+      const endpoint = `${endpointBase}${storeParam}`;
       console.log('Fetching customers from API:', endpoint);
       const response = await apiRequest(endpoint, { method: 'GET' });
       console.log('Raw API response:', response);
       return response;
     },
+    // Only fetch when a store is selected to avoid empty responses from store-scoped endpoints
+    enabled: !!currentStore?.storeId,
     // Override global settings - force fresh data
     staleTime: 0,
     gcTime: 0,
@@ -216,14 +222,15 @@ export default function Customers() {
 
   // Fetch inactive customers
   const { data: inactiveCustomers = [] } = useQuery<ApiCustomer[]>({
-    queryKey: ['/api/customers/inactive'],
+    queryKey: ['/api/customers/inactive', currentStore?.storeId],
     queryFn: async () => {
+      const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
       console.log('Fetching inactive customers...');
-      const response = await apiRequest('/api/customers/inactive', { method: 'GET' });
+      const response = await apiRequest(`/api/customers/inactive${storeParam}`, { method: 'GET' });
       console.log('Inactive customers response:', response);
       return response;
     },
-    enabled: showInactive,
+    enabled: showInactive && !!currentStore?.storeId,
   });
 
   // Form for adding/editing customers
@@ -523,12 +530,9 @@ export default function Customers() {
             >
               {showInactive ? "Hiển thị hoạt động" : "Hiển thị đã xóa"}
             </Button>
-            <Button 
+              <Button 
               variant="outline" 
-              onClick={() => {
-                console.log('Force refreshing customers data...');
-                refetch();
-              }}
+              onClick={() => refetch()}
               data-testid="button-refresh-data"
             >
               🔄 Refresh Data
@@ -556,7 +560,7 @@ export default function Customers() {
               </DialogHeader>
 
               <Form {...form}>
-                {console.log('Form rendered')}
+                {/* form render debug removed */}
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
@@ -739,26 +743,12 @@ export default function Customers() {
                 <Card 
                   key={customerId} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => {
-                    console.log('=== CUSTOMER CLICK DEBUG ===');
-                    console.log('Clicked customer:', customer);
-                    console.log('Show inactive:', showInactive);
-                    console.log('Raw customers length:', rawCustomers?.length);
-                    console.log('Customer ID:', customerId);
-                    console.log('Customer ID type:', typeof customerId);
-                    
-                    const rawCustomer = showInactive 
-                      ? customer 
-                      : rawCustomers.find(rc => {
-                          console.log(`Comparing rawCustomer.customerId: ${rc.customerId} (${typeof rc.customerId}) vs customerId: ${customerId} (${typeof customerId})`);
-                          return rc.customerId.toString() === customerId.toString();
-                        });
-                    
-                    console.log('Found rawCustomer:', rawCustomer);
-                    console.log('Setting selected customer...');
-                    setSelectedCustomer(rawCustomer || null);
-                    console.log('=== END DEBUG ===');
-                  }}
+                    onClick={() => {
+                      const rawCustomer = showInactive 
+                        ? customer 
+                        : rawCustomers.find(rc => rc.customerId.toString() === customerId.toString());
+                      setSelectedCustomer(rawCustomer || null);
+                    }}
                   data-testid={`customer-card-${customerId}`}
                 >
                   <CardContent className="p-6">
@@ -865,7 +855,7 @@ export default function Customers() {
         </div>
 
         {/* Customer Detail Modal */}
-        {console.log('Modal render check - selectedCustomer:', selectedCustomer)}
+  {/* Modal render debug removed */}
         {selectedCustomer && (
           <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -873,7 +863,7 @@ export default function Customers() {
                 <DialogTitle>Chi tiết khách hàng</DialogTitle>
               </DialogHeader>
 
-              {console.log('Modal content rendering for customer:', selectedCustomer?.hoTen || selectedCustomer?.name)}
+              {/* Modal content render debug removed */}
               <Tabs defaultValue="info" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="info" data-testid="tab-customer-info">Thông tin</TabsTrigger>
@@ -913,7 +903,7 @@ export default function Customers() {
                 </TabsContent>
 
                 <TabsContent value="orders" className="space-y-4">
-                  {console.log('Orders tab rendering - isLoadingDetail:', isLoadingDetail, 'getCustomerOrders().length:', getCustomerOrders().length)}
+                  {/* Orders tab render debug removed */}
                   {isLoadingDetail ? (
                     <div className="text-center py-8">
                       <p>Đang tải đơn hàng...</p>

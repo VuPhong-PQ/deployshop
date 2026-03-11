@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: 'Bán hàng', href: '/', icon: ShoppingCart, permission: 'ViewOrders' },
+  // Re-Sales page: chỉ hiển thị cho người dùng có quyền ViewReSales
+  { name: 'Bán hàng bổ sung', href: '/re-sales', icon: ShoppingCart, permission: 'ViewReSales' },
   { name: 'Đơn hàng', href: '/orders', icon: ClipboardList, permission: 'ViewOrders' },
   { 
     name: 'Sản phẩm', 
@@ -59,9 +61,11 @@ export function Sidebar() {
   const [isHovered, setIsHovered] = useState(false);
 
   // Filter navigation items based on permissions
-  const visibleNavigation = navigation.filter(item => 
-    !item.permission || hasPermission(item.permission)
-  );
+  const visibleNavigation = navigation.filter(item => {
+    if (!item.permission) return true;
+    if (Array.isArray(item.permission)) return item.permission.some((p) => hasPermission(p));
+    return hasPermission(item.permission as string);
+  });
 
   const toggleMenu = (menuName: string) => {
     setExpandedMenus(prev => 
@@ -114,9 +118,11 @@ export function Sidebar() {
             if (item.submenu) {
               const isExpanded = expandedMenus.includes(item.name);
               // Filter submenu items based on permissions
-              const visibleSubmenu = item.submenu.filter(subitem => 
-                !subitem.permission || hasPermission(subitem.permission)
-              );
+              const visibleSubmenu = item.submenu.filter(subitem => {
+                if (!subitem.permission) return true;
+                if (Array.isArray(subitem.permission)) return subitem.permission.some((p) => hasPermission(p));
+                return hasPermission(subitem.permission as string);
+              });
               
               // Don't show menu if no visible submenu items
               if (visibleSubmenu.length === 0) return null;

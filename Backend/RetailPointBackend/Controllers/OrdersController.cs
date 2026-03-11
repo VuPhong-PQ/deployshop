@@ -39,6 +39,7 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? paymentMethod,
             [FromForm] string? paymentStatus,
             [FromForm] string? status,
+            [FromForm] string? createdAt,
             [FromForm] string? currency)
         {
             // Láº¥y danh sÃ¡ch sáº£n pháº©m tá»« form-data
@@ -73,6 +74,8 @@ namespace RetailPointBackend.Controllers
             {
                 CustomerId = actualCustomerId,
                 OrderId = 0,
+                // CreatedAt will default to DateTime.Now, but if client provided a createdAt value
+                // (including timezone offset), parse and set it below.
                 CustomerName = null,
                 TotalAmount = decimal.TryParse(total, out var t) ? t : 0,
                 SubTotal = decimal.TryParse(subtotal, out var st) ? st : 0,
@@ -86,6 +89,29 @@ namespace RetailPointBackend.Controllers
                 StoreId = storeId?.ToString(), // Convert int? to string
                 Items = items
             };
+
+            // If client provided a createdAt value, try to parse it (supporting ISO with offset)
+            if (!string.IsNullOrEmpty(createdAt))
+            {
+                try
+                {
+                    // Prefer DateTimeOffset to preserve wall-clock time when an offset is present
+                    if (DateTimeOffset.TryParse(createdAt, out var dto))
+                    {
+                        // Use DateTime with the same wall-clock values (Kind = Unspecified)
+                        order.CreatedAt = dto.DateTime;
+                    }
+                    else if (DateTime.TryParse(createdAt, out var dt))
+                    {
+                        order.CreatedAt = dt;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse createdAt value '{createdAt}'", createdAt);
+                    // leave default CreatedAt (DateTime.Now)
+                }
+            }
             // Náº¿u cÃ³ CustomerId, gÃ¡n láº¡i CustomerName (khÃ´ng tá»± Ä‘á»™ng Ã¡p dá»¥ng giáº£m giÃ¡)
             if (order.CustomerId.HasValue && order.CustomerId > 0)
             {
@@ -284,18 +310,38 @@ namespace RetailPointBackend.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetOrders([FromQuery] int? storeId = null)
+        public IActionResult GetOrders(
+            [FromQuery] int? storeId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
+            // pageSize = 0 => return all
+            if (page < 1) page = 1;
+
             var query = _context.Orders.AsQueryable();
-            
+
             // Filter by StoreId if provided (for multi-store support)
             if (storeId.HasValue)
             {
                 query = query.Where(o => o.StoreId == storeId.Value.ToString());
             }
-            
-            // Láº¥y danh sÃ¡ch orders trÆ°á»›c
-            var ordersData = query
+
+            // Filter by date range if provided. We treat startDate/endDate as inclusive.
+            if (startDate.HasValue)
+            {
+                var sd = startDate.Value.Date;
+                query = query.Where(o => o.CreatedAt >= sd);
+            }
+            if (endDate.HasValue)
+            {
+                var ed = endDate.Value.Date.AddDays(1).AddTicks(-1); // end of day
+                query = query.Where(o => o.CreatedAt <= ed);
+            }
+
+            // Compose base projection
+            var baseQuery = query
                 .Select(o => new {
                     o.OrderId,
                     o.CustomerId,
@@ -317,8 +363,8 @@ namespace RetailPointBackend.Controllers
                     o.Status,
                     o.PaymentMethod,
                     o.StoreId,
-                    CashierName = "Admin", // Táº¡m thá»i hardcode vÃ¬ Staff chÆ°a cÃ³ trong context
-                    o.CancellationReason, // ThÃªm lÃ½ do há»§y náº¿u cÃ³
+                    CashierName = "Admin",
+                    o.CancellationReason,
                     Items = o.Items.Select(i => new {
                         i.ProductName,
                         i.Quantity,
@@ -326,42 +372,77 @@ namespace RetailPointBackend.Controllers
                         i.TotalPrice
                     }).ToList()
                 })
-                .OrderByDescending(o => o.OrderId)
-                .ToList();
+                .OrderByDescending(o => o.OrderId);
 
-            // Láº¥y thÃ´ng tin stores tá»« AppDbContext
-            var storeIds = ordersData.Where(o => !string.IsNullOrEmpty(o.StoreId) && int.TryParse(o.StoreId, out _))
-                .Select(o => int.Parse(o.StoreId!))
+            // Get total count before pagination
+            var totalCount = baseQuery.Count();
+
+            // Apply pagination
+            List<object> pageItems;
+            if (pageSize <= 0)
+            {
+                pageItems = baseQuery.ToList<object>();
+            }
+            else
+            {
+                pageItems = baseQuery.Skip((page - 1) * pageSize).Take(pageSize).ToList<object>();
+            }
+
+            // Resolve store names for returned items
+            var storeIds = pageItems
+                .Where(o => o.GetType().GetProperty("StoreId") != null)
+                .Select(o => {
+                    var val = o.GetType().GetProperty("StoreId")!.GetValue(o)?.ToString();
+                    return int.TryParse(val, out var id) ? (int?)id : null;
+                })
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
                 .Distinct()
                 .ToList();
-                
+
             var stores = _context.Stores
                 .Where(s => storeIds.Contains(s.StoreId))
                 .ToDictionary(s => s.StoreId.ToString(), s => s.Name);
 
-            // Gáº¯n tÃªn store vÃ o orders
-            var orders = ordersData.Select(o => new {
-                o.OrderId,
-                o.CustomerId,
-                o.Customer,
-                o.CustomerName,
-                o.CreatedAt,
-                o.TotalAmount,
-                o.SubTotal,
-                o.TaxAmount,
-                o.DiscountAmount,
-                o.PaymentStatus,
-                o.Status,
-                o.PaymentMethod,
-                o.StoreId,
-                StoreName = !string.IsNullOrEmpty(o.StoreId) && stores.ContainsKey(o.StoreId) ?
-                    stores[o.StoreId] : "Cá»­a hÃ ng chÃ­nh",
-                o.CashierName,
-                o.CancellationReason,
-                o.Items
+            var orders = pageItems.Select(o => {
+                var storeIdProp = o.GetType().GetProperty("StoreId")!.GetValue(o)?.ToString();
+                var storeName = !string.IsNullOrEmpty(storeIdProp) && stores.ContainsKey(storeIdProp) ? stores[storeIdProp] : "Cửa hàng chính";
+                return new {
+                    Order = o,
+                    StoreName = storeName
+                };
             }).ToList();
-            
-            return Ok(orders);
+
+            var totalPages = pageSize <= 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize);
+
+            return Ok(new {
+                items = orders.Select(x => new {
+                    // unwrap order properties with explicit names
+                    OrderId = x.Order.GetType().GetProperty("OrderId")!.GetValue(x.Order),
+                    CustomerId = x.Order.GetType().GetProperty("CustomerId")!.GetValue(x.Order),
+                    Customer = x.Order.GetType().GetProperty("Customer")!.GetValue(x.Order),
+                    CustomerName = x.Order.GetType().GetProperty("CustomerName")!.GetValue(x.Order),
+                    CreatedAt = x.Order.GetType().GetProperty("CreatedAt")!.GetValue(x.Order),
+                    TotalAmount = x.Order.GetType().GetProperty("TotalAmount")!.GetValue(x.Order),
+                    SubTotal = x.Order.GetType().GetProperty("SubTotal")!.GetValue(x.Order),
+                    TaxAmount = x.Order.GetType().GetProperty("TaxAmount")!.GetValue(x.Order),
+                    DiscountAmount = x.Order.GetType().GetProperty("DiscountAmount")!.GetValue(x.Order),
+                    PaymentStatus = x.Order.GetType().GetProperty("PaymentStatus")!.GetValue(x.Order),
+                    Status = x.Order.GetType().GetProperty("Status")!.GetValue(x.Order),
+                    PaymentMethod = x.Order.GetType().GetProperty("PaymentMethod")!.GetValue(x.Order),
+                    StoreId = x.Order.GetType().GetProperty("StoreId")!.GetValue(x.Order),
+                    StoreName = x.StoreName,
+                    CashierName = x.Order.GetType().GetProperty("CashierName")!.GetValue(x.Order),
+                    CancellationReason = x.Order.GetType().GetProperty("CancellationReason")!.GetValue(x.Order),
+                    Items = x.Order.GetType().GetProperty("Items")!.GetValue(x.Order)
+                }),
+                pagination = new {
+                    total = totalCount,
+                    page = page,
+                    pageSize = pageSize <= 0 ? totalCount : pageSize,
+                    totalPages = totalPages
+                }
+            });
         }
 
         // Láº¥y chi tiáº¿t Ä‘Æ¡n hÃ ng theo ID

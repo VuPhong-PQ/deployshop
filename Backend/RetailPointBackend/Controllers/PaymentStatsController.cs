@@ -146,18 +146,14 @@ namespace RetailPointBackend.Controllers
                 "card" => "Thẻ ngân hàng",
                 "qr" => "QR Code",
                 "ewallet" => "Ví điện tử",
-<<<<<<< HEAD
                 "banktransfer" => "Chuyển khoản",
                 "foreignusd" => "Ngoại tệ USD",
                 "foreigneur" => "Ngoại tệ EUR",
-=======
-                "banktransfer" => "Ngoại tệ",
+                "banktransfer_USD" => "Ngoại tệ USD",
+                "banktransfer_EUR" => "Ngoại tệ EUR",
                 "ngoại tệ" => "Ngoại tệ",
-                "banktransfer_USD" => "USD",
-                "banktransfer_EUR" => "EUR", 
-                "ngoại tệ_USD" => "USD",
-                "ngoại tệ_EUR" => "EUR",
->>>>>>> e2594d91b670ebd40352919d4ccb2582380f5051
+                "ngoại tệ_USD" => "Ngoại tệ USD",
+                "ngoại tệ_EUR" => "Ngoại tệ EUR",
                 _ => "Tiền mặt"
             };
         }
@@ -165,18 +161,31 @@ namespace RetailPointBackend.Controllers
         private string GetPaymentMethodKey(string? paymentMethod, string? currency)
         {
             var method = paymentMethod ?? "cash";
-            
+
             // Debug log để kiểm tra
             Console.WriteLine($"GetPaymentMethodKey: method='{method}', currency='{currency}'");
-            
-            // Tách ngoại tệ theo loại tiền tệ (xử lý cả "banktransfer" và "ngoại tệ")
+
+            // Nếu là chuyển khoản / ngoại tệ và có currency, map sang các key chuẩn
             if ((method == "banktransfer" || method == "ngoại tệ") && !string.IsNullOrEmpty(currency))
             {
-                var result = $"ngoại tệ_{currency}";
+                var cur = currency.ToUpperInvariant();
+                if (cur.StartsWith("USD"))
+                {
+                    Console.WriteLine("  -> Returning: 'foreignusd'");
+                    return "foreignusd";
+                }
+                if (cur.StartsWith("EUR"))
+                {
+                    Console.WriteLine("  -> Returning: 'foreigneur'");
+                    return "foreigneur";
+                }
+
+                // Unknown currency: fall back to banktransfer_{CURRENCY}
+                var result = $"banktransfer_{cur}";
                 Console.WriteLine($"  -> Returning: '{result}'");
                 return result;
             }
-            
+
             Console.WriteLine($"  -> Returning: '{method}'");
             return method;
         }

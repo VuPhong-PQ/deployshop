@@ -17,7 +17,6 @@ export async function apiRequest(
   options: RequestInit
 ): Promise<any> {
   const fullUrl = url.startsWith("http") ? url : API_BASE + url;
-  console.log('apiRequest - Full URL:', fullUrl);
   
   // Nếu body là FormData, xóa header Content-Type nếu có (chỉ khi headers là object)
   if (options.body instanceof FormData && options.headers && typeof options.headers === 'object') {
@@ -30,22 +29,18 @@ export async function apiRequest(
     credentials: "include",
   });
   
-  console.log('apiRequest - Response status:', res.status);
-  console.log('apiRequest - Response ok:', res.ok);
+  // Response status info removed from console to reduce noise
   
   await throwIfResNotOk(res);
   
   // Trả về json nếu có, nếu không thì trả về text
   const contentType = res.headers.get("content-type") || "";
-  console.log('apiRequest - Content type:', contentType);
   
   if (contentType.includes("application/json")) {
-    const jsonData = await res.json();
-    console.log('apiRequest - JSON data:', jsonData);
-    return jsonData;
+  const jsonData = await res.json();
+  return jsonData;
   }
   const textData = await res.text();
-  console.log('apiRequest - Text data:', textData);
   return textData;
 }
 

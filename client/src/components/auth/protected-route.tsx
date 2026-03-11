@@ -17,17 +17,13 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
   useEffect(() => {
     // Don't do anything while still loading from localStorage
     if (isLoading) {
-      console.log("⏳ Auth still loading from localStorage...");
       return;
     }
-    
-    console.log("🔍 ProtectedRoute check:", { isAuthenticated, user: !!user, currentStore: !!currentStore, location });
 
     if (!isAuthenticated) {
       // Store current location before redirecting to login
       if (location !== "/login") {
         localStorage.setItem("intendedRoute", location);
-        console.log("🔄 Stored intended route:", location);
       }
       setLocation("/login");
       return;
@@ -48,7 +44,6 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
       // Store current location before redirecting to store selection
       if (location !== "/store-selection") {
         localStorage.setItem("intendedRoute", location);
-        console.log("🔄 Stored intended route before store selection:", location);
       }
       
       // Đối với Admin hoặc user có nhiều stores - cần chọn store
@@ -63,12 +58,10 @@ export function ProtectedRoute({ children, requiredPermission }: ProtectedRouteP
 
     // Check for intended route after authentication and store selection are complete
     if (isAuthenticated && user && currentStore && !hasCheckedIntendedRoute) {
-      const intendedRoute = localStorage.getItem("intendedRoute");
-      console.log("🔍 Checking intended route:", intendedRoute, "current location:", location);
+  const intendedRoute = localStorage.getItem("intendedRoute");
       
       if (intendedRoute && intendedRoute !== location && 
           intendedRoute !== "/login" && intendedRoute !== "/store-selection") {
-        console.log("🎯 Redirecting to intended route:", intendedRoute);
         localStorage.removeItem("intendedRoute");
         setHasCheckedIntendedRoute(true);
         setLocation(intendedRoute);

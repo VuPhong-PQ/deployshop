@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Sales from "@/pages/sales";
+import ReSales from "@/pages/re-sales";
 import Products from "@/pages/products";
 import ProductGroups from "@/pages/product-groups";
 import Customers from "@/pages/customers";
@@ -53,6 +54,11 @@ function Router() {
       <Route path="/sales">
         <ProtectedRoute requiredPermission="ViewOrders">
           <Sales />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/re-sales">
+        <ProtectedRoute requiredPermission="ViewReSales">
+          <ReSales />
         </ProtectedRoute>
       </Route>
       <Route path="/products">

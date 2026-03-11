@@ -47,3 +47,14 @@ export function removeVietnameseDiacritics(str: string): string {
 export function normalizeSearchText(text: string): string {
   return removeVietnameseDiacritics(text).toLowerCase().trim();
 }
+
+// Return a usable product image URL. If the stored path is a local upload (starts with '/'),
+// prefix it with the API host. Otherwise return as-is. Falls back to a placeholder image.
+export function getProductImageUrl(imageUrl?: string | null) {
+  const placeholder = "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=200&fit=crop";
+  if (!imageUrl) return placeholder;
+  if (typeof imageUrl !== 'string') return placeholder;
+  if (!imageUrl) return placeholder;
+  if (imageUrl.startsWith('/')) return `http://101.53.9.76:5273${imageUrl}`;
+  return imageUrl;
+}

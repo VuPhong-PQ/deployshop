@@ -80,11 +80,7 @@ export const api = {
       const data = await response.json();
       const products = data?.products || data?.Products || [];
       
-      console.log('🔍 DEBUG - Raw products from API:', products);
-      if (products.length > 0) {
-        console.log('🔍 DEBUG - Sample product structure:', products[0]);
-        console.log('🔍 DEBUG - Available keys:', Object.keys(products[0]));
-      }
+      // Debug logs removed: raw products, sample structure and keys.
       
       const lowStockProducts = products
         .filter((product: any) => product.stockQuantity <= 10)
@@ -108,13 +104,13 @@ export const api = {
           for (const field of possibleCategoryFields) {
             if (product[field] && product[field].trim()) {
               categoryValue = product[field];
-              console.log(`🎯 DEBUG - Found category in field "${field}": "${categoryValue}" for product: ${product.name}`);
+              // Removed debug log for found category field
               break;
             }
           }
           
           if (categoryValue === 'Chưa phân loại') {
-            console.log(`❌ DEBUG - No category found for product: ${product.name}, available fields:`, Object.keys(product));
+            // No category found for product; debug log removed
           }
           
           return {
@@ -127,10 +123,9 @@ export const api = {
           };
         });
       
-      console.log('📊 DEBUG - Final low stock products with categories:', lowStockProducts);
-      return { success: true, data: lowStockProducts };
+  return { success: true, data: lowStockProducts };
     } catch (error) {
-      console.error('❌ DEBUG - Error in getLowStockProducts:', error);
+      // keep error return but avoid noisy debug output
       return { success: false, error: error };
     }
   },
