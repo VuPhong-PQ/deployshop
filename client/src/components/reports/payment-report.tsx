@@ -41,18 +41,28 @@ interface PaymentStatsData {
   paymentStats: PaymentStat[];
 }
 
-export function PaymentReport() {
-  const [fromDate, setFromDate] = useState(() => {
+interface PaymentReportProps {
+  startDate?: string;
+  endDate?: string;
+}
+
+export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }: PaymentReportProps = {}) {
+  // Ngày mặc định: hôm nay nếu không có props
+  const [localFromDate, setLocalFromDate] = useState(() => {
     const date = new Date();
-    date.setDate(date.getDate() - 7); // Chỉ lấy 7 ngày gần nhất
     return date.toISOString().split('T')[0];
   });
   
-  const [toDate, setToDate] = useState(() => {
+  const [localToDate, setLocalToDate] = useState(() => {
     const date = new Date();
-    date.setDate(date.getDate() + 1); // Thêm 1 ngày để đảm bảo bao gồm hôm nay
     return date.toISOString().split('T')[0];
   });
+
+  // Sử dụng props nếu có, không thì dùng state local
+  const fromDate = propStartDate || localFromDate;
+  const toDate = propEndDate || localToDate;
+  const setFromDate = setLocalFromDate;
+  const setToDate = setLocalToDate;
 
   const [expandedPaymentMethods, setExpandedPaymentMethods] = useState<Set<string>>(new Set());
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
@@ -60,15 +70,50 @@ export function PaymentReport() {
   const { data: paymentStats, isLoading, refetch } = useQuery<PaymentStatsData>({
     queryKey: ["/api/PaymentStats", fromDate, toDate],
     queryFn: async () => {
+      // Normalize user input date (support dd/mm/yyyy or yyyy-mm-dd) -> yyyy-mm-dd
+      const parseToISO = (input: string) => {
+        if (!input) return input;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(input)) {
+          const [d, m, y] = input.split('/');
+          return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+        const dt = new Date(input);
+        if (isNaN(dt.getTime())) return input;
+        return dt.toISOString().split('T')[0];
+      };
+
+      // Tính ngày kết thúc + 1 để bao gồm toàn bộ ngày được chọn
+      const parsedStart = parseToISO(fromDate);
+      const parsedEnd = parseToISO(toDate);
+      
+      // Tạo Date object và cộng 1 ngày
+      const endDateObj = new Date(parsedEnd + 'T12:00:00'); // Dùng 12:00 để tránh vấn đề timezone
+      endDateObj.setDate(endDateObj.getDate() + 1);
+      const apiEndPlusOne = endDateObj.toISOString().split('T')[0];
+
       const params = new URLSearchParams({
-        fromDate: fromDate,
-        toDate: toDate
+        fromDate: parsedStart,
+        toDate: apiEndPlusOne,
       });
-      const res = await apiRequest(`/api/PaymentStats?${params}`, { method: "GET" });
-      console.log('Payment stats data:', res); // Debug log
-      console.log('Payment stats structure:', JSON.stringify(res, null, 2)); // Detailed debug
+
+      console.log('PaymentStats API call:', {
+        fromDate,
+        toDate,
+        parsedStart,
+        parsedEnd,
+        apiEndPlusOne,
+        fullUrl: `/api/PaymentStats?${params.toString()}`
+      });
+
+      const res = await apiRequest(`/api/PaymentStats?${params.toString()}`, { method: "GET" });
+      console.log('Payment stats response:', res);
       return res;
     },
+    // Tự động refetch khi ngày thay đổi, không cache
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
   });
 
   const getPaymentIcon = (methodId: string) => {

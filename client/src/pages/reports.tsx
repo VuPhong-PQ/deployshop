@@ -49,18 +49,40 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 export default function Reports() {
   const queryClient = useQueryClient();
   
-  // Set default range để capture tất cả data hôm nay
+  // Set default range: hôm nay
   const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-  
-  const todayString = startOfToday.toISOString().split('T')[0]; // 2025-10-09
-  const tomorrowString = endOfToday.toISOString().split('T')[0]; // 2025-10-10
+  const todayString = today.toISOString().split('T')[0];
   
   const [dateRange, setDateRange] = useState({
     startDate: todayString,     // Từ hôm nay
-    endDate: tomorrowString     // Đến ngày mai (để include hết hôm nay)
+    endDate: todayString        // Đến hôm nay (cùng ngày)
   });
+  
+  // Normalize date input (support dd/mm/yyyy or yyyy-mm-dd) -> yyyy-mm-dd
+  const parseToISO = (input: string) => {
+    if (!input) return input;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(input)) {
+      const [d, m, y] = input.split('/');
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    const dt = new Date(input);
+    if (isNaN(dt.getTime())) return input;
+    return dt.toISOString().split('T')[0];
+  };
+
+  const addDays = (isoDate: string, days = 1) => {
+    const dt = new Date(isoDate + 'T00:00:00');
+    dt.setDate(dt.getDate() + days);
+    return dt.toISOString().split('T')[0];
+  };
+
+  const formatToDisplay = (isoDate: string) => {
+    if (!isoDate) return isoDate;
+    const parts = isoDate.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`; // dd/mm/yyyy
+    return isoDate;
+  };
   const [reportType, setReportType] = useState("summary");
   const [selectedStoreId, setSelectedStoreId] = useState<string>("all"); // Store filter state
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
@@ -131,7 +153,9 @@ export default function Reports() {
   const { data: salesSummary, isLoading: salesLoading } = useQuery({
     queryKey: ['/api/reports/sales-summary', dateRange.startDate, dateRange.endDate, selectedStoreId],
     queryFn: async () => {
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/sales-summary?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}${storeParam}`);
+      const apiStart = parseToISO(dateRange.startDate);
+      const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+      const response = await fetch(`http://101.53.9.76:5273/api/reports/sales-summary?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch sales summary');
       }
@@ -144,7 +168,9 @@ export default function Reports() {
   const { data: productPerformance, isLoading: productLoading } = useQuery({
     queryKey: ['/api/reports/product-performance', dateRange.startDate, dateRange.endDate, selectedStoreId],
     queryFn: async () => {
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/product-performance?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}${storeParam}`);
+      const apiStart = parseToISO(dateRange.startDate);
+      const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+      const response = await fetch(`http://101.53.9.76:5273/api/reports/product-performance?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch product performance');
       }
@@ -157,7 +183,9 @@ export default function Reports() {
   const { data: customerAnalytics, isLoading: customerLoading } = useQuery({
     queryKey: ['/api/reports/customer-analytics', dateRange.startDate, dateRange.endDate, selectedStoreId],
     queryFn: async () => {
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/customer-analytics?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}${storeParam}`);
+      const apiStart = parseToISO(dateRange.startDate);
+      const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+      const response = await fetch(`http://101.53.9.76:5273/api/reports/customer-analytics?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch customer analytics');
       }
@@ -170,7 +198,9 @@ export default function Reports() {
   const { data: profitAnalysis, isLoading: profitLoading } = useQuery({
     queryKey: ['/api/reports/profit-analysis', dateRange.startDate, dateRange.endDate, selectedStoreId],
     queryFn: async () => {
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/profit-analysis?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}${storeParam}`);
+      const apiStart = parseToISO(dateRange.startDate);
+      const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+      const response = await fetch(`http://101.53.9.76:5273/api/reports/profit-analysis?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch profit analysis');
       }
@@ -185,7 +215,9 @@ export default function Reports() {
     queryFn: async (): Promise<DiscountSummaryReport> => {
       let url = `http://101.53.9.76:5273/api/discount-reports/summary`;
       if (dateRange.startDate && dateRange.endDate) {
-        url += `?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+        const apiStart = parseToISO(dateRange.startDate);
+        const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+        url += `?startDate=${apiStart}&endDate=${apiEndExclusive}`;
       }
       
       console.log('Fetching discount summary from:', url);
@@ -206,7 +238,9 @@ export default function Reports() {
     queryFn: async (): Promise<any> => {
       let url = `http://101.53.9.76:5273/api/discount-reports/orders`;
       if (dateRange.startDate && dateRange.endDate) {
-        url += `?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+        const apiStart = parseToISO(dateRange.startDate);
+        const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
+        url += `?startDate=${apiStart}&endDate=${apiEndExclusive}`;
       }
       
       console.log('Fetching discount orders from:', url);
@@ -290,7 +324,7 @@ export default function Reports() {
     // Sheet 1: Tổng quan doanh thu
     const summaryData = [
       ['BÁO CÁO TỔNG QUAN DOANH THU'],
-      [`Từ ngày: ${dateRange.startDate} đến ngày: ${dateRange.endDate}`],
+  [`Từ ngày: ${formatToDisplay(dateRange.startDate)} đến ngày: ${formatToDisplay(dateRange.endDate)}`],
       [`Thời gian xuất: ${new Date().toLocaleString('vi-VN')}`],
       [''],
       ['Chỉ số', 'Giá trị', 'So với tháng trước'],
@@ -306,7 +340,7 @@ export default function Reports() {
     // Sheet 2: Top sản phẩm
     const productData = [
       ['TOP SẢN PHẨM BÁN CHẠY'],
-      [`Từ ngày: ${dateRange.startDate} đến ngày: ${dateRange.endDate}`],
+  [`Từ ngày: ${formatToDisplay(dateRange.startDate)} đến ngày: ${formatToDisplay(dateRange.endDate)}`],
       [''],
       ['STT', 'Tên sản phẩm', 'Doanh thu', 'Số lượng bán', 'Lợi nhuận']
     ];
@@ -331,7 +365,7 @@ export default function Reports() {
     // Sheet 3: Khách hàng
     const customerData = [
       ['PHÂN TÍCH KHÁCH HÀNG'],
-      [`Từ ngày: ${dateRange.startDate} đến ngày: ${dateRange.endDate}`],
+  [`Từ ngày: ${formatToDisplay(dateRange.startDate)} đến ngày: ${formatToDisplay(dateRange.endDate)}`],
       [''],
       ['Chỉ số', 'Giá trị'],
       ['Khách hàng mới', customerAnalytics?.newCustomers?.toString() || '0'],
@@ -346,7 +380,7 @@ export default function Reports() {
     // Sheet 4: Lợi nhuận
     const profitData = [
       ['PHÂN TÍCH LỢI NHUẬN'],
-      [`Từ ngày: ${dateRange.startDate} đến ngày: ${dateRange.endDate}`],
+  [`Từ ngày: ${formatToDisplay(dateRange.startDate)} đến ngày: ${formatToDisplay(dateRange.endDate)}`],
       [''],
       ['Tháng', 'Lợi nhuận', 'Tỷ lệ lợi nhuận']
     ];
@@ -640,7 +674,7 @@ export default function Reports() {
             </TabsContent>
 
             <TabsContent value="payment" className="space-y-6">
-              <PaymentReport />
+              <PaymentReport startDate={dateRange.startDate} endDate={dateRange.endDate} />
             </TabsContent>
 
             <TabsContent value="customers" className="space-y-6">
