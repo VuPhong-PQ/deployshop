@@ -63,8 +63,8 @@ namespace RetailPointBackend.Controllers
                         case "unitPrice": items[idx].Price = decimal.TryParse(value, out var pr) ? pr : 0; break;
                         case "totalPrice": items[idx].TotalPrice = decimal.TryParse(value, out var tp) ? tp : 0; break;
                     }
-                }
             }
+        }
             if (!items.Any()) return BadRequest("Order or items missing");
             
             // Náº¿u customerId = 0 thÃ¬ set thÃ nh null (khÃ¡ch vÃ£ng lai)
@@ -166,6 +166,18 @@ namespace RetailPointBackend.Controllers
 
             _context.Orders.Add(order);
             _context.SaveChanges();
+
+            // Diagnostic: persist the raw createdAt param and the persisted CreatedAt to a debug file
+            try
+            {
+                var dbgPath = Path.Combine(AppContext.BaseDirectory, "createdAt-debug.log");
+                var dbgLine = $"{DateTime.Now:O} | ReceivedCreatedAtParam: {createdAt ?? "(null)"} | PersistedCreatedAt: {order.CreatedAt:O} | OrderId: {order.OrderId}{Environment.NewLine}";
+                System.IO.File.AppendAllText(dbgPath, dbgLine);
+            }
+            catch
+            {
+                // swallow errors - diagnostics best-effort
+            }
             
             // Táº¡o OrderDiscount record náº¿u cÃ³ manual discount
             if (order.DiscountAmount > 0)
@@ -286,22 +298,25 @@ namespace RetailPointBackend.Controllers
                 }
             }
 
-            // Tráº£ vá» káº¿t quáº£ vá»›i thÃ´ng tin tá»“n kho tháº¥p náº¿u cÃ³
-            var result = new { order.OrderId, Status = "Success" };
+            // Trả về kết quả với thông tin tồn kho thấp nếu có
+            // Include the persisted CreatedAt in the response to help debugging whether client-provided
+            // createdAt was applied by the server.
+            var result = new { order.OrderId, Status = "Success", CreatedAt = order.CreatedAt };
             if (lowStockProducts.Any())
             {
                 return Ok(new 
                 { 
                     order.OrderId, 
                     Status = "Success", 
+                    CreatedAt = order.CreatedAt,
                     LowStockWarning = new 
                     { 
-                        Message = "ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c táº¡o, nhÆ°ng má»™t sá»‘ sáº£n pháº©m Ä‘áº¡t má»©c tá»“n kho tháº¥p",
+                        Message = "Đơn hàng đã được tạo, nhưng một số sản phẩm đạt mức tồn kho thấp",
                         Products = lowStockProducts 
                     }
                 });
             }
-            
+
             return Ok(result);
         }
 
