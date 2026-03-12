@@ -114,6 +114,7 @@ export default function Staff() {
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any | null>(null);
   const [permissionSearch, setPermissionSearch] = useState("");
+  const [roleSearch, setRoleSearch] = useState(""); // Tìm kiếm vai trò
 
   // Fetch data
   const { data: staff = [], isLoading: staffLoading } = useQuery<any[]>({
@@ -1263,8 +1264,34 @@ export default function Staff() {
               </Button>
             </div>
 
+            {/* Thanh tìm kiếm vai trò */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm vai trò hoặc quyền hạn (gõ không dấu)..."
+                    value={roleSearch}
+                    onChange={(e) => setRoleSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {roles.map((role: any) => {
+              {roles.filter((role: any) => {
+                if (!roleSearch) return true;
+                const q = normalizeSearchText(roleSearch);
+                const roleName = normalizeSearchText(role.roleName || "");
+                const roleDesc = normalizeSearchText(role.description || "");
+                // Tìm trong tên vai trò, mô tả, hoặc tên quyền
+                const permissionMatch = role.permissions?.some((p: any) => 
+                  normalizeSearchText(p.permissionName || "").includes(q) ||
+                  normalizeSearchText(p.description || "").includes(q)
+                );
+                return roleName.includes(q) || roleDesc.includes(q) || permissionMatch;
+              }).map((role: any) => {
                 const staffCount = staff.filter((s: any) => s.roleId === role.roleId).length;
                 return (
                   <Card key={role.roleId} className="hover:shadow-md transition-shadow">
@@ -1588,12 +1615,32 @@ export default function Staff() {
                     <FormItem>
                       <FormLabel>Quyền hạn</FormLabel>
                       <FormControl>
-                        <div className="border rounded-lg p-4 max-h-60 overflow-y-auto">
+                        <div className="border rounded-lg p-4">
+                          {/* Ô tìm kiếm quyền hạn */}
+                          <div className="mb-3">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                placeholder="Tìm quyền hạn (gõ không dấu, vd: viewresales)..."
+                                value={permissionSearch}
+                                onChange={(e) => setPermissionSearch(e.target.value)}
+                                className="pl-9"
+                              />
+                            </div>
+                          </div>
+                          <div className="max-h-60 overflow-y-auto">
                           {permissions.length === 0 ? (
                             <p className="text-sm text-gray-500">Đang tải quyền hạn...</p>
                           ) : (
                             <div className="grid grid-cols-1 gap-3">
-                              {permissions.map((permission: any) => (
+                              {permissions.filter((permission: any) => {
+                                if (!permissionSearch) return true;
+                                const q = normalizeSearchText(permissionSearch);
+                                const name = normalizeSearchText(permission.permissionName || "");
+                                const desc = normalizeSearchText(permission.description || "");
+                                const cat = normalizeSearchText(permission.category || "");
+                                return name.includes(q) || desc.includes(q) || cat.includes(q);
+                              }).map((permission: any) => (
                                 <div key={permission.permissionId} className="flex items-start space-x-3">
                                   <Checkbox
                                     id={`role-permission-${permission.permissionId}`}
@@ -1627,8 +1674,18 @@ export default function Staff() {
                                   </div>
                                 </div>
                               ))}
+                              {permissions.filter((permission: any) => {
+                                if (!permissionSearch) return true;
+                                const q = normalizeSearchText(permissionSearch);
+                                const name = normalizeSearchText(permission.permissionName || "");
+                                const desc = normalizeSearchText(permission.description || "");
+                                return name.includes(q) || desc.includes(q);
+                              }).length === 0 && (
+                                <p className="text-sm text-gray-500 text-center py-2">Không tìm thấy quyền hạn phù hợp</p>
+                              )}
                             </div>
                           )}
+                          </div>
                         </div>
                       </FormControl>
                       <FormMessage />

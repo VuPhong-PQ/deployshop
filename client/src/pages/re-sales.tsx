@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSound } from "@/hooks/use-notification-sound";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, normalizeSearchText, getProductImageUrl } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
@@ -93,6 +93,10 @@ export default function ReSales() {
   const [qrCodeData, setQrCodeData] = useState<any>(null);
   const [showQRCode, setShowQRCode] = useState(false);
   const [activeProductTab, setActiveProductTab] = useState("all");
+  // Pagination states (inherited from Sales)
+  const [allProductsPage, setAllProductsPage] = useState(1);
+  const [featuredProductsPage, setFeaturedProductsPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 10;
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
   // New: sale date state (YYYY-MM-DD) — default to today
@@ -146,20 +150,194 @@ export default function ReSales() {
   const { data: products = [], isLoading: productsLoading } = useQuery<any[]>({
     queryKey: ['products-sales', currentStore?.storeId],
     queryFn: async () => {
-      const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
-      const resp = await fetch(`/api/products${storeParam}`);
-      if (!resp.ok) throw new Error('Error loading products');
-      const r = await resp.json();
-      return r.products || r.Products || [];
+      // Request all products (same behavior as sales.tsx) so client-side pagination works consistently
+      const params = new URLSearchParams({ pageSize: '9999', page: '1' });
+      if (currentStore?.storeId) params.append('storeId', currentStore.storeId.toString());
+      const url = `/api/products?${params.toString()}`;
+      const res = await apiRequest(url, { method: 'GET' });
+      const r = typeof res === 'string' ? JSON.parse(res) : res;
+      return Array.isArray(r) ? r : (r.products || r.Products || []);
     },
     enabled: !!currentStore?.storeId,
   });
 
-  const { data: featuredProducts = [] } = useQuery<any[]>({ queryKey: ['/api/products/featured', currentStore?.storeId], queryFn: async () => { const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : ''; const resp = await fetch(`/api/products/featured${storeParam}`); const r = await resp.json(); return r.products || r.Products || []; }, enabled: !!currentStore?.storeId });
+  const { data: featuredProducts = [] } = useQuery<any[]>({
+    queryKey: ['/api/products/featured', currentStore?.storeId],
+    queryFn: async () => {
+      // Request all featured products to support client-side pagination
+      const params = new URLSearchParams({ pageSize: '9999', page: '1' });
+      if (currentStore?.storeId) params.append('storeId', currentStore.storeId.toString());
+      const url = `/api/products/featured?${params.toString()}`;
+      const res = await apiRequest(url, { method: 'GET' });
+      const r = typeof res === 'string' ? JSON.parse(res) : res;
+      return Array.isArray(r) ? r : (r.products || r.Products || []);
+    },
+    enabled: !!currentStore?.storeId
+  });
 
   const { data: customers = [] } = useQuery<any[]>({ queryKey: ['/api/customers', currentStore?.storeId], queryFn: async () => { const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : ''; const rawCustomers = await apiRequest(`/api/customers${storeParam}`, { method: 'GET' }); return rawCustomers; }, select: (rawCustomers: any[]) => rawCustomers.map((c) => ({ id: c.customerId?.toString(), name: c.hoTen || '', phone: c.soDienThoai || '', address: c.diaChi || '' })), enabled: !!currentStore?.storeId });
 
   const { data: storeInfo } = useQuery<StoreInfo | null>({ queryKey: ["/api/StoreInfo"], queryFn: async () => { const res = await apiRequest("/api/StoreInfo", { method: "GET" }); if (res.status === 404) return null; return typeof res === "string" ? JSON.parse(res) : res; } });
+
+  // Pagination helper component and logic (inherited from Sales)
+  const PaginationComponent = ({ 
+    currentPage, 
+    totalPages, 
+    onPageChange,
+    totalItems,
+    itemsPerPage 
+  }: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+    totalItems: number;
+    itemsPerPage: number;
+  }) => {
+    if (totalPages <= 1) return null;
+
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+    return (
+      <div className="bg-white border-t border-gray-200 px-2 lg:px-4 py-2 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center text-xs text-gray-600">
+            <span className="hidden sm:inline">
+              Hiển thị {startItem}-{endItem} trong tổng số {totalItems} sản phẩm
+            </span>
+            <span className="sm:hidden">
+              Trang {currentPage}/{totalPages} ({totalItems} sp)
+            </span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-7 w-7 p-0"
+              title="Trang trước"
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+            {totalPages <= 5 ? (
+              Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(page)}
+                  className="h-7 w-7 p-0 text-xs"
+                  title={`Trang ${page}`}
+                >
+                  {page}
+                </Button>
+              ))
+            ) : (
+              <>
+                {currentPage > 2 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onPageChange(1)}
+                      className="h-7 w-7 p-0 text-xs"
+                      title="Trang đầu"
+                    >
+                      1
+                    </Button>
+                    {currentPage > 3 && (
+                      <span className="px-1 text-gray-400 text-xs">...</span>
+                    )}
+                  </>
+                )}
+                {currentPage > 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage - 1)}
+                    className="h-7 w-7 p-0 text-xs"
+                    title={`Trang ${currentPage - 1}`}
+                  >
+                    {currentPage - 1}
+                  </Button>
+                )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-xs"
+                  title={`Trang hiện tại: ${currentPage}`}
+                >
+                  {currentPage}
+                </Button>
+                {currentPage < totalPages && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    className="h-7 w-7 p-0 text-xs"
+                    title={`Trang ${currentPage + 1}`}
+                  >
+                    {currentPage + 1}
+                  </Button>
+                )}
+                {currentPage < totalPages - 1 && (
+                  <>
+                    {currentPage < totalPages - 2 && (
+                      <span className="px-1 text-gray-400 text-xs">...</span>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onPageChange(totalPages)}
+                      className="h-7 w-7 p-0 text-xs"
+                      title="Trang cuối"
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-7 w-7 p-0"
+              title="Trang sau"
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Filter products using normalizeSearchText and compute pagination
+  const filteredProducts = (products || []).filter((product: any) => {
+    const q = normalizeSearchText(searchTerm || "");
+    if (!q) return true;
+    const name = normalizeSearchText(product.name || "");
+    const barcode = normalizeSearchText(product.barcode || product.barcodeNumber || "");
+    const sku = normalizeSearchText(product.sku || product.code || "");
+    return name.includes(q) || barcode.includes(q) || sku.includes(q);
+  });
+
+  const totalAllProductsPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const startAllProductsIndex = (allProductsPage - 1) * PRODUCTS_PER_PAGE;
+  const endAllProductsIndex = startAllProductsIndex + PRODUCTS_PER_PAGE;
+  const paginatedAllProducts = filteredProducts.slice(startAllProductsIndex, endAllProductsIndex);
+
+  const totalFeaturedProductsPages = Math.max(1, Math.ceil((featuredProducts || []).length / PRODUCTS_PER_PAGE));
+  const startFeaturedProductsIndex = (featuredProductsPage - 1) * PRODUCTS_PER_PAGE;
+  const endFeaturedProductsIndex = startFeaturedProductsIndex + PRODUCTS_PER_PAGE;
+  const paginatedFeaturedProducts = (featuredProducts || []).slice(startFeaturedProductsIndex, endFeaturedProductsIndex);
+
+  useEffect(() => {
+    setAllProductsPage(1);
+  }, [searchTerm]);
 
   const { data: paymentConfig, refetch: refetchPaymentConfig } = useQuery<PaymentConfig>({ queryKey: ["/api/PaymentMethodConfig/enabled"], queryFn: async () => { const res = await apiRequest("/api/PaymentMethodConfig/enabled", { method: "GET" }); return res; }, staleTime: 0, gcTime: 0 });
 
@@ -226,23 +404,15 @@ export default function ReSales() {
     formData.append('paymentMethod', selectedPayment);
     formData.append('paymentStatus', "paid");
     formData.append('status', "completed");
-    // createdAt using selected saleDate + current time with explicit timezone offset
+    // createdAt using selected saleDate + current time (simple approach like working sample)
     try {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      // timezone offset in minutes (note: getTimezoneOffset returns minutes behind UTC)
-      const offsetMinutes = -now.getTimezoneOffset();
-      const sign = offsetMinutes >= 0 ? '+' : '-';
-      const absOffset = Math.abs(offsetMinutes);
-      const offH = String(Math.floor(absOffset / 60)).padStart(2, '0');
-      const offM = String(absOffset % 60).padStart(2, '0');
-      const tz = `${sign}${offH}:${offM}`;
-      const createdAtWithOffset = `${saleDate}T${hh}:${mm}:${ss}${tz}`;
-      formData.append('createdAt', createdAtWithOffset);
+      const timePart = new Date().toTimeString().split(' ')[0];
+      const createdAtIso = new Date(`${saleDate}T${timePart}`).toISOString();
+      console.log('[RE-SALES] saleDate:', saleDate);
+      console.log('[RE-SALES] createdAt being sent:', createdAtIso);
+      formData.append('createdAt', createdAtIso);
     } catch (e) {
-      // fallback to server-interpretable ISO
+      console.error('[RE-SALES] Error creating createdAt:', e);
       formData.append('createdAt', new Date().toISOString());
     }
     cart.forEach((item, idx) => {
@@ -324,7 +494,7 @@ export default function ReSales() {
               </div>
               {/* simplified products listing for brevity; reuse products mapping similar to Sales */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-4 h-full overflow-y-auto">
-                {products.map((product: any) => (
+                {paginatedAllProducts.map((product: any) => (
                   <div key={product.productId} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => addToCart(product)}>
                     <Card>
                       <CardContent className="p-4">
@@ -338,6 +508,16 @@ export default function ReSales() {
                     </Card>
                   </div>
                 ))}
+              </div>
+              {/* Pagination for products (inherited from Sales) */}
+              <div className="flex-shrink-0 p-3">
+                <PaginationComponent
+                  currentPage={allProductsPage}
+                  totalPages={totalAllProductsPages}
+                  onPageChange={setAllProductsPage}
+                  totalItems={filteredProducts.length}
+                  itemsPerPage={PRODUCTS_PER_PAGE}
+                />
               </div>
             </CardContent>
           </Card>

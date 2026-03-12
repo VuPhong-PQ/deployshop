@@ -97,29 +97,72 @@ export default function OrdersPage() {
   const [pageSize, setPageSize] = useState<number>(50); // options: 10,50,100,200,500,1000,0(all)
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalItems, setTotalItems] = useState<number>(0);
+
+  // Reset to first page when server-side filters change
+  useEffect(() => {
+    setPage(1);
+  }, [selectedStoreId, startDate, endDate, pageSize]);
   
   const { data: orders = [], isLoading, refetch } = useQuery<Order[]>({
-    queryKey: ["/api/orders", startDate, endDate, page, pageSize],
+    // Backend supports: storeId, startDate, endDate, page, pageSize
+    // Other filters are applied client-side
+    queryKey: ["/api/orders", startDate, endDate, page, pageSize, selectedStoreId],
     queryFn: async () => {
       const parts: string[] = [];
-      if (startDate) parts.push(`startDate=${encodeURIComponent(startDate)}`);
-      if (endDate) parts.push(`endDate=${encodeURIComponent(endDate)}`);
+      // Format dates as ISO datetime strings for proper .NET DateTime parsing
+      if (startDate) parts.push(`startDate=${encodeURIComponent(startDate + "T00:00:00")}`);
+      if (endDate) parts.push(`endDate=${encodeURIComponent(endDate + "T23:59:59")}`);
+      // Backend supports storeId filter
+      if (selectedStoreId && selectedStoreId !== 'all') parts.push(`storeId=${encodeURIComponent(selectedStoreId)}`);
       parts.push(`page=${page}`);
       parts.push(`pageSize=${pageSize}`);
       const query = parts.length ? `?${parts.join("&")}` : "";
       const res = await apiRequest(`/api/orders${query}`, { method: "GET" });
 
       // API may return two shapes:
-      // 1) legacy: array of orders
+      // 1) legacy: array of orders (server-side pagination/filter not working)
       // 2) new: { items: [...], pagination: { total, page, pageSize, totalPages } }
       const raw = typeof res === "string" ? JSON.parse(res) : res;
 
       let extracted: any[] = [];
+      let serverPagination = false;
+      
       if (Array.isArray(raw)) {
+        // Legacy array response - pagination và filter không hoạt động từ server
+        // Cần thực hiện filter và pagination client-side
         extracted = raw;
-        setTotalItems(extracted.length);
-        setTotalPages(1);
+        
+        // Client-side date filtering (khi backend chưa hỗ trợ)
+        if (startDate || endDate) {
+          extracted = extracted.filter((order: any) => {
+            const orderDate = new Date(order.createdAt ?? order.CreatedAt);
+            if (startDate) {
+              const start = new Date(startDate + "T00:00:00");
+              if (orderDate < start) return false;
+            }
+            if (endDate) {
+              const end = new Date(endDate + "T23:59:59");
+              if (orderDate > end) return false;
+            }
+            return true;
+          });
+        }
+        
+        const total = extracted.length;
+        setTotalItems(total);
+        // Client-side pagination for array response
+        if (pageSize > 0) {
+          const calculatedTotalPages = Math.ceil(total / pageSize);
+          setTotalPages(calculatedTotalPages);
+          // Slice data cho trang hiện tại
+          const startIdx = (page - 1) * pageSize;
+          const endIdx = startIdx + pageSize;
+          extracted = extracted.slice(startIdx, endIdx);
+        } else {
+          setTotalPages(1);
+        }
       } else if (raw && raw.items) {
+        serverPagination = true;
         // raw.items may contain wrapped objects depending on server shape
         extracted = raw.items.map((it: any) => {
           // it could be { Order: {...}, StoreName: '...' } or direct order-like object
@@ -239,11 +282,13 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   // Filter orders based on search query and selected filters
+  // Note: Backend only supports storeId, startDate, endDate, page, pageSize
+  // Other filters (searchQuery, paymentStatus, orderStatus) must be applied client-side
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
     
     return orders.filter(order => {
-      // Search query filter
+      // Search query filter (client-side)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesOrderId = order.orderId.toString().includes(query);
@@ -255,24 +300,19 @@ export default function OrdersPage() {
         }
       }
       
-      // Store filter
-      if (selectedStoreId !== "all" && order.storeId !== selectedStoreId) {
-        return false;
-      }
-      
-      // Payment status filter
+      // Payment status filter (client-side - backend doesn't support this)
       if (selectedPaymentStatus !== "all" && order.paymentStatus !== selectedPaymentStatus) {
         return false;
       }
       
-      // Order status filter
+      // Order status filter (client-side - backend doesn't support this)
       if (selectedOrderStatus !== "all" && order.status !== selectedOrderStatus) {
         return false;
       }
       
       return true;
     });
-  }, [orders, searchQuery, selectedStoreId, selectedPaymentStatus, selectedOrderStatus]);
+  }, [orders, searchQuery, selectedPaymentStatus, selectedOrderStatus]);
 
   // Helper functions để format trạng thái
   const formatPaymentStatus = (status?: string) => {
@@ -410,9 +450,11 @@ export default function OrdersPage() {
     navigate('/sales');
   };
 
-  // Tính toán thống kê trạng thái (dựa trên kết quả filter)
+  // Tính toán thống kê trạng thái (dựa trên kết quả filter của trang hiện tại)
+  // Lưu ý: Khi dùng phân trang server-side, stats chỉ phản ánh trang hiện tại
   const stats = useMemo(() => {
-    const total = filteredOrders.length;
+    // Use server's totalItems for total count when pagination is active
+    const total = pageSize > 0 ? totalItems : filteredOrders.length;
     const paid = filteredOrders.filter(o => o.paymentStatus === 'paid').length;
     const pending = filteredOrders.filter(o => o.paymentStatus === 'pending').length;
     const failed = filteredOrders.filter(o => o.paymentStatus === 'failed').length;
@@ -421,7 +463,7 @@ export default function OrdersPage() {
     const cancelled = filteredOrders.filter(o => o.status === 'cancelled').length;
     
     return { total, paid, pending, failed, completed, processing, cancelled };
-  }, [filteredOrders]);
+  }, [filteredOrders, totalItems, pageSize]);
 
   return (
     <>
@@ -762,7 +804,7 @@ export default function OrdersPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => { if (page > 1) setPage(p => p-1); }} disabled={page <= 1}>Prev</Button>
+              <Button size="sm" onClick={() => { if (page > 1) setPage(p => p-1); }} disabled={page <= 1 || pageSize === 0}>Prev</Button>
               <Button size="sm" onClick={() => { if (page < totalPages) setPage(p => p+1); }} disabled={page >= totalPages || pageSize === 0}>Next</Button>
             </div>
           </div>

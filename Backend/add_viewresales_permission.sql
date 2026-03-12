@@ -7,8 +7,8 @@
 -- 1. Thêm permission ViewReSales nếu chưa tồn tại
 IF NOT EXISTS (SELECT 1 FROM Permissions WHERE PermissionName = 'ViewReSales')
 BEGIN
-    INSERT INTO Permissions (PermissionName, Description, Category, IsActive)
-    VALUES ('ViewReSales', N'Xem và sử dụng trang Bán hàng bổ sung (Re-Sales)', 'Orders', 1);
+    INSERT INTO Permissions (PermissionName, Description, Category)
+    VALUES ('ViewReSales', N'Xem và sử dụng trang Bán hàng bổ sung (Re-Sales)', 'Orders');
     PRINT N'Đã thêm permission ViewReSales thành công.';
 END
 ELSE
@@ -48,7 +48,7 @@ END;
 PRINT N'';
 PRINT N'=== KẾT QUẢ ===';
 
-SELECT PermissionId, PermissionName, Description, Category, IsActive
+SELECT PermissionId, PermissionName, Description, Category
 FROM Permissions
 WHERE PermissionName = 'ViewReSales';
 

@@ -90,27 +90,23 @@ namespace RetailPointBackend.Controllers
                 Items = items
             };
 
-            // If client provided a createdAt value, try to parse it (supporting ISO with offset)
+            // If client provided createdAt, try to parse and use it (simple approach like working sample)
+            _logger.LogInformation("CreateOrder - Received createdAt param: '{createdAt}'", createdAt ?? "NULL");
             if (!string.IsNullOrEmpty(createdAt))
             {
-                try
+                if (DateTime.TryParse(createdAt, out var parsedCreatedAt))
                 {
-                    // Prefer DateTimeOffset to preserve wall-clock time when an offset is present
-                    if (DateTimeOffset.TryParse(createdAt, out var dto))
-                    {
-                        // Use DateTime with the same wall-clock values (Kind = Unspecified)
-                        order.CreatedAt = dto.DateTime;
-                    }
-                    else if (DateTime.TryParse(createdAt, out var dt))
-                    {
-                        order.CreatedAt = dt;
-                    }
+                    order.CreatedAt = parsedCreatedAt;
+                    _logger.LogInformation("CreateOrder - Parsed createdAt: {CreatedAt}", order.CreatedAt);
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogWarning(ex, "Failed to parse createdAt value '{createdAt}'", createdAt);
-                    // leave default CreatedAt (DateTime.Now)
+                    _logger.LogWarning("CreateOrder - Failed to parse createdAt: '{createdAt}'", createdAt);
                 }
+            }
+            else
+            {
+                _logger.LogInformation("CreateOrder - No createdAt provided, using default DateTime.Now: {CreatedAt}", order.CreatedAt);
             }
             // Náº¿u cÃ³ CustomerId, gÃ¡n láº¡i CustomerName (khÃ´ng tá»± Ä‘á»™ng Ã¡p dá»¥ng giáº£m giÃ¡)
             if (order.CustomerId.HasValue && order.CustomerId > 0)
