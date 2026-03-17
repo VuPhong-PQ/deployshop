@@ -52,6 +52,12 @@ interface PaymentConfig {
   enableDrawer: boolean;
 }
 
+interface SplitPaymentEntry {
+  method: string;
+  methodName: string;
+  amount: number;
+}
+
 const getPaymentIcon = (id: string) => {
   switch (id) {
     case 'cash': return Banknote;
@@ -98,6 +104,11 @@ export default function ReSales() {
   const [featuredProductsPage, setFeaturedProductsPage] = useState(1);
   const PRODUCTS_PER_PAGE = 10;
   const [showCameraScanner, setShowCameraScanner] = useState(false);
+
+  // Split payment states
+  const [isSplitPayment, setIsSplitPayment] = useState(false);
+  const [splitPayments, setSplitPayments] = useState<SplitPaymentEntry[]>([]);
+  const [splitInputAmounts, setSplitInputAmounts] = useState<Record<string, string>>({});
 
   // New: sale date state (YYYY-MM-DD) — default to today
   const [saleDate, setSaleDate] = useState<string>(new Date().toISOString().slice(0,10));
@@ -384,9 +395,77 @@ export default function ReSales() {
     setCart([...cart, newItem]);
   };
 
+  // === Split Payment Helper Functions ===
+  const toggleSplitPayment = () => {
+    if (!isSplitPayment) {
+      const firstMethod = availablePaymentMethods[0];
+      if (firstMethod) {
+        setSplitPayments([{ method: firstMethod.id, methodName: firstMethod.name, amount: 0 }]);
+        setSplitInputAmounts({ [firstMethod.id]: '' });
+      }
+      setIsSplitPayment(true);
+    } else {
+      setIsSplitPayment(false);
+      setSplitPayments([]);
+      setSplitInputAmounts({});
+    }
+  };
+
+  const addSplitPaymentMethod = (methodId: string) => {
+    const method = availablePaymentMethods.find(m => m.id === methodId);
+    if (!method) return;
+    if (splitPayments.some(sp => sp.method === methodId)) {
+      toast({ title: "Đã có", description: `${method.name} đã được thêm rồi`, variant: "destructive" });
+      return;
+    }
+    setSplitPayments(prev => [...prev, { method: methodId, methodName: method.name, amount: 0 }]);
+    setSplitInputAmounts(prev => ({ ...prev, [methodId]: '' }));
+  };
+
+  const removeSplitPaymentMethod = (methodId: string) => {
+    setSplitPayments(prev => prev.filter(sp => sp.method !== methodId));
+    setSplitInputAmounts(prev => { const n = { ...prev }; delete n[methodId]; return n; });
+  };
+
+  const updateSplitAmount = (methodId: string, value: string) => {
+    setSplitInputAmounts(prev => ({ ...prev, [methodId]: value }));
+    const numValue = parseFloat(value) || 0;
+    setSplitPayments(prev => prev.map(sp => sp.method === methodId ? { ...sp, amount: numValue } : sp));
+  };
+
+  const autoFillSplitRemaining = (methodId: string) => {
+    const otherTotal = splitPayments.filter(sp => sp.method !== methodId).reduce((s, sp) => s + sp.amount, 0);
+    const remaining = Math.max(0, total - otherTotal);
+    setSplitPayments(prev => prev.map(sp => sp.method === methodId ? { ...sp, amount: remaining } : sp));
+    setSplitInputAmounts(prev => ({ ...prev, [methodId]: remaining.toString() }));
+  };
+
+  const totalSplitAmount = splitPayments.reduce((s, sp) => s + sp.amount, 0);
+  const splitRemaining = total - totalSplitAmount;
+  const isSplitValid = isSplitPayment ? (splitPayments.length >= 2 && Math.abs(splitRemaining) < 1) : true;
+
+  const getPaymentMethodDisplay = () => {
+    if (!isSplitPayment) {
+      const m = availablePaymentMethods.find(pm => pm.id === selectedPayment);
+      return m?.name || 'Tiền mặt';
+    }
+    return splitPayments.map(sp => sp.methodName).join(' + ');
+  };
+
+  const getSplitPaymentJSON = (): string | null => {
+    if (!isSplitPayment || splitPayments.length < 2) return null;
+    return JSON.stringify(splitPayments);
+  };
+
+  const getPrimaryPaymentMethod = (): string => {
+    if (!isSplitPayment) return selectedPayment;
+    return 'split';
+  };
+
   const processPayment = () => {
     if (cart.length === 0) { toast({ title: "Giỏ hàng trống", description: "Vui lòng thêm sản phẩm vào giỏ hàng", variant: "destructive" }); return; }
-    if (currentReopenedOrder) { const formData = new FormData(); formData.append('paymentMethod', selectedPayment); formData.append('paymentStatus', 'paid'); formData.append('status', 'completed'); completeOrderMutation.mutate({ orderId: currentReopenedOrder.orderId, formData }); }
+    if (isSplitPayment && !isSplitValid) { toast({ title: "Chia thanh toán chưa hợp lệ", description: "Vui lòng kiểm tra lại số tiền chia", variant: "destructive" }); return; }
+    if (currentReopenedOrder) { const formData = new FormData(); formData.append('paymentMethod', getPrimaryPaymentMethod()); formData.append('paymentStatus', 'paid'); formData.append('status', 'completed'); const splitJSON = getSplitPaymentJSON(); if (splitJSON) formData.append('splitPaymentDetails', splitJSON); completeOrderMutation.mutate({ orderId: currentReopenedOrder.orderId, formData }); }
     else createNewOrder();
   };
 
@@ -401,9 +480,11 @@ export default function ReSales() {
     formData.append('taxAmount', taxAmount.toString());
     formData.append('discountAmount', totalDiscountAmount.toString());
     formData.append('total', total.toString());
-    formData.append('paymentMethod', selectedPayment);
+    formData.append('paymentMethod', getPrimaryPaymentMethod());
     formData.append('paymentStatus', "paid");
     formData.append('status', "completed");
+    const splitJSON = getSplitPaymentJSON();
+    if (splitJSON) formData.append('splitPaymentDetails', splitJSON);
     // createdAt using selected saleDate + current time (simple approach like working sample)
     try {
       const timePart = new Date().toTimeString().split(' ')[0];
@@ -427,6 +508,9 @@ export default function ReSales() {
       onSuccess: () => {
         toast({ title: "Thành công", description: "Đơn hàng đã được tạo (Re-Sales)" });
         setCart([]);
+        setIsSplitPayment(false);
+        setSplitPayments([]);
+        setSplitInputAmounts({});
         queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
         window.dispatchEvent(new CustomEvent('newOrderCreated'));
       },
@@ -446,9 +530,11 @@ export default function ReSales() {
     formData.append('taxAmount', taxAmount.toString());
     formData.append('discountAmount', "0");
     formData.append('total', total.toString());
-    formData.append('paymentMethod', selectedPayment);
+    formData.append('paymentMethod', getPrimaryPaymentMethod());
     formData.append('paymentStatus', "pending");
     formData.append('status', "pending");
+    const splitJSONLater = getSplitPaymentJSON();
+    if (splitJSONLater) formData.append('splitPaymentDetails', splitJSONLater);
     try {
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, '0');
@@ -551,16 +637,114 @@ export default function ReSales() {
 
                 {cart.length > 0 && (
                   <div className="space-y-3">
-                    <p className="font-medium">Phương thức thanh toán:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {availablePaymentMethods.map(m => { const Icon = m.icon; return (<Button key={m.id} variant={selectedPayment===m.id? 'default':'outline'} size="sm" onClick={() => setSelectedPayment(m.id)}><Icon className="w-4 h-4 mr-1"/>{m.name}</Button>); })}
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">Phương thức thanh toán:</p>
+                      <Button
+                        variant={isSplitPayment ? "default" : "outline"}
+                        size="sm"
+                        onClick={toggleSplitPayment}
+                        className={isSplitPayment ? "bg-indigo-600 hover:bg-indigo-700 text-xs" : "text-xs"}
+                      >
+                        {isSplitPayment ? "✓ Đang chia bill" : "Chia bill"}
+                      </Button>
                     </div>
+
+                    {!isSplitPayment ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {availablePaymentMethods.map(m => { const Icon = m.icon; return (<Button key={m.id} variant={selectedPayment===m.id? 'default':'outline'} size="sm" onClick={() => setSelectedPayment(m.id)}><Icon className="w-4 h-4 mr-1"/>{m.name}</Button>); })}
+                      </div>
+                    ) : (
+                      <div className="space-y-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        {splitPayments.map((sp, idx) => {
+                          const Icon = getPaymentIcon(sp.method);
+                          return (
+                            <div key={sp.method} className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 min-w-[100px]">
+                                <Icon className="w-3 h-3 text-indigo-600" />
+                                <span className="text-xs font-medium text-indigo-700">{sp.methodName}</span>
+                              </div>
+                              <Input
+                                type="number"
+                                placeholder="Số tiền"
+                                value={splitInputAmounts[sp.method] || ''}
+                                onChange={(e) => updateSplitAmount(sp.method, e.target.value)}
+                                className="h-8 text-sm flex-1"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => autoFillSplitRemaining(sp.method)}
+                                className="h-8 text-xs text-indigo-600 hover:text-indigo-800 px-2"
+                                title="Tự động điền số còn lại"
+                              >
+                                Còn lại
+                              </Button>
+                              {splitPayments.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeSplitPaymentMethod(sp.method)}
+                                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Add payment method */}
+                        {availablePaymentMethods.filter(m => !splitPayments.some(sp => sp.method === m.id)).length > 0 && (
+                          <div className="flex gap-1 flex-wrap pt-1">
+                            {availablePaymentMethods.filter(m => !splitPayments.some(sp => sp.method === m.id)).map(m => (
+                              <Button
+                                key={m.id}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addSplitPaymentMethod(m.id)}
+                                className="h-7 text-xs border-dashed"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />{m.name}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Split summary */}
+                        <div className="pt-2 border-t border-indigo-200 space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-indigo-600">Đã chia:</span>
+                            <span className="font-bold text-indigo-700">{totalSplitAmount.toLocaleString('vi-VN')}₫</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-indigo-600">Còn lại:</span>
+                            <span className={`font-bold ${Math.abs(splitRemaining) < 1 ? 'text-green-600' : 'text-red-600'}`}>
+                              {splitRemaining.toLocaleString('vi-VN')}₫
+                            </span>
+                          </div>
+                          {splitPayments.length < 2 && (
+                            <p className="text-xs text-orange-600">⚠ Cần ít nhất 2 phương thức thanh toán</p>
+                          )}
+                          {Math.abs(splitRemaining) >= 1 && totalSplitAmount > 0 && (
+                            <p className="text-xs text-red-600">⚠ Tổng chia phải bằng tổng đơn hàng ({total.toLocaleString('vi-VN')}₫)</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {cart.length > 0 && (
                   <div className="space-y-2 mt-4">
-                    <Button className="w-full h-12 text-lg" onClick={processPayment}>Thanh toán</Button>
+                    <Button 
+                      className="w-full h-12 text-lg" 
+                      onClick={processPayment}
+                      disabled={isSplitPayment && !isSplitValid}
+                    >
+                      {isSplitPayment 
+                        ? `Thanh toán (${splitPayments.length} hình thức)` 
+                        : 'Thanh toán'}
+                    </Button>
                     <Button className="w-full h-11 text-lg bg-green-600 hover:bg-green-700" onClick={() => {/* E-invoice flow could reuse existing implementation if needed */}}>Xuất hóa đơn</Button>
                     <Button variant="outline" className="w-full h-10 text-sm" onClick={saveOrderForLater}>Thanh toán sau</Button>
                   </div>
