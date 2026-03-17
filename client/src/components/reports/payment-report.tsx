@@ -22,6 +22,8 @@ interface OrderDetail {
   totalAmount: number;
   createdAt: string;
   items: OrderItem[];
+  splitPaymentDetails?: string | null;
+  splitAmount?: number | null;
 }
 
 interface PaymentStat {
@@ -573,6 +575,15 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                             </div>
                             <div className="text-right flex-shrink-0 ml-2">
                               <div className="font-semibold text-sm sm:text-base">{order.totalAmount.toLocaleString('vi-VN')}₫</div>
+                              {/* Split payment indicator */}
+                              {order.splitPaymentDetails && (
+                                <div className="text-xs text-orange-600 font-medium">✂️ Thanh toán chia nhỏ</div>
+                              )}
+                              {order.splitAmount && order.splitAmount !== order.totalAmount && (
+                                <div className="text-xs text-blue-600 font-medium">
+                                  Phần này: {Number(order.splitAmount).toLocaleString('vi-VN')}₫
+                                </div>
+                              )}
                               <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 justify-end">
                                 <Package className="w-3 h-3" />
                                 <span>{order.items?.length || 0} items</span>
@@ -587,6 +598,37 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                           {expandedOrders.has(order.orderId) && (
                             <div className="border-t bg-gray-50">
                               <div className="p-3">
+                                {/* Split payment details */}
+                                {order.splitPaymentDetails && (() => {
+                                  try {
+                                    const splits = typeof order.splitPaymentDetails === 'string' 
+                                      ? JSON.parse(order.splitPaymentDetails) 
+                                      : order.splitPaymentDetails;
+                                    if (Array.isArray(splits) && splits.length > 0) {
+                                      return (
+                                        <div className="mb-3">
+                                          <h5 className="font-medium mb-2 text-xs sm:text-sm flex items-center gap-1">
+                                            <span>✂️</span> Chi tiết thanh toán chia nhỏ:
+                                          </h5>
+                                          <div className="space-y-1">
+                                            {splits.map((sp: any, idx: number) => (
+                                              <div key={idx} className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-100 text-xs sm:text-sm">
+                                                <div className="flex items-center gap-2">
+                                                  <span className="font-medium">{sp.methodName}</span>
+                                                </div>
+                                                <div className="font-semibold text-blue-700">
+                                                  {Number(sp.amount).toLocaleString('vi-VN')}₫
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                  } catch (e) { /* ignore parse error */ }
+                                  return null;
+                                })()}
+                                
                                 <h5 className="font-medium mb-2 text-xs sm:text-sm">Chi tiết sản phẩm:</h5>
                                 <div className="space-y-2">
                                   {order.items?.map((item, index) => (

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.Globalization;
+using System.Text.Json;
 
 namespace RetailPointBackend.Controllers
 {
@@ -16,17 +17,54 @@ namespace RetailPointBackend.Controllers
             _context = context;
         }
 
+        // Helper class for split payment parsing
+        private class SplitPaymentEntry
+        {
+            public string method { get; set; } = "";
+            public string methodName { get; set; } = "";
+            public decimal amount { get; set; }
+        }
+
+        // Helper class for building payment stats
+        private class PaymentStatBuilder
+        {
+            public string PaymentMethodId { get; set; } = "";
+            public string PaymentMethod { get; set; } = "";
+            public decimal TotalAmount { get; set; }
+            public int OrderCount { get; set; }
+            public List<OrderStatEntry> Orders { get; set; } = new();
+        }
+
+        private class OrderStatEntry
+        {
+            public int OrderId { get; set; }
+            public string? OrderNumber { get; set; }
+            public string CustomerName { get; set; } = "Khách lẻ";
+            public decimal TotalAmount { get; set; }
+            public DateTime CreatedAt { get; set; }
+            public string? Currency { get; set; }
+            public string? SplitPaymentDetails { get; set; }
+            public decimal? SplitAmount { get; set; } // Amount for this specific payment method in split
+            public List<OrderItemEntry> Items { get; set; } = new();
+        }
+
+        private class OrderItemEntry
+        {
+            public string? ProductName { get; set; }
+            public int Quantity { get; set; }
+            public decimal Price { get; set; }
+            public decimal TotalPrice { get; set; }
+        }
+
         // GET: api/PaymentStats
         [HttpGet]
         public async Task<IActionResult> GetPaymentStats([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
         {
             try
             {
-                // Mặc định lấy 30 ngày gần nhất nếu không có fromDate/toDate
                 var startDate = fromDate ?? DateTime.Now.AddDays(-30).Date;
                 var endDate = toDate ?? DateTime.Now.Date.AddDays(1).AddTicks(-1);
 
-                // Lấy các đơn hàng đã hoàn thành trong khoảng thời gian với items (loại trừ đơn hàng đã hủy)
                 var orders = await _context.Orders
                     .Include(o => o.Items)
                     .Where(o => o.Status == "completed" && 
@@ -35,57 +73,113 @@ namespace RetailPointBackend.Controllers
                                o.CreatedAt <= endDate)
                     .ToListAsync();
 
-                // Debug: Log số lượng orders và payment methods
-                Console.WriteLine($"Found {orders.Count} completed orders");
-                Console.WriteLine($"Date range: {startDate} to {endDate}");
+                // Build payment stats with split payment support
+                var statsByMethod = new Dictionary<string, PaymentStatBuilder>();
+
                 foreach (var order in orders)
                 {
-                    Console.WriteLine($"Order {order.OrderId}: PaymentMethod = '{order.PaymentMethod}', Currency = '{order.Currency}', Amount = {order.TotalAmount}");
-                    var key = GetPaymentMethodKey(order.PaymentMethod, order.Currency);
-                    Console.WriteLine($"  -> Final Key: '{key}'");
+                    var orderItems = order.Items.Select(item => new OrderItemEntry
+                    {
+                        ProductName = item.ProductName,
+                        Quantity = item.Quantity,
+                        Price = item.Price,
+                        TotalPrice = item.TotalPrice
+                    }).ToList();
+
+                    // Check if order has split payment details
+                    if (!string.IsNullOrEmpty(order.SplitPaymentDetails))
+                    {
+                        try
+                        {
+                            var splits = JsonSerializer.Deserialize<List<SplitPaymentEntry>>(order.SplitPaymentDetails);
+                            if (splits != null && splits.Count > 0)
+                            {
+                                foreach (var split in splits)
+                                {
+                                    var key = split.method;
+                                    if (!statsByMethod.ContainsKey(key))
+                                    {
+                                        statsByMethod[key] = new PaymentStatBuilder
+                                        {
+                                            PaymentMethodId = key,
+                                            PaymentMethod = FormatPaymentMethodName(key)
+                                        };
+                                    }
+
+                                    statsByMethod[key].TotalAmount += split.amount;
+                                    statsByMethod[key].OrderCount++;
+                                    statsByMethod[key].Orders.Add(new OrderStatEntry
+                                    {
+                                        OrderId = order.OrderId,
+                                        OrderNumber = order.OrderNumber,
+                                        CustomerName = order.CustomerName ?? "Khách lẻ",
+                                        TotalAmount = order.TotalAmount,
+                                        CreatedAt = order.CreatedAt,
+                                        Currency = order.Currency,
+                                        SplitPaymentDetails = order.SplitPaymentDetails,
+                                        SplitAmount = split.amount,
+                                        Items = orderItems
+                                    });
+                                }
+                                continue; // Skip normal processing for split orders
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error parsing SplitPaymentDetails for order {order.OrderId}: {ex.Message}");
+                            // Fall through to normal processing
+                        }
+                    }
+
+                    // Normal (non-split) order processing
+                    var methodKey = GetPaymentMethodKey(order.PaymentMethod, order.Currency);
+                    if (!statsByMethod.ContainsKey(methodKey))
+                    {
+                        statsByMethod[methodKey] = new PaymentStatBuilder
+                        {
+                            PaymentMethodId = methodKey,
+                            PaymentMethod = FormatPaymentMethodName(methodKey)
+                        };
+                    }
+
+                    statsByMethod[methodKey].TotalAmount += order.TotalAmount;
+                    statsByMethod[methodKey].OrderCount++;
+                    statsByMethod[methodKey].Orders.Add(new OrderStatEntry
+                    {
+                        OrderId = order.OrderId,
+                        OrderNumber = order.OrderNumber,
+                        CustomerName = order.CustomerName ?? "Khách lẻ",
+                        TotalAmount = order.TotalAmount,
+                        CreatedAt = order.CreatedAt,
+                        Currency = order.Currency,
+                        Items = orderItems
+                    });
                 }
 
-                // Nhóm theo phương thức thanh toán + currency cho banktransfer và tính tổng
-                var paymentStats = orders
-                    .GroupBy(o => GetPaymentMethodKey(o.PaymentMethod, o.Currency))
-                    .Select(g => new
-                    {
-                        PaymentMethod = FormatPaymentMethodName(g.Key),
-                        PaymentMethodId = g.Key,
-                        TotalAmount = g.Sum(o => o.TotalAmount),
-                        OrderCount = g.Count(),
-                        Percentage = 0.0, // Sẽ tính sau
-                        Orders = g.Select(order => new
-                        {
-                            OrderId = order.OrderId,
-                            OrderNumber = order.OrderNumber,
-                            CustomerName = order.CustomerName ?? "Khách lẻ",
-                            TotalAmount = order.TotalAmount,
-                            CreatedAt = order.CreatedAt,
-                            Currency = order.Currency, // Thêm currency vào response
-                            Items = order.Items.Select(item => new
-                            {
-                                ProductName = item.ProductName,
-                                Quantity = item.Quantity,
-                                Price = item.Price,
-                                TotalPrice = item.TotalPrice
-                            }).ToList()
-                        }).OrderByDescending(x => x.CreatedAt).ToList()
-                    })
+                var totalRevenue = statsByMethod.Values.Sum(x => x.TotalAmount);
+                
+                var paymentStats = statsByMethod.Values
                     .OrderByDescending(x => x.TotalAmount)
-                    .ToList();
-
-                // Tính phần trăm
-                var totalRevenue = paymentStats.Sum(x => x.TotalAmount);
-                var statsWithPercentage = paymentStats.Select(stat => new
-                {
-                    stat.PaymentMethod,
-                    stat.PaymentMethodId,
-                    stat.TotalAmount,
-                    stat.OrderCount,
-                    stat.Orders,
-                    Percentage = totalRevenue > 0 ? Math.Round((stat.TotalAmount / totalRevenue) * 100, 1) : 0
-                }).ToList();
+                    .Select(stat => new
+                    {
+                        stat.PaymentMethod,
+                        stat.PaymentMethodId,
+                        stat.TotalAmount,
+                        stat.OrderCount,
+                        Percentage = totalRevenue > 0 ? Math.Round((stat.TotalAmount / totalRevenue) * 100, 1) : 0,
+                        Orders = stat.Orders.OrderByDescending(x => x.CreatedAt).Select(o => new
+                        {
+                            o.OrderId,
+                            o.OrderNumber,
+                            o.CustomerName,
+                            o.TotalAmount,
+                            o.CreatedAt,
+                            o.Currency,
+                            o.SplitPaymentDetails,
+                            o.SplitAmount,
+                            o.Items
+                        }).ToList()
+                    }).ToList();
 
                 return Ok(new
                 {
@@ -93,7 +187,7 @@ namespace RetailPointBackend.Controllers
                     ToDate = endDate.ToString("yyyy-MM-dd"),
                     TotalRevenue = totalRevenue,
                     TotalOrders = orders.Count,
-                    PaymentStats = statsWithPercentage
+                    PaymentStats = paymentStats
                 });
             }
             catch (Exception ex)
@@ -154,6 +248,7 @@ namespace RetailPointBackend.Controllers
                 "ngoại tệ" => "Ngoại tệ",
                 "ngoại tệ_USD" => "Ngoại tệ USD",
                 "ngoại tệ_EUR" => "Ngoại tệ EUR",
+                "split" => "Thanh toán chia nhỏ",
                 _ => "Tiền mặt"
             };
         }

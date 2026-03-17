@@ -29,6 +29,7 @@ interface OrderDetail {
     email?: string;
     diaChi?: string;
   };
+  splitPaymentDetails?: string | null;
   items: {
     productId: number;
     productName: string;
@@ -36,6 +37,12 @@ interface OrderDetail {
     price: number;
     totalPrice: number;
   }[];
+}
+
+interface SplitPaymentEntry {
+  method: string;
+  methodName: string;
+  amount: number;
 }
 
 export default function InvoicePrint() {
@@ -84,9 +91,24 @@ export default function InvoicePrint() {
       case 'banktransfer': return 'Chuyển khoản';
       case 'foreignusd': return 'Ngoại tệ USD';
       case 'foreigneur': return 'Ngoại tệ EUR';
+      case 'split': return 'Thanh toán chia nhỏ';
       default: return 'Tiền mặt';
     }
   };
+
+  // Parse split payment details
+  const parseSplitPayments = (): SplitPaymentEntry[] | null => {
+    if (!orderDetail?.splitPaymentDetails) return null;
+    try {
+      const splits = JSON.parse(orderDetail.splitPaymentDetails) as SplitPaymentEntry[];
+      if (Array.isArray(splits) && splits.length > 0) return splits;
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const splitPayments = parseSplitPayments();
 
   // Format payment status
   const formatPaymentStatus = (status?: string) => {
@@ -329,6 +351,24 @@ export default function InvoicePrint() {
             </div>
             
             <div>Hình thức thanh toán: <strong>{formatPaymentMethod(orderDetail.paymentMethod)}</strong></div>
+            
+            {/* Split payment details */}
+            {splitPayments && splitPayments.length > 0 && (
+              <div className="mt-2 mb-1" style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '6px 8px', background: '#f8f9ff' }}>
+                <div className="font-bold text-xs mb-1" style={{ color: '#4338ca' }}>Chi tiết chia bill:</div>
+                {splitPayments.map((sp, idx) => (
+                  <div key={idx} className="flex justify-between text-xs" style={{ padding: '2px 0' }}>
+                    <span>{sp.methodName || formatPaymentMethod(sp.method)}</span>
+                    <strong>{Number(sp.amount).toLocaleString('vi-VN')}₫</strong>
+                  </div>
+                ))}
+                <div className="flex justify-between text-xs font-bold" style={{ borderTop: '1px dashed #ccc', marginTop: '4px', paddingTop: '4px' }}>
+                  <span>Tổng:</span>
+                  <span>{splitPayments.reduce((s, p) => s + Number(p.amount), 0).toLocaleString('vi-VN')}₫</span>
+                </div>
+              </div>
+            )}
+            
             <div>Thu Ngân: <strong>Admin</strong></div>
           </div>
 

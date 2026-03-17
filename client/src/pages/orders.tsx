@@ -71,6 +71,7 @@ type Order = {
   cancellationReason?: string;
   storeId?: string;
   storeName?: string;
+  splitPaymentDetails?: string | null;
 };
 
 
@@ -198,7 +199,8 @@ export default function OrdersPage() {
         discountAmount: order.discountAmount ?? order.DiscountAmount ?? order.Order?.DiscountAmount,
         cancellationReason: order.cancellationReason ?? order.CancellationReason ?? order.Order?.CancellationReason,
         storeId: order.storeId ?? order.StoreId ?? order.Order?.StoreId,
-        storeName: order.storeName ?? order.StoreName ?? order.StoreName ?? (order.Order ? order.Order.StoreName : undefined)
+        storeName: order.storeName ?? order.StoreName ?? order.StoreName ?? (order.Order ? order.Order.StoreName : undefined),
+        splitPaymentDetails: order.splitPaymentDetails ?? order.SplitPaymentDetails ?? order.Order?.SplitPaymentDetails
       }));
 
       return mapped;
@@ -667,7 +669,33 @@ export default function OrdersPage() {
                     <div className="flex flex-wrap gap-2 mt-3">
                       {getPaymentStatusBadge(order.paymentStatus)}
                       {getOrderStatusBadge(order.status)}
+                      {order.paymentMethod === 'split' && (
+                        <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 text-xs">
+                          💳 Chia bill
+                        </Badge>
+                      )}
                     </div>
+                    
+                    {/* Hiển thị chi tiết chia bill */}
+                    {order.splitPaymentDetails && (() => {
+                      try {
+                        const splits = JSON.parse(order.splitPaymentDetails) as { method: string; methodName: string; amount: number }[];
+                        if (Array.isArray(splits) && splits.length > 0) {
+                          return (
+                            <div className="mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-md">
+                              <div className="text-xs font-semibold text-indigo-700 mb-1">Chi tiết chia bill:</div>
+                              {splits.map((sp, idx) => (
+                                <div key={idx} className="flex justify-between text-xs text-indigo-600">
+                                  <span>{sp.methodName || sp.method}</span>
+                                  <strong>{Number(sp.amount).toLocaleString('vi-VN')}₫</strong>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      } catch { return null; }
+                    })()}
                     
                     {/* Hiển thị lý do hủy nếu đơn hàng đã bị hủy */}
                     {order.status === 'cancelled' && order.cancellationReason && (

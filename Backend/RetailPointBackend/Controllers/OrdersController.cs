@@ -40,7 +40,8 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? paymentStatus,
             [FromForm] string? status,
             [FromForm] string? createdAt,
-            [FromForm] string? currency)
+            [FromForm] string? currency,
+            [FromForm] string? splitPaymentDetails)
         {
             // Láº¥y danh sÃ¡ch sáº£n pháº©m tá»« form-data
             var items = new List<OrderItem>();
@@ -87,8 +88,13 @@ namespace RetailPointBackend.Controllers
                 OrderNumber = orderNumber,
                 StaffId = staffId,
                 StoreId = storeId?.ToString(), // Convert int? to string
+                SplitPaymentDetails = splitPaymentDetails, // JSON split payment info
                 Items = items
             };
+
+            // Log split payment info
+            _logger.LogInformation("CreateOrder - PaymentMethod: '{PaymentMethod}', SplitPaymentDetails: '{SplitPaymentDetails}'", 
+                paymentMethod ?? "NULL", splitPaymentDetails ?? "NULL");
 
             // If client provided createdAt, try to parse and use it (simple approach like working sample)
             _logger.LogInformation("CreateOrder - Received createdAt param: '{createdAt}'", createdAt ?? "NULL");
@@ -374,6 +380,7 @@ namespace RetailPointBackend.Controllers
                     o.Status,
                     o.PaymentMethod,
                     o.StoreId,
+                    o.SplitPaymentDetails,
                     CashierName = "Admin",
                     o.CancellationReason,
                     Items = o.Items.Select(i => new {
@@ -445,6 +452,7 @@ namespace RetailPointBackend.Controllers
                     StoreName = x.StoreName,
                     CashierName = x.Order.GetType().GetProperty("CashierName")!.GetValue(x.Order),
                     CancellationReason = x.Order.GetType().GetProperty("CancellationReason")!.GetValue(x.Order),
+                    SplitPaymentDetails = x.Order.GetType().GetProperty("SplitPaymentDetails")!.GetValue(x.Order),
                     Items = x.Order.GetType().GetProperty("Items")!.GetValue(x.Order)
                 }),
                 pagination = new {
@@ -487,6 +495,7 @@ namespace RetailPointBackend.Controllers
                     o.StoreId,
                     o.Notes,
                     o.CancellationReason,
+                    o.SplitPaymentDetails,
                     Items = o.Items.Select(i => new {
                         i.ProductId,
                         i.ProductName,
@@ -529,6 +538,7 @@ namespace RetailPointBackend.Controllers
                 StoreName = storeName,
                 order.Notes,
                 order.CancellationReason,
+                order.SplitPaymentDetails,
                 order.Items
             };
             
@@ -541,7 +551,8 @@ namespace RetailPointBackend.Controllers
             [FromForm] string? paymentMethod,
             [FromForm] string? paymentStatus,
             [FromForm] string? status,
-            [FromForm] string? currency)
+            [FromForm] string? currency,
+            [FromForm] string? splitPaymentDetails)
         {
             var order = _context.Orders.FirstOrDefault(o => o.OrderId == id);
             if (order == null) return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
@@ -553,6 +564,7 @@ namespace RetailPointBackend.Controllers
             order.PaymentStatus = paymentStatus ?? "paid";
             order.Status = status ?? "completed";
             order.Currency = currency ?? order.Currency;
+            order.SplitPaymentDetails = splitPaymentDetails ?? order.SplitPaymentDetails;
             order.OrderNumber = $"ORD{DateTimeOffset.Now.ToUnixTimeSeconds()}";
             
             try
