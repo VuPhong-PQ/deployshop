@@ -249,7 +249,14 @@ namespace RetailPointBackend.Controllers
                 .Include(s => s.Store)
                 .FirstOrDefaultAsync(s => s.Username == loginDto.Username && s.IsActive);
 
-            if (staff == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, staff.PasswordHash))
+            // Guard: staff must exist
+            if (staff == null)
+            {
+                return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng");
+            }
+
+            // Guard: password hash must be present
+            if (string.IsNullOrEmpty(staff.PasswordHash) || !BCrypt.Net.BCrypt.Verify(loginDto.Password, staff.PasswordHash))
             {
                 return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng");
             }
@@ -258,9 +265,11 @@ namespace RetailPointBackend.Controllers
             staff.LastLogin = DateTime.Now;
             await _context.SaveChangesAsync();
 
-            var permissions = staff.Role.RolePermissions
+            // Safely extract permissions (handle missing Role or RolePermissions)
+            var permissions = staff.Role?.RolePermissions?
+                .Where(rp => rp?.Permission != null)
                 .Select(rp => rp.Permission.PermissionName)
-                .ToList();
+                .ToList() ?? new List<string>();
 
             var response = new LoginResponseDto
             {
@@ -269,7 +278,7 @@ namespace RetailPointBackend.Controllers
                 Username = staff.Username,
                 Email = staff.Email,
                 RoleId = staff.RoleId,
-                RoleName = staff.Role.RoleName,
+                RoleName = staff.Role?.RoleName ?? string.Empty,
                 Permissions = permissions,
                 LastLogin = staff.LastLogin,
                 StoreId = staff.StoreId,
