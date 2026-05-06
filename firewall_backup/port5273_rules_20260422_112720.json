@@ -1,0 +1,24 @@
+﻿[
+    {
+        "DisplayName":  "Shop backend",
+        "Name":  "{ECE80D75-78E3-4B42-ABEB-24663175041C}",
+        "Enabled":  2,
+        "Action":  2,
+        "Profile":  0,
+        "Direction":  1,
+        "RemoteAddresses":  "Any",
+        "LocalPorts":  "5273",
+        "Program":  null
+    },
+    {
+        "DisplayName":  "Allow 5273 whitelist v2",
+        "Name":  "{120f2d1b-6d2d-4bf1-ac57-a5c2d5949faa}",
+        "Enabled":  1,
+        "Action":  2,
+        "Profile":  0,
+        "Direction":  1,
+        "RemoteAddresses":  "113.164.238.250,101.53.9.70,103.156.4.82,103.199.40.220,103.199.42.130",
+        "LocalPorts":  "5273",
+        "Program":  null
+    }
+]
