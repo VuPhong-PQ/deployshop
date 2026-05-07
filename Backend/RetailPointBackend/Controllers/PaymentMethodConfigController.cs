@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RetailPointBackend.Models;
 using System.Linq;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class PaymentMethodConfigController : ControllerBase
@@ -14,7 +16,6 @@ namespace RetailPointBackend.Controllers
             _context = context;
         }
 
-        // GET: api/PaymentMethodConfig
         [HttpGet]
         public IActionResult GetConfig()
         {
@@ -23,14 +24,12 @@ namespace RetailPointBackend.Controllers
             return Ok(config);
         }
 
-        // GET: api/PaymentMethodConfig/enabled
         [HttpGet("enabled")]
         public IActionResult GetEnabledPaymentMethods()
         {
             var config = _context.PaymentMethodConfigs.FirstOrDefault();
-            if (config == null) 
+            if (config == null)
             {
-                // Trả về phương thức mặc định nếu chưa có cấu hình
                 return Ok(new
                 {
                     paymentMethods = new[]
@@ -42,25 +41,19 @@ namespace RetailPointBackend.Controllers
             }
 
             var enabledMethods = new List<object>();
-            
+
             if (config.EnableCash)
                 enabledMethods.Add(new { id = "cash", name = "Tiền mặt", enabled = true });
-            
             if (config.EnableBankCard)
                 enabledMethods.Add(new { id = "card", name = "Thẻ ngân hàng", enabled = true });
-            
             if (config.EnableQRCode)
                 enabledMethods.Add(new { id = "qr", name = "QR Code", enabled = true });
-            
             if (config.EnableEWallet)
                 enabledMethods.Add(new { id = "ewallet", name = "USD Ngoại Tệ", enabled = true });
-            
             if (config.EnableBankTransfer)
                 enabledMethods.Add(new { id = "banktransfer", name = "Chuyển khoản", enabled = true });
-
             if (config.EnableForeignUSD)
                 enabledMethods.Add(new { id = "foreignusd", name = "Ngoại tệ USD", enabled = true });
-
             if (config.EnableForeignEUR)
                 enabledMethods.Add(new { id = "foreigneur", name = "Ngoại tệ EUR", enabled = true });
 
@@ -73,7 +66,6 @@ namespace RetailPointBackend.Controllers
             });
         }
 
-        // POST: api/PaymentMethodConfig
         [HttpPost]
         public IActionResult UpsertConfig([FromBody] PaymentMethodConfig model)
         {

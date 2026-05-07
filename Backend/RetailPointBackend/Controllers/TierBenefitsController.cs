@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class TierBenefitsController : ControllerBase
@@ -21,7 +23,7 @@ namespace RetailPointBackend.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách quyền lợi của tất cả các hạng
+        /// Láº¥y danh sÃ¡ch quyá»n lá»£i cá»§a táº¥t cáº£ cÃ¡c háº¡ng
         /// </summary>
         [HttpGet("all-benefits")]
         public async Task<IActionResult> GetAllTierBenefits()
@@ -44,7 +46,7 @@ namespace RetailPointBackend.Controllers
                     DiscountPercentage = tier.DiscountPercentage,
                     Description = tier.Description,
                     
-                    // Chi tiết quyền lợi điểm thưởng
+                    // Chi tiáº¿t quyá»n lá»£i Ä‘iá»ƒm thÆ°á»Ÿng
                     BonusBenefits = GetTierBonusBenefits(tier.TierName),
                     SpecialBenefits = GetTierSpecialBenefits(tier.TierName)
                 }).ToList();
@@ -53,18 +55,18 @@ namespace RetailPointBackend.Controllers
                 {
                     Success = true,
                     Data = tierBenefits,
-                    Message = "Lấy thông tin quyền lợi thành công"
+                    Message = "Láº¥y thÃ´ng tin quyá»n lá»£i thÃ nh cÃ´ng"
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting tier benefits");
-                return StatusCode(500, new { Success = false, Message = "Lỗi hệ thống khi lấy quyền lợi" });
+                return StatusCode(500, new { Success = false, Message = "Lá»—i há»‡ thá»‘ng khi láº¥y quyá»n lá»£i" });
             }
         }
 
         /// <summary>
-        /// Lấy quyền lợi của một hạng cụ thể
+        /// Láº¥y quyá»n lá»£i cá»§a má»™t háº¡ng cá»¥ thá»ƒ
         /// </summary>
         [HttpGet("{tierId}/benefits")]
         public async Task<IActionResult> GetTierBenefits(int tierId)
@@ -77,7 +79,7 @@ namespace RetailPointBackend.Controllers
 
                 if (tier == null)
                 {
-                    return NotFound(new { Success = false, Message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { Success = false, Message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 var customerCount = await _context.Customers.CountAsync(c => c.TierId == tierId);
@@ -94,7 +96,7 @@ namespace RetailPointBackend.Controllers
                     Description = tier.Description,
                     CustomerCount = customerCount,
                     
-                    // Chi tiết quyền lợi
+                    // Chi tiáº¿t quyá»n lá»£i
                     BonusBenefits = GetTierBonusBenefits(tier.TierName),
                     SpecialBenefits = GetTierSpecialBenefits(tier.TierName),
                     ExampleCalculation = GetExampleCalculation(tier.TierName)
@@ -104,18 +106,18 @@ namespace RetailPointBackend.Controllers
                 {
                     Success = true,
                     Data = benefits,
-                    Message = "Lấy thông tin quyền lợi thành công"
+                    Message = "Láº¥y thÃ´ng tin quyá»n lá»£i thÃ nh cÃ´ng"
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting tier benefits for tier {TierId}", tierId);
-                return StatusCode(500, new { Success = false, Message = "Lỗi hệ thống khi lấy quyền lợi" });
+                return StatusCode(500, new { Success = false, Message = "Lá»—i há»‡ thá»‘ng khi láº¥y quyá»n lá»£i" });
             }
         }
 
         /// <summary>
-        /// Mô phỏng tính điểm cho một đơn hàng theo hạng cụ thể
+        /// MÃ´ phá»ng tÃ­nh Ä‘iá»ƒm cho má»™t Ä‘Æ¡n hÃ ng theo háº¡ng cá»¥ thá»ƒ
         /// </summary>
         [HttpPost("simulate/{tierId}")]
         public async Task<IActionResult> SimulatePointsCalculation(int tierId, [FromBody] SimulateRequest request)
@@ -128,35 +130,35 @@ namespace RetailPointBackend.Controllers
 
                 if (tier == null)
                 {
-                    return NotFound(new { Success = false, Message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { Success = false, Message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 var settings = await _loyaltyService.GetLoyaltySettingsAsync();
                 
-                // Tính điểm cơ bản
+                // TÃ­nh Ä‘iá»ƒm cÆ¡ báº£n
                 var basePoints = (int)(request.OrderAmount / settings.PointsRate);
                 
-                // Áp dụng hệ số hạng
+                // Ãp dá»¥ng há»‡ sá»‘ háº¡ng
                 var tierPoints = (int)(basePoints * tier.PointsMultiplier);
                 
-                // Tính bonus points
+                // TÃ­nh bonus points
                 var bonusPoints = CalculateTierBonusPoints(tier.TierName, request.OrderAmount, basePoints);
                 
-                // Special day bonus nếu có
+                // Special day bonus náº¿u cÃ³
                 var specialBonus = 0;
                 if (request.IsBirthday)
                 {
-                    if (tier.TierName.ToLower().Contains("bạc") || tier.TierName.ToLower().Contains("silver"))
-                        specialBonus = basePoints; // Gấp đôi
-                    else if (tier.TierName.ToLower().Contains("vàng") || tier.TierName.ToLower().Contains("gold"))
-                        specialBonus = (int)(basePoints * 1.5m); // Gấp 2.5 lần
-                    else if (tier.TierName.ToLower().Contains("kim cương") || tier.TierName.ToLower().Contains("diamond") || tier.TierName.ToLower().Contains("platinum"))
-                        specialBonus = basePoints * 2; // Gấp 3 lần
+                    if (tier.TierName.ToLower().Contains("báº¡c") || tier.TierName.ToLower().Contains("silver"))
+                        specialBonus = basePoints; // Gáº¥p Ä‘Ã´i
+                    else if (tier.TierName.ToLower().Contains("vÃ ng") || tier.TierName.ToLower().Contains("gold"))
+                        specialBonus = (int)(basePoints * 1.5m); // Gáº¥p 2.5 láº§n
+                    else if (tier.TierName.ToLower().Contains("kim cÆ°Æ¡ng") || tier.TierName.ToLower().Contains("diamond") || tier.TierName.ToLower().Contains("platinum"))
+                        specialBonus = basePoints * 2; // Gáº¥p 3 láº§n
                 }
 
                 if (request.IsHoliday)
                 {
-                    specialBonus += (int)(basePoints * 0.5m); // +50% trong ngày lễ
+                    specialBonus += (int)(basePoints * 0.5m); // +50% trong ngÃ y lá»…
                 }
                 
                 var totalPoints = tierPoints + bonusPoints + specialBonus;
@@ -181,7 +183,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error simulating points for tier {TierId}", tierId);
-                return StatusCode(500, new { Success = false, Message = "Lỗi hệ thống khi mô phỏng" });
+                return StatusCode(500, new { Success = false, Message = "Lá»—i há»‡ thá»‘ng khi mÃ´ phá»ng" });
             }
         }
 
@@ -189,43 +191,43 @@ namespace RetailPointBackend.Controllers
         {
             var tierNameLower = tierName.ToLower();
 
-            if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+            if (tierNameLower.Contains("báº¡c") || tierNameLower.Contains("silver"))
             {
                 return new
                 {
-                    PointsBonus = "+20% điểm thưởng",
-                    FixedBonus = "50 điểm cố định cho đơn hàng >= 100k",
-                    BirthdayBonus = "Gấp đôi điểm trong tuần sinh nhật",
+                    PointsBonus = "+20% Ä‘iá»ƒm thÆ°á»Ÿng",
+                    FixedBonus = "50 Ä‘iá»ƒm cá»‘ Ä‘á»‹nh cho Ä‘Æ¡n hÃ ng >= 100k",
+                    BirthdayBonus = "Gáº¥p Ä‘Ã´i Ä‘iá»ƒm trong tuáº§n sinh nháº­t",
                     Color = "#C0C0C0"
                 };
             }
-            else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+            else if (tierNameLower.Contains("vÃ ng") || tierNameLower.Contains("gold"))
             {
                 return new
                 {
-                    PointsBonus = "+50% điểm thưởng",
-                    FixedBonus = "100 điểm cố định cho đơn hàng >= 200k",
-                    MilestoneBonus = "200 điểm thêm mỗi 500k",
-                    BirthdayBonus = "Gấp 2.5 lần điểm trong tuần sinh nhật",
+                    PointsBonus = "+50% Ä‘iá»ƒm thÆ°á»Ÿng",
+                    FixedBonus = "100 Ä‘iá»ƒm cá»‘ Ä‘á»‹nh cho Ä‘Æ¡n hÃ ng >= 200k",
+                    MilestoneBonus = "200 Ä‘iá»ƒm thÃªm má»—i 500k",
+                    BirthdayBonus = "Gáº¥p 2.5 láº§n Ä‘iá»ƒm trong tuáº§n sinh nháº­t",
                     Color = "#FFD700"
                 };
             }
-            else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
+            else if (tierNameLower.Contains("kim cÆ°Æ¡ng") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
             {
                 return new
                 {
-                    PointsBonus = "+100% điểm thưởng (gấp đôi)",
-                    FixedBonus = "300 điểm cố định mọi đơn hàng",
-                    MilestoneBonus = "250 điểm thêm mỗi 300k",
-                    WeekendBonus = "Gấp đôi toàn bộ bonus cuối tuần",
-                    BirthdayBonus = "Gấp 3 lần điểm trong tuần sinh nhật",
+                    PointsBonus = "+100% Ä‘iá»ƒm thÆ°á»Ÿng (gáº¥p Ä‘Ã´i)",
+                    FixedBonus = "300 Ä‘iá»ƒm cá»‘ Ä‘á»‹nh má»i Ä‘Æ¡n hÃ ng",
+                    MilestoneBonus = "250 Ä‘iá»ƒm thÃªm má»—i 300k",
+                    WeekendBonus = "Gáº¥p Ä‘Ã´i toÃ n bá»™ bonus cuá»‘i tuáº§n",
+                    BirthdayBonus = "Gáº¥p 3 láº§n Ä‘iá»ƒm trong tuáº§n sinh nháº­t",
                     Color = "#B9F2FF"
                 };
             }
 
             return new
             {
-                PointsBonus = "Không có bonus đặc biệt",
+                PointsBonus = "KhÃ´ng cÃ³ bonus Ä‘áº·c biá»‡t",
                 Color = "#808080"
             };
         }
@@ -236,42 +238,42 @@ namespace RetailPointBackend.Controllers
 
             var commonBenefits = new List<string>
             {
-                "Tích điểm trên mọi giao dịch",
-                "Đổi điểm thành tiền mặt",
-                "Thông báo ưu đãi qua email/SMS"
+                "TÃ­ch Ä‘iá»ƒm trÃªn má»i giao dá»‹ch",
+                "Äá»•i Ä‘iá»ƒm thÃ nh tiá»n máº·t",
+                "ThÃ´ng bÃ¡o Æ°u Ä‘Ã£i qua email/SMS"
             };
 
-            if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+            if (tierNameLower.Contains("báº¡c") || tierNameLower.Contains("silver"))
             {
                 return commonBenefits.Concat(new[]
                 {
-                    "Ưu tiên hỗ trợ khách hàng",
-                    "Giảm giá sinh nhật đặc biệt",
-                    "Thông báo sớm về khuyến mãi"
+                    "Æ¯u tiÃªn há»— trá»£ khÃ¡ch hÃ ng",
+                    "Giáº£m giÃ¡ sinh nháº­t Ä‘áº·c biá»‡t",
+                    "ThÃ´ng bÃ¡o sá»›m vá» khuyáº¿n mÃ£i"
                 }).ToArray();
             }
-            else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+            else if (tierNameLower.Contains("vÃ ng") || tierNameLower.Contains("gold"))
             {
                 return commonBenefits.Concat(new[]
                 {
-                    "Miễn phí giao hàng toàn quốc",
-                    "Tư vấn cá nhân hóa",
-                    "Truy cập sớm sản phẩm mới",
-                    "Quà tặng sinh nhật cao cấp",
-                    "Hoàn tiền nhanh 24h"
+                    "Miá»…n phÃ­ giao hÃ ng toÃ n quá»‘c",
+                    "TÆ° váº¥n cÃ¡ nhÃ¢n hÃ³a",
+                    "Truy cáº­p sá»›m sáº£n pháº©m má»›i",
+                    "QuÃ  táº·ng sinh nháº­t cao cáº¥p",
+                    "HoÃ n tiá»n nhanh 24h"
                 }).ToArray();
             }
-            else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
+            else if (tierNameLower.Contains("kim cÆ°Æ¡ng") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
             {
                 return commonBenefits.Concat(new[]
                 {
                     "Concierge service 24/7",
-                    "Miễn phí giao hàng express",
-                    "Truy cập VIP lounge",
+                    "Miá»…n phÃ­ giao hÃ ng express",
+                    "Truy cáº­p VIP lounge",
                     "Personal shopper dedicated",
-                    "Sự kiện độc quyền và preview",
-                    "Quà tặng premium hàng tháng",
-                    "Bảo hành và bảo dưỡng miễn phí"
+                    "Sá»± kiá»‡n Ä‘á»™c quyá»n vÃ  preview",
+                    "QuÃ  táº·ng premium hÃ ng thÃ¡ng",
+                    "Báº£o hÃ nh vÃ  báº£o dÆ°á»¡ng miá»…n phÃ­"
                 }).ToArray();
             }
 
@@ -292,58 +294,58 @@ namespace RetailPointBackend.Controllers
             var breakdown = new List<object>();
             var tierNameLower = tierName.ToLower();
 
-            breakdown.Add(new { Step = "Điểm cơ bản", Amount = orderAmount, Points = basePoints, Description = $"{orderAmount:N0} VNĐ ÷ 1000 = {basePoints} điểm" });
+            breakdown.Add(new { Step = "Äiá»ƒm cÆ¡ báº£n", Amount = orderAmount, Points = basePoints, Description = $"{orderAmount:N0} VNÄ Ã· 1000 = {basePoints} Ä‘iá»ƒm" });
 
-            if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+            if (tierNameLower.Contains("báº¡c") || tierNameLower.Contains("silver"))
             {
                 var bonus = (int)(basePoints * 0.2m);
                 var fixedBonus = orderAmount >= 100000 ? 50 : 0;
-                breakdown.Add(new { Step = "Hạng Bạc +20%", Points = bonus, Description = $"Bonus 20%: {basePoints} × 0.2 = {bonus} điểm" });
+                breakdown.Add(new { Step = "Háº¡ng Báº¡c +20%", Points = bonus, Description = $"Bonus 20%: {basePoints} Ã— 0.2 = {bonus} Ä‘iá»ƒm" });
                 if (fixedBonus > 0)
-                    breakdown.Add(new { Step = "Bonus >= 100k", Points = fixedBonus, Description = "Cố định 50 điểm cho đơn >= 100k" });
+                    breakdown.Add(new { Step = "Bonus >= 100k", Points = fixedBonus, Description = "Cá»‘ Ä‘á»‹nh 50 Ä‘iá»ƒm cho Ä‘Æ¡n >= 100k" });
             }
-            else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+            else if (tierNameLower.Contains("vÃ ng") || tierNameLower.Contains("gold"))
             {
                 var bonus = (int)(basePoints * 0.5m);
                 var fixedBonus = orderAmount >= 200000 ? 100 : 0;
                 var milestoneBonus = (int)(orderAmount / 500000) * 200;
                 
-                breakdown.Add(new { Step = "Hạng Vàng +50%", Points = bonus, Description = $"Bonus 50%: {basePoints} × 0.5 = {bonus} điểm" });
+                breakdown.Add(new { Step = "Háº¡ng VÃ ng +50%", Points = bonus, Description = $"Bonus 50%: {basePoints} Ã— 0.5 = {bonus} Ä‘iá»ƒm" });
                 if (fixedBonus > 0)
-                    breakdown.Add(new { Step = "Bonus >= 200k", Points = fixedBonus, Description = "Cố định 100 điểm cho đơn >= 200k" });
+                    breakdown.Add(new { Step = "Bonus >= 200k", Points = fixedBonus, Description = "Cá»‘ Ä‘á»‹nh 100 Ä‘iá»ƒm cho Ä‘Æ¡n >= 200k" });
                 if (milestoneBonus > 0)
-                    breakdown.Add(new { Step = "Milestone", Points = milestoneBonus, Description = $"Mỗi 500k: {(int)(orderAmount / 500000)} × 200 = {milestoneBonus} điểm" });
+                    breakdown.Add(new { Step = "Milestone", Points = milestoneBonus, Description = $"Má»—i 500k: {(int)(orderAmount / 500000)} Ã— 200 = {milestoneBonus} Ä‘iá»ƒm" });
             }
-            else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
+            else if (tierNameLower.Contains("kim cÆ°Æ¡ng") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
             {
                 var bonus = basePoints; // 100%
                 var fixedBonus = 300;
                 var milestoneBonus = (int)(orderAmount / 300000) * 250;
                 
-                breakdown.Add(new { Step = "Hạng Kim cương +100%", Points = bonus, Description = $"Bonus 100%: {basePoints} × 1.0 = {bonus} điểm" });
-                breakdown.Add(new { Step = "Bonus cố định", Points = fixedBonus, Description = "Cố định 300 điểm mọi đơn hàng" });
+                breakdown.Add(new { Step = "Háº¡ng Kim cÆ°Æ¡ng +100%", Points = bonus, Description = $"Bonus 100%: {basePoints} Ã— 1.0 = {bonus} Ä‘iá»ƒm" });
+                breakdown.Add(new { Step = "Bonus cá»‘ Ä‘á»‹nh", Points = fixedBonus, Description = "Cá»‘ Ä‘á»‹nh 300 Ä‘iá»ƒm má»i Ä‘Æ¡n hÃ ng" });
                 if (milestoneBonus > 0)
-                    breakdown.Add(new { Step = "Milestone", Points = milestoneBonus, Description = $"Mỗi 300k: {(int)(orderAmount / 300000)} × 250 = {milestoneBonus} điểm" });
+                    breakdown.Add(new { Step = "Milestone", Points = milestoneBonus, Description = $"Má»—i 300k: {(int)(orderAmount / 300000)} Ã— 250 = {milestoneBonus} Ä‘iá»ƒm" });
             }
 
             if (isBirthday)
             {
                 var birthdayBonus = 0;
-                if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+                if (tierNameLower.Contains("báº¡c") || tierNameLower.Contains("silver"))
                     birthdayBonus = basePoints;
-                else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+                else if (tierNameLower.Contains("vÃ ng") || tierNameLower.Contains("gold"))
                     birthdayBonus = (int)(basePoints * 1.5m);
-                else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
+                else if (tierNameLower.Contains("kim cÆ°Æ¡ng") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
                     birthdayBonus = basePoints * 2;
                 
                 if (birthdayBonus > 0)
-                    breakdown.Add(new { Step = "Sinh nhật", Points = birthdayBonus, Description = "Bonus tuần sinh nhật" });
+                    breakdown.Add(new { Step = "Sinh nháº­t", Points = birthdayBonus, Description = "Bonus tuáº§n sinh nháº­t" });
             }
 
             if (isHoliday)
             {
                 var holidayBonus = (int)(basePoints * 0.5m);
-                breakdown.Add(new { Step = "Ngày lễ", Points = holidayBonus, Description = "Bonus 50% ngày lễ" });
+                breakdown.Add(new { Step = "NgÃ y lá»…", Points = holidayBonus, Description = "Bonus 50% ngÃ y lá»…" });
             }
 
             return breakdown;
@@ -354,19 +356,19 @@ namespace RetailPointBackend.Controllers
             var bonusPoints = 0;
             var tierNameLower = tierName.ToLower();
 
-            if (tierNameLower.Contains("bạc") || tierNameLower.Contains("silver"))
+            if (tierNameLower.Contains("báº¡c") || tierNameLower.Contains("silver"))
             {
                 bonusPoints = (int)(basePoints * 0.2m);
                 if (orderAmount >= 100000) bonusPoints += 50;
             }
-            else if (tierNameLower.Contains("vàng") || tierNameLower.Contains("gold"))
+            else if (tierNameLower.Contains("vÃ ng") || tierNameLower.Contains("gold"))
             {
                 bonusPoints = (int)(basePoints * 0.5m);
                 if (orderAmount >= 200000) bonusPoints += 100;
                 var milestoneBonus = (int)(orderAmount / 500000) * 200;
                 bonusPoints += milestoneBonus;
             }
-            else if (tierNameLower.Contains("kim cương") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
+            else if (tierNameLower.Contains("kim cÆ°Æ¡ng") || tierNameLower.Contains("diamond") || tierNameLower.Contains("platinum"))
             {
                 bonusPoints = basePoints; // 100%
                 bonusPoints += 300;

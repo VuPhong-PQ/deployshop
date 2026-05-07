@@ -1,20 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
+using RetailPointBackend.Services;
 using BCrypt.Net;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace RetailPointBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class StaffController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IJwtService _jwtService;
 
-        public StaffController(AppDbContext context)
+        public StaffController(AppDbContext context, IJwtService jwtService)
         {
             _context = context;
+            _jwtService = jwtService;
         }
 
         // GET: api/Staff
@@ -235,6 +241,7 @@ namespace RetailPointBackend.Controllers
 
         // POST: api/Staff/login
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginDto loginDto)
         {
             if (!ModelState.IsValid)
@@ -282,7 +289,8 @@ namespace RetailPointBackend.Controllers
                 Permissions = permissions,
                 LastLogin = staff.LastLogin,
                 StoreId = staff.StoreId,
-                StoreName = staff.Store?.Name
+                StoreName = staff.Store?.Name,
+                Token = _jwtService.GenerateToken(staff, permissions)
             };
 
             return Ok(response);
@@ -292,6 +300,13 @@ namespace RetailPointBackend.Controllers
         [HttpGet("refresh-permissions/{staffId}")]
         public async Task<ActionResult<object>> RefreshPermissions(int staffId)
         {
+            // Kiểm tra người dùng chỉ có thể refresh của chính mình (trừ Admin)
+            var currentStaffId = User.FindFirstValue("staffId");
+            var currentRole = User.FindFirstValue("roleName");
+            if (currentStaffId != null && currentRole != "Admin" && currentStaffId != staffId.ToString())
+            {
+                return Forbid();
+            }
             var staff = await _context.Staffs
                 .Include(s => s.Role)
                 .ThenInclude(r => r.RolePermissions)
@@ -409,5 +424,6 @@ namespace RetailPointBackend.Controllers
         public DateTime? LastLogin { get; set; }
         public int? StoreId { get; set; }
         public string? StoreName { get; set; }
+        public string Token { get; set; } = string.Empty;
     }
 }

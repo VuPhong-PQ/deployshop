@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CustomersController : ControllerBase
@@ -21,23 +23,23 @@ namespace RetailPointBackend.Controllers
         {
             return rank switch
             {
-                CustomerRank.Thuong => "Đồng",     // TierId 1
-                CustomerRank.Premium => "Bạc",     // TierId 2  
-                CustomerRank.VIP => "Vàng",        // TierId 3 - ĐÚNG cho khách hàng hiện tại
-                CustomerRank.Platinum => "Kim cương", // TierId 4
-                _ => "Đồng"
+                CustomerRank.Thuong => "Äá»“ng",     // TierId 1
+                CustomerRank.Premium => "Báº¡c",     // TierId 2  
+                CustomerRank.VIP => "VÃ ng",        // TierId 3 - ÄÃšNG cho khÃ¡ch hÃ ng hiá»‡n táº¡i
+                CustomerRank.Platinum => "Kim cÆ°Æ¡ng", // TierId 4
+                _ => "Äá»“ng"
             };
         }
 
-        // Helper method to map frontend names to CustomerRank (hỗ trợ cả tiếng Anh và Việt)
+        // Helper method to map frontend names to CustomerRank (há»— trá»£ cáº£ tiáº¿ng Anh vÃ  Viá»‡t)
         private CustomerRank MapFrontendToCustomerRank(string frontendRank)
         {
             return frontendRank?.ToLower() switch
             {
-                "bronze" or "đồng" => CustomerRank.Thuong,
-                "silver" or "bạc" => CustomerRank.Premium,
-                "gold" or "vàng" => CustomerRank.VIP,
-                "platinum" or "kim cương" or "kim cuong" => CustomerRank.Platinum,
+                "bronze" or "Ä‘á»“ng" => CustomerRank.Thuong,
+                "silver" or "báº¡c" => CustomerRank.Premium,
+                "gold" or "vÃ ng" => CustomerRank.VIP,
+                "platinum" or "kim cÆ°Æ¡ng" or "kim cuong" => CustomerRank.Platinum,
                 _ => CustomerRank.Thuong
             };
         }
@@ -210,7 +212,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Lỗi tạo khách hàng: {ex.Message}");
+                return BadRequest($"Lá»—i táº¡o khÃ¡ch hÃ ng: {ex.Message}");
             }
         }        // PUT: api/customers/{id}
         [HttpPut("{id}")]
@@ -252,7 +254,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Lỗi cập nhật khách hàng: {ex.Message}");
+                return BadRequest($"Lá»—i cáº­p nháº­t khÃ¡ch hÃ ng: {ex.Message}");
             }
         }
 
@@ -274,7 +276,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Lỗi xóa khách hàng: {ex.Message}");
+                return BadRequest($"Lá»—i xÃ³a khÃ¡ch hÃ ng: {ex.Message}");
             }
         }
 
@@ -292,7 +294,7 @@ namespace RetailPointBackend.Controllers
 
                 if (order == null)
                 {
-                    return NotFound($"Không tìm thấy đơn hàng với ID: {orderId}");
+                    return NotFound($"KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng vá»›i ID: {orderId}");
                 }
 
                 var result = new
@@ -338,7 +340,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Lỗi lấy chi tiết đơn hàng: {ex.Message}");
+                return BadRequest($"Lá»—i láº¥y chi tiáº¿t Ä‘Æ¡n hÃ ng: {ex.Message}");
             }
         }
 
@@ -397,3 +399,4 @@ namespace RetailPointBackend.Controllers
         }
     }
 }
+

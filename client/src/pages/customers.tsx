@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +21,11 @@ import type { ApiCustomer, CustomerFormData, ApiStore, Customer, Order, OrderIte
 import { useAuth } from "@/contexts/auth-context";
 
 const customerFormSchema = z.object({
-  name: z.string().min(1, "Họ tên là bắt buộc"),
-  phone: z.string().min(1, "Số điện thoại là bắt buộc"),
+  name: z.string().min(1, "Há» tÃªn lÃ  báº¯t buá»™c"),
+  phone: z.string().min(1, "Sá»‘ Ä‘iá»‡n thoáº¡i lÃ  báº¯t buá»™c"),
   email: z.string().email().optional().or(z.literal("")),
   address: z.string().optional(),
-  storeId: z.string().min(1, "Cửa hàng là bắt buộc"),
+  storeId: z.string().min(1, "Cá»­a hÃ ng lÃ  báº¯t buá»™c"),
   customerType: z.enum(["regular", "premium", "vip"]).optional().default("regular"),
   dateOfBirth: z.date().optional(),
   loyaltyPoints: z.number().optional().default(0),
@@ -55,9 +55,6 @@ export default function Customers() {
         isActive: customerData.isActive !== undefined ? customerData.isActive : true,
         dateOfBirth: customerData.dateOfBirth?.toISOString() || null,
       };
-      
-      console.log('Sending add request for customer:', requestData);
-      
       return apiRequest('/api/customers', {
         method: 'POST',
         headers: { 
@@ -69,11 +66,10 @@ export default function Customers() {
     },
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Khách hàng đã được thêm thành công",
+        title: "ThÃ nh cÃ´ng",
+        description: "KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c thÃªm thÃ nh cÃ´ng",
       });
       // Force reload data immediately from server
-      console.log('Customer added, refetching data...');
       refetch();
       setIsAddDialogOpen(false);
       form.reset();
@@ -81,8 +77,8 @@ export default function Customers() {
     onError: (error: any) => {
       console.error('Add customer error:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể thêm khách hàng. Vui lòng thử lại.",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ thÃªm khÃ¡ch hÃ ng. Vui lÃ²ng thá»­ láº¡i.",
         variant: "destructive",
       });
     }
@@ -91,7 +87,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTier, setSelectedTier] = useState<string>("all");
   const [showInactive, setShowInactive] = useState(false);
-  // Hàm reset bộ lọc
+  // HÃ m reset bá»™ lá»c
   const resetFilters = () => {
     setSearchTerm("");
     setSelectedTier("all");
@@ -109,9 +105,7 @@ export default function Customers() {
       const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
       const endpointBase = showInactive ? '/api/customers/inactive' : '/api/customers';
       const endpoint = `${endpointBase}${storeParam}`;
-      console.log('Fetching customers from API:', endpoint);
       const response = await apiRequest(endpoint, { method: 'GET' });
-      console.log('Raw API response:', response);
       return response;
     },
     // Only fetch when a store is selected to avoid empty responses from store-scoped endpoints
@@ -124,11 +118,9 @@ export default function Customers() {
     retry: 1,
   });
 
-  // Debug: log dữ liệu gốc từ API
-  console.log('rawCustomers:', rawCustomers);
-  // Map dữ liệu từ API sang đúng định dạng frontend
+  // Debug: log dá»¯ liá»‡u gá»‘c tá»« API
+  // Map dá»¯ liá»‡u tá»« API sang Ä‘Ãºng Ä‘á»‹nh dáº¡ng frontend
   rawCustomers.forEach((c, i) => {
-    console.log(`Customer[${i}] hangKhachHang:`, c.hangKhachHang, 'type:', typeof c.hangKhachHang);
   });
   const customers: Customer[] = rawCustomers.map((c) => ({
     id: c.customerId?.toString(),
@@ -137,14 +129,14 @@ export default function Customers() {
     email: c.email || "",
     address: c.diaChi || "",
     customerType: 
-      // Kiểm tra theo string chính xác
+      // Kiá»ƒm tra theo string chÃ­nh xÃ¡c
       c.hangKhachHang === 'VIP' ? 'vip'
       : c.hangKhachHang === 'Platinum' ? 'platinum'
       : c.hangKhachHang === 'Premium' ? 'premium'
       : c.hangKhachHang === 'Silver' ? 'premium'
       : c.hangKhachHang === 'Bronze' ? 'regular'
       : c.hangKhachHang === 'Thuong' ? 'regular'
-      // Fallback cho các giá trị số cũ (nếu có)
+      // Fallback cho cÃ¡c giÃ¡ trá»‹ sá»‘ cÅ© (náº¿u cÃ³)
       : c.hangKhachHang === 3 ? 'platinum'
       : c.hangKhachHang === 2 ? 'premium'
       : 'regular',
@@ -157,9 +149,7 @@ export default function Customers() {
     createdAt: c.createdAt ? new Date(c.createdAt) : new Date(),
     updatedAt: c.updatedAt ? new Date(c.updatedAt) : new Date(),
   }));
-  // Debug: log giá trị customers
-  console.log('Customers:', customers);
-
+  // Debug: log giÃ¡ trá»‹ customers
   const { data: orders = [] } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
   });
@@ -168,9 +158,7 @@ export default function Customers() {
   const { data: stores = [] } = useQuery<ApiStore[]>({
     queryKey: ['/api/stores'],
     queryFn: async () => {
-      console.log('Fetching stores from API...');
       const response = await apiRequest('/api/stores', { method: 'GET' });
-      console.log('Stores API response:', response);
       return response;
     },
   });
@@ -180,13 +168,10 @@ export default function Customers() {
     queryKey: ['/api/customers', selectedCustomer?.customerId, 'detail'],
     queryFn: async () => {
       if (!selectedCustomer?.customerId) {
-        console.log('No customerId available:', selectedCustomer);
         return null;
       }
-      console.log('Fetching customer detail for:', selectedCustomer.customerId);
       try {
         const response = await apiRequest(`/api/customers/${selectedCustomer.customerId}`, { method: 'GET' });
-        console.log('Customer detail response:', response);
         return response;
       } catch (error) {
         console.error('Customer detail API error:', error);
@@ -202,10 +187,8 @@ export default function Customers() {
     queryKey: ['/api/LoyaltyTransactions/customer', selectedCustomer?.customerId],
     queryFn: async () => {
       if (!selectedCustomer?.customerId) return null;
-      console.log('Fetching loyalty transactions for customer:', selectedCustomer.customerId);
       try {
         const response = await apiRequest(`/api/LoyaltyTransactions/customer/${selectedCustomer.customerId}`, { method: 'GET' });
-        console.log('Loyalty transactions response:', response);
         return response?.transactions || [];
       } catch (error) {
         console.error('Loyalty transactions API error:', error);
@@ -225,9 +208,7 @@ export default function Customers() {
     queryKey: ['/api/customers/inactive', currentStore?.storeId],
     queryFn: async () => {
       const storeParam = currentStore?.storeId ? `?storeId=${currentStore.storeId}` : '';
-      console.log('Fetching inactive customers...');
       const response = await apiRequest(`/api/customers/inactive${storeParam}`, { method: 'GET' });
-      console.log('Inactive customers response:', response);
       return response;
     },
     enabled: showInactive && !!currentStore?.storeId,
@@ -265,9 +246,6 @@ export default function Customers() {
         totalSpent: parseFloat(data.totalSpent || "0"),
         isActive: data.isActive !== undefined ? data.isActive : true,
       };
-      
-      console.log('Sending update request for customer:', id, requestData);
-      
       return apiRequest(`/api/customers/${id}`, {
         method: 'PUT',
         headers: { 
@@ -279,11 +257,10 @@ export default function Customers() {
     },
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Thông tin khách hàng đã được cập nhật",
+        title: "ThÃ nh cÃ´ng",
+        description: "ThÃ´ng tin khÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t",
       });
       // Force reload data immediately from server
-      console.log('Customer updated, refetching data...');
       refetch();
       setEditingCustomer(null);
       form.reset();
@@ -291,8 +268,8 @@ export default function Customers() {
     onError: (error: any) => {
       console.error('Update customer error:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể cập nhật thông tin khách hàng",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ cáº­p nháº­t thÃ´ng tin khÃ¡ch hÃ ng",
         variant: "destructive",
       });
     }
@@ -307,16 +284,15 @@ export default function Customers() {
     },
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Khách hàng đã được xóa",
+        title: "ThÃ nh cÃ´ng",
+        description: "KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c xÃ³a",
       });
-      console.log('Customer deleted, refetching data...');
       refetch();
     },
     onError: () => {
       toast({
-        title: "Lỗi",
-        description: "Không thể xóa khách hàng",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ xÃ³a khÃ¡ch hÃ ng",
         variant: "destructive",
       });
     }
@@ -331,16 +307,15 @@ export default function Customers() {
     },
     onSuccess: () => {
       toast({
-        title: "Thành công",
-        description: "Khách hàng đã được khôi phục",
+        title: "ThÃ nh cÃ´ng",
+        description: "KhÃ¡ch hÃ ng Ä‘Ã£ Ä‘Æ°á»£c khÃ´i phá»¥c",
       });
-      console.log('Customer restored, refetching data...');
       refetch();
     },
     onError: () => {
       toast({
-        title: "Lỗi",
-        description: "Không thể khôi phục khách hàng",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ khÃ´i phá»¥c khÃ¡ch hÃ ng",
         variant: "destructive",
       });
     }
@@ -385,27 +360,21 @@ export default function Customers() {
 
   // Get customer orders from detailed API (for modal tabs)
   const getCustomerOrders = () => {
-    console.log('getCustomerOrders called - customerDetail:', customerDetail);
-    console.log('customerDetail?.orders:', customerDetail?.orders);
-    console.log('customerDetailError:', customerDetailError);
     const orders = customerDetail?.orders || [];
-    console.log('Returning orders array length:', orders.length);
     return orders;
   };
 
   // Handle view order detail
   const handleViewOrderDetail = async (orderId: number) => {
     try {
-      console.log('Fetching order detail for:', orderId);
       const orderDetail = await apiRequest(`/api/customers/orders/${orderId}`, { method: 'GET' });
-      console.log('Order detail response:', orderDetail);
       setSelectedOrder(orderDetail);
       setIsOrderDetailOpen(true);
     } catch (error) {
       console.error('Failed to fetch order detail:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể tải chi tiết đơn hàng",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ táº£i chi tiáº¿t Ä‘Æ¡n hÃ ng",
         variant: "destructive",
       });
     }
@@ -415,10 +384,10 @@ export default function Customers() {
   const getTierBadge = (hangKhachHang: string) => {
     // Map English tier names to Vietnamese
     const tierMapping = {
-      "Bronze": "Đồng",
-      "Silver": "Bạc", 
-      "Platinum": "Vàng",
-      "VIP": "Kim cương"
+      "Bronze": "Äá»“ng",
+      "Silver": "Báº¡c", 
+      "Platinum": "VÃ ng",
+      "VIP": "Kim cÆ°Æ¡ng"
     };
 
     // Get Vietnamese name, fallback to original if not found
@@ -426,40 +395,38 @@ export default function Customers() {
 
     switch (hangKhachHang) {
       case 'VIP':
-      case 'Kim cương':  // Thêm case cho tên tiếng Việt từ backend
-        return { label: 'Kim cương', color: 'bg-purple-500' };
+      case 'Kim cÆ°Æ¡ng':  // ThÃªm case cho tÃªn tiáº¿ng Viá»‡t tá»« backend
+        return { label: 'Kim cÆ°Æ¡ng', color: 'bg-purple-500' };
       case 'Premium':
         return { label: 'Premium', color: 'bg-yellow-400 text-black' };
       case 'Platinum':
-      case 'Vàng':  // Thêm case cho tên tiếng Việt từ backend
-        return { label: 'Vàng', color: 'bg-yellow-500' };
+      case 'VÃ ng':  // ThÃªm case cho tÃªn tiáº¿ng Viá»‡t tá»« backend
+        return { label: 'VÃ ng', color: 'bg-yellow-500' };
       case 'Silver':
-      case 'Bạc':  // Thêm case cho tên tiếng Việt từ backend
-        return { label: 'Bạc', color: 'bg-gray-400' };
+      case 'Báº¡c':  // ThÃªm case cho tÃªn tiáº¿ng Viá»‡t tá»« backend
+        return { label: 'Báº¡c', color: 'bg-gray-400' };
       case 'Bronze':
-      case 'Đồng':  // Thêm case cho tên tiếng Việt từ backend
-        return { label: 'Đồng', color: 'bg-orange-600' };
+      case 'Äá»“ng':  // ThÃªm case cho tÃªn tiáº¿ng Viá»‡t tá»« backend
+        return { label: 'Äá»“ng', color: 'bg-orange-600' };
       case 'Thuong':
       default:
-        return { label: 'Thường', color: 'bg-gray-500' };
+        return { label: 'ThÆ°á»ng', color: 'bg-gray-500' };
     }
   };
 
   // Handle form submission
   const onSubmit = (data: CustomerFormData) => {
-    console.log('Submit customer data:', data);
     if (editingCustomer) {
-      // Nếu đang chỉnh sửa, gọi mutation cập nhật
+      // Náº¿u Ä‘ang chá»‰nh sá»­a, gá»i mutation cáº­p nháº­t
       editCustomerMutation.mutate({ id: editingCustomer.customerId, data });
     } else {
-      // Nếu thêm mới, gọi mutation thêm mới
+      // Náº¿u thÃªm má»›i, gá»i mutation thÃªm má»›i
       addCustomerMutation.mutate(data);
     }
   };
 
   // Handle edit customer
   const handleEditCustomer = (customer: ApiCustomer) => {
-    console.log('Editing customer:', customer);
     setEditingCustomer(customer);
     form.reset({
       name: customer.hoTen || "",
@@ -480,27 +447,27 @@ export default function Customers() {
 
   // Handle delete customer
   const handleDeleteCustomer = (id: number) => {
-    if (confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) {
+    if (confirm("Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n xÃ³a khÃ¡ch hÃ ng nÃ y?")) {
       deleteCustomerMutation.mutate(id.toString());
     }
   };
 
   // Handle restore customer
   const handleRestoreCustomer = (id: number) => {
-    if (confirm("Bạn có chắc chắn muốn khôi phục khách hàng này?")) {
+    if (confirm("Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n khÃ´i phá»¥c khÃ¡ch hÃ ng nÃ y?")) {
       restoreCustomerMutation.mutate(id);
     }
   };
 
   return (
-    <AppLayout title="Khách hàng">
+    <AppLayout title="KhÃ¡ch hÃ ng">
       <div data-testid="customers-page">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <div className="relative w-80">
               <Input
-                placeholder="Tìm kiếm khách hàng (có thể gõ không dấu)..."
+                placeholder="TÃ¬m kiáº¿m khÃ¡ch hÃ ng (cÃ³ thá»ƒ gÃµ khÃ´ng dáº¥u)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -510,32 +477,32 @@ export default function Customers() {
             </div>
             <Select value={selectedTier} onValueChange={setSelectedTier}>
               <SelectTrigger className="w-48" data-testid="select-tier-filter">
-                <SelectValue placeholder="Tất cả hạng" />
+                <SelectValue placeholder="Táº¥t cáº£ háº¡ng" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả hạng</SelectItem>
-                <SelectItem value="regular">Thường</SelectItem>
+                <SelectItem value="all">Táº¥t cáº£ háº¡ng</SelectItem>
+                <SelectItem value="regular">ThÆ°á»ng</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
-                <SelectItem value="platinum">Vàng</SelectItem>
-                <SelectItem value="vip">Kim cương</SelectItem>
+                <SelectItem value="platinum">VÃ ng</SelectItem>
+                <SelectItem value="vip">Kim cÆ°Æ¡ng</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={resetFilters} data-testid="button-reset-filters">
-              Xóa bộ lọc
+              XÃ³a bá»™ lá»c
             </Button>
             <Button 
               variant={showInactive ? "default" : "outline"}
               onClick={() => setShowInactive(!showInactive)} 
               data-testid="button-toggle-inactive"
             >
-              {showInactive ? "Hiển thị hoạt động" : "Hiển thị đã xóa"}
+              {showInactive ? "Hiá»ƒn thá»‹ hoáº¡t Ä‘á»™ng" : "Hiá»ƒn thá»‹ Ä‘Ã£ xÃ³a"}
             </Button>
               <Button 
               variant="outline" 
               onClick={() => refetch()}
               data-testid="button-refresh-data"
             >
-              🔄 Refresh Data
+              ðŸ”„ Refresh Data
             </Button>
           </div>
 
@@ -549,13 +516,13 @@ export default function Customers() {
                 data-testid="button-add-customer"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Thêm khách hàng
+                ThÃªm khÃ¡ch hÃ ng
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>
-                  {editingCustomer ? "Chỉnh sửa khách hàng" : "Thêm khách hàng mới"}
+                  {editingCustomer ? "Chá»‰nh sá»­a khÃ¡ch hÃ ng" : "ThÃªm khÃ¡ch hÃ ng má»›i"}
                 </DialogTitle>
               </DialogHeader>
 
@@ -567,7 +534,7 @@ export default function Customers() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Họ tên *</FormLabel>
+                        <FormLabel>Há» tÃªn *</FormLabel>
                         <FormControl>
                           <Input {...field} data-testid="input-customer-name" />
                         </FormControl>
@@ -581,7 +548,7 @@ export default function Customers() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Số điện thoại *</FormLabel>
+                        <FormLabel>Sá»‘ Ä‘iá»‡n thoáº¡i *</FormLabel>
                         <FormControl>
                           <Input {...field} data-testid="input-customer-phone" />
                         </FormControl>
@@ -609,7 +576,7 @@ export default function Customers() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Địa chỉ</FormLabel>
+                        <FormLabel>Äá»‹a chá»‰</FormLabel>
                         <FormControl>
                           <Input {...field} data-testid="input-customer-address" />
                         </FormControl>
@@ -623,11 +590,11 @@ export default function Customers() {
                     name="storeId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cửa hàng *</FormLabel>
+                        <FormLabel>Cá»­a hÃ ng *</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-store">
-                              <SelectValue placeholder="Chọn cửa hàng" />
+                              <SelectValue placeholder="Chá»n cá»­a hÃ ng" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -648,7 +615,7 @@ export default function Customers() {
                     name="customerType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hạng khách hàng</FormLabel>
+                        <FormLabel>Háº¡ng khÃ¡ch hÃ ng</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-customer-type">
@@ -656,10 +623,10 @@ export default function Customers() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="regular">Thường</SelectItem>
+                            <SelectItem value="regular">ThÆ°á»ng</SelectItem>
                             <SelectItem value="premium">Premium</SelectItem>
-                            <SelectItem value="platinum">Vàng</SelectItem>
-                            <SelectItem value="vip">Kim cương</SelectItem>
+                            <SelectItem value="platinum">VÃ ng</SelectItem>
+                            <SelectItem value="vip">Kim cÆ°Æ¡ng</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -674,7 +641,7 @@ export default function Customers() {
                       onClick={() => setIsAddDialogOpen(false)}
                       data-testid="button-cancel"
                     >
-                      Hủy
+                      Há»§y
                     </Button>
                     <Button
                       type="submit"
@@ -682,8 +649,8 @@ export default function Customers() {
                       data-testid="button-save-customer"
                     >
                       {addCustomerMutation.isPending || editCustomerMutation.isPending 
-                        ? "Đang lưu..." 
-                        : (editingCustomer ? "Cập nhật" : "Thêm")
+                        ? "Äang lÆ°u..." 
+                        : (editingCustomer ? "Cáº­p nháº­t" : "ThÃªm")
                       }
                     </Button>
                   </div>
@@ -711,12 +678,12 @@ export default function Customers() {
               <CardContent className="p-12 text-center">
                 <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Không tìm thấy khách hàng
+                  KhÃ´ng tÃ¬m tháº¥y khÃ¡ch hÃ ng
                 </h3>
                 <p className="text-gray-500">
                   {searchTerm || selectedTier !== "all" 
-                    ? "Thử thay đổi bộ lọc tìm kiếm"
-                    : "Bắt đầu bằng cách thêm khách hàng đầu tiên"
+                    ? "Thá»­ thay Ä‘á»•i bá»™ lá»c tÃ¬m kiáº¿m"
+                    : "Báº¯t Ä‘áº§u báº±ng cÃ¡ch thÃªm khÃ¡ch hÃ ng Ä‘áº§u tiÃªn"
                   }
                 </p>
               </CardContent>
@@ -737,7 +704,7 @@ export default function Customers() {
               const customerOrdersForCard = getCustomerOrdersForCard(customerId?.toString() || "0");
               const lastOrderDate = customerOrdersForCard.length > 0 
                 ? new Date(customerOrdersForCard[0].createdAt).toLocaleDateString('vi-VN')
-                : "Chưa có đơn hàng";
+                : "ChÆ°a cÃ³ Ä‘Æ¡n hÃ ng";
 
               return (
                 <Card 
@@ -829,21 +796,21 @@ export default function Customers() {
                     <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
-                          <p className="text-sm text-gray-500">Điểm tích lũy</p>
+                          <p className="text-sm text-gray-500">Äiá»ƒm tÃ­ch lÅ©y</p>
                           <p className="font-semibold text-primary" data-testid={`customer-points-${customerId}`}>
                             {loyaltyPoints}
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Tổng chi tiêu</p>
+                          <p className="text-sm text-gray-500">Tá»•ng chi tiÃªu</p>
                           <p className="font-semibold text-green-600" data-testid={`customer-spent-${customerId}`}>
-                            {parseInt(totalSpent.toString()).toLocaleString('vi-VN')}₫
+                            {parseInt(totalSpent.toString()).toLocaleString('vi-VN')}â‚«
                           </p>
                         </div>
                       </div>
                       <div className="mt-2 text-center">
                         <p className="text-xs text-gray-500">
-                          Đơn gần nhất: {lastOrderDate}
+                          ÄÆ¡n gáº§n nháº¥t: {lastOrderDate}
                         </p>
                       </div>
                     </div>
@@ -860,15 +827,15 @@ export default function Customers() {
           <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Chi tiết khách hàng</DialogTitle>
+                <DialogTitle>Chi tiáº¿t khÃ¡ch hÃ ng</DialogTitle>
               </DialogHeader>
 
               {/* Modal content render debug removed */}
               <Tabs defaultValue="info" className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="info" data-testid="tab-customer-info">Thông tin</TabsTrigger>
-                  <TabsTrigger value="orders" data-testid="tab-customer-orders">Đơn hàng</TabsTrigger>
-                  <TabsTrigger value="loyalty" data-testid="tab-customer-loyalty">Điểm thưởng</TabsTrigger>
+                  <TabsTrigger value="info" data-testid="tab-customer-info">ThÃ´ng tin</TabsTrigger>
+                  <TabsTrigger value="orders" data-testid="tab-customer-orders">ÄÆ¡n hÃ ng</TabsTrigger>
+                  <TabsTrigger value="loyalty" data-testid="tab-customer-loyalty">Äiá»ƒm thÆ°á»Ÿng</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="info" className="space-y-4">
@@ -906,7 +873,7 @@ export default function Customers() {
                   {/* Orders tab render debug removed */}
                   {isLoadingDetail ? (
                     <div className="text-center py-8">
-                      <p>Đang tải đơn hàng...</p>
+                      <p>Äang táº£i Ä‘Æ¡n hÃ ng...</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -920,22 +887,22 @@ export default function Customers() {
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-medium">Đơn hàng #{order.orderNumber || order.orderId}</p>
+                                <p className="font-medium">ÄÆ¡n hÃ ng #{order.orderNumber || order.orderId}</p>
                                 <p className="text-sm text-gray-500">
                                   {new Date(order.createdAt).toLocaleString('vi-VN')}
                                 </p>
                                 <p className="text-sm text-gray-600 mt-1">
-                                  {order.items?.length || 0} sản phẩm
+                                  {order.items?.length || 0} sáº£n pháº©m
                                 </p>
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-primary">
-                                  {parseFloat(order.totalAmount || "0").toLocaleString('vi-VN')}₫
+                                  {parseFloat(order.totalAmount || "0").toLocaleString('vi-VN')}â‚«
                                 </p>
                                 <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                                  {order.status === 'completed' ? 'Hoàn thành' : 
-                                   order.status === 'pending' ? 'Chờ xử lý' : 
-                                   order.status === 'processing' ? 'Đang xử lý' : 'Đang xử lý'}
+                                  {order.status === 'completed' ? 'HoÃ n thÃ nh' : 
+                                   order.status === 'pending' ? 'Chá» xá»­ lÃ½' : 
+                                   order.status === 'processing' ? 'Äang xá»­ lÃ½' : 'Äang xá»­ lÃ½'}
                                 </Badge>
                               </div>
                             </div>
@@ -945,7 +912,7 @@ export default function Customers() {
                       {getCustomerOrders().length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                           <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                          <p>Khách hàng chưa có đơn hàng nào</p>
+                          <p>KhÃ¡ch hÃ ng chÆ°a cÃ³ Ä‘Æ¡n hÃ ng nÃ o</p>
                         </div>
                       )}
                     </div>
@@ -957,7 +924,7 @@ export default function Customers() {
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <Star className="w-5 h-5 mr-2 text-yellow-500" />
-                        Chương trình điểm thưởng
+                        ChÆ°Æ¡ng trÃ¬nh Ä‘iá»ƒm thÆ°á»Ÿng
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -966,37 +933,37 @@ export default function Customers() {
                           <p className="text-2xl font-bold text-primary">
                             {customerDetail?.loyaltyPoints || selectedCustomer.loyaltyPoints}
                           </p>
-                          <p className="text-sm text-gray-500">Điểm hiện tại</p>
+                          <p className="text-sm text-gray-500">Äiá»ƒm hiá»‡n táº¡i</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold text-green-600">
-                            {parseInt(customerDetail?.totalSpent || selectedCustomer.totalSpent.toString() || "0").toLocaleString('vi-VN')}₫
+                            {parseInt(customerDetail?.totalSpent || selectedCustomer.totalSpent.toString() || "0").toLocaleString('vi-VN')}â‚«
                           </p>
-                          <p className="text-sm text-gray-500">Tổng chi tiêu</p>
+                          <p className="text-sm text-gray-500">Tá»•ng chi tiÃªu</p>
                         </div>
                       </div>
                       
                       {/* Loyalty Transactions */}
                       <div className="mt-6">
                         <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-medium">Lịch sử giao dịch điểm</h4>
+                          <h4 className="font-medium">Lá»‹ch sá»­ giao dá»‹ch Ä‘iá»ƒm</h4>
                           <button 
                             onClick={() => refetchTransactions()}
                             disabled={isLoadingLoyalty}
                             className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400"
                           >
-                            {isLoadingLoyalty ? 'Đang tải...' : '🔄 Làm mới'}
+                            {isLoadingLoyalty ? 'Äang táº£i...' : 'ðŸ”„ LÃ m má»›i'}
                           </button>
                         </div>
                         
                         {isLoadingLoyalty ? (
-                          <div className="text-center text-gray-500">Đang tải...</div>
+                          <div className="text-center text-gray-500">Äang táº£i...</div>
                         ) : loyaltyTransactions && loyaltyTransactions.length > 0 ? (
                           <div className="space-y-2 max-h-40 overflow-y-auto">
                             {loyaltyTransactions.slice(0, 10).map((transaction: any, index: number) => (
                               <div key={transaction.transactionId || index} className="flex justify-between items-center text-sm py-2 border-b">
                                 <div>
-                                  <p className="font-medium">{transaction.reason || 'Giao dịch điểm'}</p>
+                                  <p className="font-medium">{transaction.reason || 'Giao dá»‹ch Ä‘iá»ƒm'}</p>
                                   <p className="text-gray-500">
                                     {new Date(transaction.processedAt).toLocaleDateString('vi-VN')} {new Date(transaction.processedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                                   </p>
@@ -1008,38 +975,38 @@ export default function Customers() {
                             ))}
                             {loyaltyTransactions.length > 10 && (
                               <div className="text-center text-gray-500 text-xs pt-2">
-                                Hiển thị 10 giao dịch gần nhất từ {loyaltyTransactions.length} giao dịch
+                                Hiá»ƒn thá»‹ 10 giao dá»‹ch gáº§n nháº¥t tá»« {loyaltyTransactions.length} giao dá»‹ch
                               </div>
                             )}
                           </div>
                         ) : (
-                          <div className="text-center text-gray-500">Chưa có giao dịch nào</div>
+                          <div className="text-center text-gray-500">ChÆ°a cÃ³ giao dá»‹ch nÃ o</div>
                         )}
                       </div>
 
                       <div className="mt-6">
                         <p className="text-sm text-gray-600 mb-2">
-                          Quyền lợi hạng {getTierBadge(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang).label}:
+                          Quyá»n lá»£i háº¡ng {getTierBadge(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang).label}:
                         </p>
                         <ul className="text-sm space-y-1">
                           {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'VIP' && (
                             <>
-                              <li>• Giảm giá 15% cho tất cả sản phẩm</li>
-                              <li>• Tích điểm x3</li>
-                              <li>• Ưu tiên hỗ trợ khách hàng</li>
+                              <li>â€¢ Giáº£m giÃ¡ 15% cho táº¥t cáº£ sáº£n pháº©m</li>
+                              <li>â€¢ TÃ­ch Ä‘iá»ƒm x3</li>
+                              <li>â€¢ Æ¯u tiÃªn há»— trá»£ khÃ¡ch hÃ ng</li>
                             </>
                           )}
                           {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'Premium' && (
                             <>
-                              <li>• Giảm giá 10% cho tất cả sản phẩm</li>
-                              <li>• Tích điểm x2</li>
-                              <li>• Miễn phí giao hàng</li>
+                              <li>â€¢ Giáº£m giÃ¡ 10% cho táº¥t cáº£ sáº£n pháº©m</li>
+                              <li>â€¢ TÃ­ch Ä‘iá»ƒm x2</li>
+                              <li>â€¢ Miá»…n phÃ­ giao hÃ ng</li>
                             </>
                           )}
                           {(customerDetail?.hangKhachHang || selectedCustomer.hangKhachHang) === 'Thuong' && (
                             <>
-                              <li>• Tích điểm tiêu chuẩn</li>
-                              <li>• Ưu đãi đặc biệt theo mùa</li>
+                              <li>â€¢ TÃ­ch Ä‘iá»ƒm tiÃªu chuáº©n</li>
+                              <li>â€¢ Æ¯u Ä‘Ã£i Ä‘áº·c biá»‡t theo mÃ¹a</li>
                             </>
                           )}
                         </ul>
@@ -1057,42 +1024,42 @@ export default function Customers() {
           <Dialog open={isOrderDetailOpen} onOpenChange={setIsOrderDetailOpen}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Chi tiết đơn hàng #{selectedOrder.orderNumber || selectedOrder.orderId}</DialogTitle>
+                <DialogTitle>Chi tiáº¿t Ä‘Æ¡n hÃ ng #{selectedOrder.orderNumber || selectedOrder.orderId}</DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6">
                 {/* Order Info */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Thông tin đơn hàng</CardTitle>
+                    <CardTitle className="text-lg">ThÃ´ng tin Ä‘Æ¡n hÃ ng</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-gray-500">Ngày tạo</p>
+                        <p className="text-sm text-gray-500">NgÃ y táº¡o</p>
                         <p className="font-medium">
                           {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Trạng thái</p>
+                        <p className="text-sm text-gray-500">Tráº¡ng thÃ¡i</p>
                         <Badge variant={selectedOrder.status === 'completed' ? 'default' : 'secondary'}>
-                          {selectedOrder.status === 'completed' ? 'Hoàn thành' : 
-                           selectedOrder.status === 'pending' ? 'Chờ xử lý' : 
-                           selectedOrder.status === 'processing' ? 'Đang xử lý' : 'Đang xử lý'}
+                          {selectedOrder.status === 'completed' ? 'HoÃ n thÃ nh' : 
+                           selectedOrder.status === 'pending' ? 'Chá» xá»­ lÃ½' : 
+                           selectedOrder.status === 'processing' ? 'Äang xá»­ lÃ½' : 'Äang xá»­ lÃ½'}
                         </Badge>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Tổng tiền</p>
+                        <p className="text-sm text-gray-500">Tá»•ng tiá»n</p>
                         <p className="font-bold text-primary text-lg">
-                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}₫
+                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}â‚«
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Phương thức thanh toán</p>
+                        <p className="text-sm text-gray-500">PhÆ°Æ¡ng thá»©c thanh toÃ¡n</p>
                         <p className="font-medium">
-                          {selectedOrder.paymentMethod === 'cash' ? 'Tiền mặt' : 
-                           selectedOrder.paymentMethod === 'card' ? 'Thẻ' : 'Khác'}
+                          {selectedOrder.paymentMethod === 'cash' ? 'Tiá»n máº·t' : 
+                           selectedOrder.paymentMethod === 'card' ? 'Tháº»' : 'KhÃ¡c'}
                         </p>
                       </div>
                     </div>
@@ -1102,16 +1069,16 @@ export default function Customers() {
                 {/* Order Items */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Sản phẩm trong đơn hàng</CardTitle>
+                    <CardTitle className="text-lg">Sáº£n pháº©m trong Ä‘Æ¡n hÃ ng</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {selectedOrder.items?.map((item, index) => (
                         <div key={index} className="flex justify-between items-center py-3 border-b">
                           <div className="flex-1">
-                            <p className="font-medium">{item.productName || item.product?.name || 'Sản phẩm'}</p>
+                            <p className="font-medium">{item.productName || item.product?.name || 'Sáº£n pháº©m'}</p>
                             <p className="text-sm text-gray-500">
-                              {parseFloat(item.price || "0").toLocaleString('vi-VN')}₫ × {item.quantity}
+                              {parseFloat(item.price || "0").toLocaleString('vi-VN')}â‚« Ã— {item.quantity}
                             </p>
                             {item.product?.sku && (
                               <p className="text-xs text-gray-400">SKU: {item.product.sku}</p>
@@ -1119,7 +1086,7 @@ export default function Customers() {
                           </div>
                           <div className="text-right">
                             <p className="font-bold">
-                              {parseFloat(item.totalPrice || (parseFloat(item.price || "0") * item.quantity).toString()).toLocaleString('vi-VN')}₫
+                              {parseFloat(item.totalPrice || (parseFloat(item.price || "0") * item.quantity).toString()).toLocaleString('vi-VN')}â‚«
                             </p>
                           </div>
                         </div>
@@ -1128,9 +1095,9 @@ export default function Customers() {
                     
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex justify-between items-center text-lg font-bold">
-                        <span>Tổng cộng:</span>
+                        <span>Tá»•ng cá»™ng:</span>
                         <span className="text-primary">
-                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}₫
+                          {parseFloat(selectedOrder.totalAmount || "0").toLocaleString('vi-VN')}â‚«
                         </span>
                       </div>
                     </div>
@@ -1144,3 +1111,4 @@ export default function Customers() {
     </AppLayout>
   );
 }
+

@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
@@ -6,6 +7,7 @@ using System.Drawing.Printing;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class PrintConfigController : ControllerBase
@@ -18,9 +20,9 @@ namespace RetailPointBackend.Controllers
         }
 
         /// <summary>
-        /// Lấy cài đặt in ấn hiện tại
+        /// Láº¥y cÃ i Ä‘áº·t in áº¥n hiá»‡n táº¡i
         /// </summary>
-        /// <returns>Cấu hình in ấn</returns>
+        /// <returns>Cáº¥u hÃ¬nh in áº¥n</returns>
         [HttpGet]
         public async Task<ActionResult<PrintConfig>> GetConfig()
         {
@@ -29,7 +31,7 @@ namespace RetailPointBackend.Controllers
                 var config = await _context.PrintConfigs.FirstOrDefaultAsync();
                 if (config == null)
                 {
-                    // Tạo cấu hình mặc định nếu chưa có
+                    // Táº¡o cáº¥u hÃ¬nh máº·c Ä‘á»‹nh náº¿u chÆ°a cÃ³
                     config = new PrintConfig
                     {
                         PrinterName = "Default Printer",
@@ -40,7 +42,7 @@ namespace RetailPointBackend.Controllers
                         PrintBarcode = true,
                         PrintLogo = false,
                         BillHeader = "RETAIL POINT STORE",
-                        BillFooter = "Cảm ơn quý khách!"
+                        BillFooter = "Cáº£m Æ¡n quÃ½ khÃ¡ch!"
                     };
                     _context.PrintConfigs.Add(config);
                     await _context.SaveChangesAsync();
@@ -49,15 +51,15 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Lỗi khi lấy cấu hình in", details = ex.Message });
+                return StatusCode(500, new { error = "Lá»—i khi láº¥y cáº¥u hÃ¬nh in", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// Cập nhật cài đặt in ấn
+        /// Cáº­p nháº­t cÃ i Ä‘áº·t in áº¥n
         /// </summary>
-        /// <param name="model">Cấu hình in ấn mới</param>
-        /// <returns>Cấu hình đã được cập nhật</returns>
+        /// <param name="model">Cáº¥u hÃ¬nh in áº¥n má»›i</param>
+        /// <returns>Cáº¥u hÃ¬nh Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t</returns>
         [HttpPost]
         [HttpPut]
         public async Task<ActionResult<PrintConfig>> UpdateConfig([FromBody] PrintConfigUpdateModel model)
@@ -73,7 +75,7 @@ namespace RetailPointBackend.Controllers
                 var existing = await _context.PrintConfigs.FirstOrDefaultAsync();
                 if (existing != null)
                 {
-                    // Cập nhật cấu hình hiện có
+                    // Cáº­p nháº­t cáº¥u hÃ¬nh hiá»‡n cÃ³
                     existing.PrinterName = model.PrinterName ?? existing.PrinterName;
                     existing.PaperSize = model.PaperSize ?? existing.PaperSize;
                     existing.PrintCopies = model.PrintCopies;
@@ -88,7 +90,7 @@ namespace RetailPointBackend.Controllers
                 }
                 else
                 {
-                    // Tạo mới nếu chưa có
+                    // Táº¡o má»›i náº¿u chÆ°a cÃ³
                     var newConfig = new PrintConfig
                     {
                         PrinterName = model.PrinterName ?? "Default Printer",
@@ -99,7 +101,7 @@ namespace RetailPointBackend.Controllers
                         PrintBarcode = model.PrintBarcode,
                         PrintLogo = model.PrintLogo,
                         BillHeader = model.BillHeader ?? "RETAIL POINT STORE",
-                        BillFooter = model.BillFooter ?? "Cảm ơn quý khách!"
+                        BillFooter = model.BillFooter ?? "Cáº£m Æ¡n quÃ½ khÃ¡ch!"
                     };
                     _context.PrintConfigs.Add(newConfig);
                     existing = newConfig;
@@ -110,14 +112,14 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Lỗi khi cập nhật cấu hình in", details = ex.Message });
+                return StatusCode(500, new { error = "Lá»—i khi cáº­p nháº­t cáº¥u hÃ¬nh in", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// Lấy danh sách máy in có sẵn
+        /// Láº¥y danh sÃ¡ch mÃ¡y in cÃ³ sáºµn
         /// </summary>
-        /// <returns>Danh sách máy in</returns>
+        /// <returns>Danh sÃ¡ch mÃ¡y in</returns>
         [HttpGet("available-printers")]
         public ActionResult GetAvailablePrinters()
         {
@@ -125,7 +127,7 @@ namespace RetailPointBackend.Controllers
             {
                 var availablePrinters = new List<string>();
                 
-                // Chỉ chạy trên Windows
+                // Chá»‰ cháº¡y trÃªn Windows
                 if (OperatingSystem.IsWindows())
                 {
                     availablePrinters = System.Drawing.Printing.PrinterSettings.InstalledPrinters
@@ -134,7 +136,7 @@ namespace RetailPointBackend.Controllers
                 }
                 else
                 {
-                    // Cho các platform khác, trả về danh sách mặc định
+                    // Cho cÃ¡c platform khÃ¡c, tráº£ vá» danh sÃ¡ch máº·c Ä‘á»‹nh
                     availablePrinters = new List<string> { "Default Printer", "PDF Printer" };
                 }
                 
@@ -142,15 +144,15 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Lỗi khi lấy danh sách máy in", details = ex.Message });
+                return StatusCode(500, new { error = "Lá»—i khi láº¥y danh sÃ¡ch mÃ¡y in", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// Kiểm tra kết nối máy in
+        /// Kiá»ƒm tra káº¿t ná»‘i mÃ¡y in
         /// </summary>
-        /// <param name="printerName">Tên máy in</param>
-        /// <returns>Trạng thái kết nối</returns>
+        /// <param name="printerName">TÃªn mÃ¡y in</param>
+        /// <returns>Tráº¡ng thÃ¡i káº¿t ná»‘i</returns>
         [HttpPost("test-printer")]
         public ActionResult TestPrinter([FromBody] TestPrinterRequest request)
         {
@@ -170,19 +172,19 @@ namespace RetailPointBackend.Controllers
                 { 
                     printerName = request.PrinterName, 
                     isConnected,
-                    message = isConnected ? "Máy in kết nối thành công" : "Không tìm thấy máy in"
+                    message = isConnected ? "MÃ¡y in káº¿t ná»‘i thÃ nh cÃ´ng" : "KhÃ´ng tÃ¬m tháº¥y mÃ¡y in"
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Lỗi khi kiểm tra máy in", details = ex.Message });
+                return StatusCode(500, new { error = "Lá»—i khi kiá»ƒm tra mÃ¡y in", details = ex.Message });
             }
         }
 
         /// <summary>
-        /// Lấy danh sách máy in được cài đặt trên hệ thống
+        /// Láº¥y danh sÃ¡ch mÃ¡y in Ä‘Æ°á»£c cÃ i Ä‘áº·t trÃªn há»‡ thá»‘ng
         /// </summary>
-        /// <returns>Danh sách tên máy in</returns>
+        /// <returns>Danh sÃ¡ch tÃªn mÃ¡y in</returns>
         [HttpGet("printers")]
         public IActionResult GetInstalledPrinters()
         {
@@ -201,13 +203,13 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Lỗi khi lấy danh sách máy in", details = ex.Message });
+                return StatusCode(500, new { error = "Lá»—i khi láº¥y danh sÃ¡ch mÃ¡y in", details = ex.Message });
             }
         }
     }
 
     /// <summary>
-    /// Model để cập nhật cài đặt in
+    /// Model Ä‘á»ƒ cáº­p nháº­t cÃ i Ä‘áº·t in
     /// </summary>
     public class PrintConfigUpdateModel
     {
@@ -233,7 +235,7 @@ namespace RetailPointBackend.Controllers
     }
 
     /// <summary>
-    /// Model để test kết nối máy in
+    /// Model Ä‘á»ƒ test káº¿t ná»‘i mÃ¡y in
     /// </summary>
     public class TestPrinterRequest
     {
@@ -242,3 +244,4 @@ namespace RetailPointBackend.Controllers
         public string PrinterName { get; set; } = string.Empty;
     }
 }
+

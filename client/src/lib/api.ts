@@ -1,5 +1,7 @@
-// API request utility - Force correct API URL
-const API_BASE_URL = 'http://101.53.9.76:5273/api';
+﻿// API request utility - Force correct API URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'http://localhost:5273/api';
+
+import { authFetch } from '@/lib/authFetch';
 
 export interface ApiResponse<T> {
   data?: T;
@@ -18,7 +20,7 @@ export async function apiRequest<T>(
       'Content-Type': 'application/json',
     };
 
-    const token = localStorage.getItem('authToken');
+    const token = sessionStorage.getItem('authToken');
     if (token) {
       defaultHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -31,7 +33,7 @@ export async function apiRequest<T>(
       },
     };
 
-    const response = await fetch(url, config);
+    const response = await authFetch(url, config);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -72,7 +74,8 @@ export const api = {
         params.append('storeId', storeId.toString());
       }
       
-      const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/products?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }

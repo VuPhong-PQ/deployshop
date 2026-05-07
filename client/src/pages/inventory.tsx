@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -304,13 +304,11 @@ export default function Inventory() {
 
   // Handle form submission
   const onSubmit = (data: StockAdjustmentData) => {
-    console.log('Form submitted with data:', data);
     adjustStockMutation.mutate(data);
   };
 
   // Handle barcode scan
   const handleBarcodeScan = (code: string) => {
-    console.log('📷 Scanned barcode in inventory:', code);
     setSearchTerm(code);
     setIsScannerOpen(false);
     
@@ -429,7 +427,6 @@ export default function Inventory() {
               <Dialog open={isAdjustmentDialogOpen} onOpenChange={handleDialogOpenChange}>
                 <DialogTrigger asChild>
                   <Button data-testid="button-adjust-stock" onClick={() => {
-                    console.log('Dialog opening, products available:', products.length);
                   }}>
                     <Package className="w-4 h-4 mr-2" />
                     Điều chỉnh tồn kho
@@ -449,7 +446,6 @@ export default function Inventory() {
                           <FormItem>
                             <FormLabel>Sản phẩm *</FormLabel>
                             <Select onValueChange={(value) => {
-                              console.log('Product selected:', value);
                               field.onChange(value);
                             }} value={field.value}>
                               <FormControl>
@@ -462,7 +458,6 @@ export default function Inventory() {
                                   <SelectItem value="loading" disabled>Đang tải...</SelectItem>
                                 ) : (
                                   products.map((product, index) => {
-                                    console.log(`Product ${index}:`, product.productId, product.name);
                                     return (
                                       <SelectItem key={product.productId} value={String(product.productId)}>
                                         {product.name} (Hiện tại: {product.stockQuantity})
@@ -494,7 +489,6 @@ export default function Inventory() {
                           <FormItem>
                             <FormLabel>Loại giao dịch *</FormLabel>
                             <Select onValueChange={(value) => {
-                              console.log('Type selected:', value);
                               field.onChange(value);
                             }} value={field.value}>
                               <FormControl>
@@ -705,7 +699,7 @@ export default function Inventory() {
                                     src={
                                       product.imageUrl
                                         ? product.imageUrl.startsWith("/uploads")
-                                          ? `http://101.53.9.76:5273${product.imageUrl}`
+                                          ? `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273')}${product.imageUrl}`
                                           : product.imageUrl
                                         : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=40&h=40&fit=crop"
                                     }
@@ -957,3 +951,4 @@ export default function Inventory() {
     </AppLayout>
   );
 }
+

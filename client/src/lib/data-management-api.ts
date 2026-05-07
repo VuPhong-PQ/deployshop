@@ -1,4 +1,4 @@
-// Data Management API Types
+﻿// Data Management API Types
 export interface DatabaseInfo {
   databaseName: string;
   sizeMB: number;
@@ -58,6 +58,8 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+import { authFetch } from '@/lib/authFetch';
+
 // Utility function for retry logic
 const retryFetch = async (
   url: string, 
@@ -69,7 +71,7 @@ const retryFetch = async (
   
   for (let i = 0; i <= maxRetries; i++) {
     try {
-      const response = await fetch(url, options);
+      const response = await authFetch(url, options);
       return response;
     } catch (error: any) {
       lastError = error;
@@ -90,7 +92,7 @@ const retryFetch = async (
 };
 
 // Data Management API functions
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://101.53.9.76:5273';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const API_BASE = `${API_BASE_URL}/api/DataManagement`;
 
 export const dataManagementApi = {
@@ -98,7 +100,7 @@ export const dataManagementApi = {
   testConnection: async (): Promise<{success: boolean, message: string}> => {
     try {
       // Test với endpoint database-info thay vì health
-      const response = await fetch(`${API_BASE}/database-info`, {
+      const response = await authFetch(`${API_BASE}/database-info`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +147,7 @@ export const dataManagementApi = {
   // Get database info
   getDatabaseInfo: async (): Promise<DatabaseInfo> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/database-info`, {
+    const response = await authFetch(`${API_BASE}/database-info`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -164,7 +166,7 @@ export const dataManagementApi = {
   // Backup database
   backupDatabase: async (request: BackupRequest): Promise<BackupResult> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/backup`, {
+    const response = await authFetch(`${API_BASE}/backup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -184,7 +186,7 @@ export const dataManagementApi = {
   // Get backup files list
   getBackupFiles: async (): Promise<BackupFile[]> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/backup-files`, {
+    const response = await authFetch(`${API_BASE}/backup-files`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -213,7 +215,7 @@ export const dataManagementApi = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch(`${API_BASE}/upload-backup`, {
+    const response = await authFetch(`${API_BASE}/upload-backup`, {
       method: 'POST',
       headers: {
         'StaffId': staffId || '1'
@@ -240,7 +242,7 @@ export const dataManagementApi = {
     const staffId = localStorage.getItem('staffId');
     
     try {
-      const response = await fetch(`${API_BASE}/download-backup/${encodeURIComponent(fileName)}`, {
+      const response = await authFetch(`${API_BASE}/download-backup/${encodeURIComponent(fileName)}`, {
         method: 'GET',
         headers: {
           'StaffId': staffId || '1',
@@ -376,7 +378,7 @@ export const dataManagementApi = {
   },  // Get backup history
   getBackupHistory: async (): Promise<BackupHistoryItem[]> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/backup-history`, {
+    const response = await authFetch(`${API_BASE}/backup-history`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -396,7 +398,7 @@ export const dataManagementApi = {
   // Restore database
   restoreDatabase: async (request: RestoreRequest): Promise<{ message: string; restoredFrom: string }> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/restore`, {
+    const response = await authFetch(`${API_BASE}/restore`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -416,7 +418,7 @@ export const dataManagementApi = {
   // Delete sales data
   deleteSalesData: async (confirmation: DeleteConfirmation): Promise<{ message: string; timestamp: string }> => {
     const staffId = localStorage.getItem('staffId');
-    const response = await fetch(`${API_BASE}/sales-data`, {
+    const response = await authFetch(`${API_BASE}/sales-data`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

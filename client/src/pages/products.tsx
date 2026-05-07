@@ -1,27 +1,31 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { Textarea } from "@/components/ui/textarea";
+// Base URL for API — sử dụng path tương đối để IIS proxy forward đúng
+// Nếu có VITE_API_BASE_URL thì dùng, còn không dùng '' (relative) để tránh hardcode localhost
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 // Hàm upload ảnh lên server, trả về url
 async function uploadImage(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch("http://101.53.9.76:5273/api/upload/image", {
+  const res = await authFetch(`${API_BASE}/api/upload/image`, {
     method: "POST",
     body: formData,
   });
   if (!res.ok) throw new Error("Upload ảnh thất bại");
   const data = await res.json();
-  return data.url.startsWith("/") ? `http://101.53.9.76:5273${data.url}` : data.url;
+  return data.url.startsWith("/") ? `${API_BASE}${data.url}` : data.url;
 }
 
 // Hàm AI tìm kiếm và tải hình ảnh tự động
 async function searchAndDownloadImage(productName: string) {
-  const res = await fetch("http://101.53.9.76:5273/api/products/search-image", {
+  const res = await authFetch(`${API_BASE}/api/products/search-image`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ productName }),
   });
   if (!res.ok) throw new Error("Tìm kiếm hình ảnh thất bại");
   const data = await res.json();
-  return data.imageUrl.startsWith("/") ? `http://101.53.9.76:5273${data.imageUrl}` : data.imageUrl;
+  return data.imageUrl.startsWith("/") ? `${API_BASE}${data.imageUrl}` : data.imageUrl;
 }
 import React, { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -124,7 +128,7 @@ export default function Products() {
       }
       // If 'all', don't add stockStatus parameter
       
-      const response = await fetch(`http://101.53.9.76:5273/api/products?${params}`);
+      const response = await authFetch(`${API_BASE}/api/products?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
@@ -137,13 +141,8 @@ export default function Products() {
   const totalPages = productsResponse?.totalPages || productsResponse?.TotalPages || 0;
 
   // Debug logs
-  console.log('Products data:', products);
   if (Array.isArray(products) && products.length > 0) {
-    console.log('Sample product:', products[0]);
   }
-  console.log('Products count:', products.length);
-  console.log('isLoading:', isLoading);
-
   // const { data: categories = [] } = useQuery<Category[]>({
   //   queryKey: ['/api/categories'],
   // });
@@ -160,8 +159,6 @@ export default function Products() {
       label: g.name,
       value: String(g.productGroupId ?? g.ProductGroupId),
     }));
-  console.log('productGroups:', productGroups);
-
   // Form for adding/editing products
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
@@ -197,10 +194,7 @@ export default function Products() {
         imageUrl: productData.image || null,
         isFeatured: Boolean(productData.isFeatured),
       };
-      
-      console.log('Sending product data:', formattedData);
-      
-      const response = await fetch('http://101.53.9.76:5273/api/products', {
+      const response = await authFetch(`${API_BASE}/api/products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formattedData)
@@ -263,7 +257,7 @@ export default function Products() {
       }
       
       try {
-        const response = await fetch(`http://101.53.9.76:5273/api/products/${id}`, {
+        const response = await authFetch(`${API_BASE}/api/products/${id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -313,7 +307,7 @@ export default function Products() {
   // Delete product mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`http://101.53.9.76:5273/api/products/${id}`, {
+      const response = await authFetch(`${API_BASE}/api/products/${id}`, {
         method: 'DELETE'
       });
       
@@ -346,7 +340,7 @@ export default function Products() {
   // Toggle product active mutation
   const toggleActiveProductMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`http://101.53.9.76:5273/api/products/${id}/toggle-active`, {
+      const response = await authFetch(`${API_BASE}/api/products/${id}/toggle-active`, {
         method: 'PUT'
       });
       
@@ -375,7 +369,7 @@ export default function Products() {
   // Export all products mutation
   const exportAllProductsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/products/export');
+      const response = await authFetch(`${API_BASE}/api/products/export`);
       if (!response.ok) {
         throw new Error('Failed to export products');
       }
@@ -407,7 +401,7 @@ export default function Products() {
   // Export template mutation
   const exportTemplateMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/products/export-template');
+      const response = await authFetch(`${API_BASE}/api/products/export-template`);
       if (!response.ok) {
         throw new Error('Failed to export template');
       }
@@ -441,7 +435,7 @@ export default function Products() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch('http://101.53.9.76:5273/api/products/import-excel', {
+      const response = await authFetch(`${API_BASE}/api/products/import-excel`, {
         method: 'POST',
         body: formData,
       });
@@ -486,11 +480,6 @@ export default function Products() {
   }, [searchTerm, selectedGroup, activeFilter, stockFilter]);
 
   // Debug products
-  console.log('Products data:', products);
-  console.log('Products count:', products.length);
-  console.log('Current page:', currentPage);
-  console.log('Total pages:', totalPages);
-
   // Handle AI image search
   const handleAIImageSearch = async () => {
     const productName = form.getValues("name");
@@ -516,7 +505,7 @@ export default function Products() {
       );
       
       // Tìm nhiều hình ảnh để người dùng lựa chọn
-      const response = await fetch('http://101.53.9.76:5273/api/products/search-images', {
+      const response = await authFetch(`${API_BASE}/api/products/search-images`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -1100,8 +1089,12 @@ export default function Products() {
               const stockStatus = getStockStatus(product);
               // Ưu tiên imageUrl, sau đó đến image, cuối cùng là ảnh mặc định
               let imageUrl = product.imageUrl || product.image || "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=300&h=200&fit=crop";
+              // Normalize URL cũ có localhost/127.0.0.1 thành path tương đối
+              if (imageUrl && typeof imageUrl === "string") {
+                imageUrl = imageUrl.replace(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, '');
+              }
               if (imageUrl && typeof imageUrl === "string" && !imageUrl.startsWith("http")) {
-                imageUrl = `http://101.53.9.76:5273${imageUrl}`;
+                imageUrl = `${API_BASE}${imageUrl}`;
               }
               const key = product.productId || product.id;
               const isInactive = (product as any).isActive === false;
@@ -1261,3 +1254,5 @@ export default function Products() {
     </AppLayout>
   );
 }
+
+

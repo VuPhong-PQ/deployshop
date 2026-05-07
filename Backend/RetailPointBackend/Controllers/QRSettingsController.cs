@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class QRSettingsController : ControllerBase
@@ -25,7 +27,7 @@ namespace RetailPointBackend.Controllers
                 
                 if (settings == null)
                 {
-                    // Trả về cấu hình mặc định nếu chưa có
+                    // Tráº£ vá» cáº¥u hÃ¬nh máº·c Ä‘á»‹nh náº¿u chÆ°a cÃ³
                     return Ok(new QRSettings());
                 }
 
@@ -33,7 +35,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy cấu hình QR", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y cáº¥u hÃ¬nh QR", error = ex.Message });
             }
         }
 
@@ -52,14 +54,14 @@ namespace RetailPointBackend.Controllers
                 
                 if (existingSettings == null)
                 {
-                    // Tạo mới
+                    // Táº¡o má»›i
                     settings.CreatedAt = DateTime.Now;
                     settings.UpdatedAt = DateTime.Now;
                     _context.QRSettings.Add(settings);
                 }
                 else
                 {
-                    // Cập nhật
+                    // Cáº­p nháº­t
                     existingSettings.BankCode = settings.BankCode;
                     existingSettings.BankAccountNumber = settings.BankAccountNumber;
                     existingSettings.BankAccountHolder = settings.BankAccountHolder;
@@ -77,11 +79,11 @@ namespace RetailPointBackend.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Đã lưu cấu hình QR thành công" });
+                return Ok(new { message = "ÄÃ£ lÆ°u cáº¥u hÃ¬nh QR thÃ nh cÃ´ng" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi lưu cấu hình QR", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi lÆ°u cáº¥u hÃ¬nh QR", error = ex.Message });
             }
         }
 
@@ -95,19 +97,19 @@ namespace RetailPointBackend.Controllers
                 
                 if (settings == null || !settings.IsEnabled)
                 {
-                    return BadRequest(new { message = "Chưa cấu hình QR hoặc QR bị tắt" });
+                    return BadRequest(new { message = "ChÆ°a cáº¥u hÃ¬nh QR hoáº·c QR bá»‹ táº¯t" });
                 }
 
-                // Kiểm tra thông tin cần thiết
+                // Kiá»ƒm tra thÃ´ng tin cáº§n thiáº¿t
                 if (string.IsNullOrEmpty(settings.BankCode) || 
                     string.IsNullOrEmpty(settings.BankAccountNumber) || 
                     string.IsNullOrEmpty(settings.BankAccountHolder))
                 {
-                    return BadRequest(new { message = "Thiếu thông tin cấu hình QR" });
+                    return BadRequest(new { message = "Thiáº¿u thÃ´ng tin cáº¥u hÃ¬nh QR" });
                 }
 
                 return Ok(new { 
-                    message = "Cấu hình QR hợp lệ",
+                    message = "Cáº¥u hÃ¬nh QR há»£p lá»‡",
                     provider = settings.QRProvider,
                     bankName = settings.BankName,
                     accountHolder = settings.BankAccountHolder
@@ -115,7 +117,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi kiểm tra cấu hình QR", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi kiá»ƒm tra cáº¥u hÃ¬nh QR", error = ex.Message });
             }
         }
 
@@ -129,15 +131,15 @@ namespace RetailPointBackend.Controllers
                 
                 if (settings == null || !settings.IsEnabled)
                 {
-                    return BadRequest(new { message = "Chưa cấu hình QR hoặc QR bị tắt" });
+                    return BadRequest(new { message = "ChÆ°a cáº¥u hÃ¬nh QR hoáº·c QR bá»‹ táº¯t" });
                 }
 
                 if (request.Amount <= 0)
                 {
-                    return BadRequest(new { message = "Số tiền phải lớn hơn 0" });
+                    return BadRequest(new { message = "Sá»‘ tiá»n pháº£i lá»›n hÆ¡n 0" });
                 }
 
-                // Chuẩn bị thông tin để tạo QR
+                // Chuáº©n bá»‹ thÃ´ng tin Ä‘á»ƒ táº¡o QR
                 var qrRequest = new VietQRRequest
                 {
                     BankCode = settings.BankCode,
@@ -147,16 +149,16 @@ namespace RetailPointBackend.Controllers
                     Description = GetQRDescription(request.Description, request.OrderId, settings.DefaultDescription)
                 };
 
-                // Gọi VietQR Image API trực tiếp
+                // Gá»i VietQR Image API trá»±c tiáº¿p
                 var qrImageUrl = "";
                 if (settings.QRProvider.ToLower() == "vietqr")
                 {
-                    // Sử dụng VietQR Image API với kích thước lớn hơn
+                    // Sá»­ dá»¥ng VietQR Image API vá»›i kÃ­ch thÆ°á»›c lá»›n hÆ¡n
                     var template = !string.IsNullOrEmpty(settings.QRTemplate) ? settings.QRTemplate : "compact";
                     qrImageUrl = $"https://api.vietqr.io/image/{settings.BankCode}-{settings.BankAccountNumber}-{template}.jpg" +
                                $"?accountName={Uri.EscapeDataString(settings.BankAccountHolder)}" +
                                $"&amount={request.Amount}" +
-                               $"&size=512";  // Thêm kích thước 512x512 để QR rõ nét hơn
+                               $"&size=512";  // ThÃªm kÃ­ch thÆ°á»›c 512x512 Ä‘á»ƒ QR rÃµ nÃ©t hÆ¡n
                     
                     if (!string.IsNullOrEmpty(qrRequest.Description))
                     {
@@ -176,11 +178,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tạo QR", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº¡o QR", error = ex.Message });
             }
         }
 
-        // GET: api/QRSettings/generate-url - Tạo QR URL đơn giản
+        // GET: api/QRSettings/generate-url - Táº¡o QR URL Ä‘Æ¡n giáº£n
         [HttpGet("generate-url")]
         public async Task<IActionResult> GenerateQRUrl(decimal amount, string? description = null, string? orderId = null)
         {
@@ -190,10 +192,10 @@ namespace RetailPointBackend.Controllers
                 
                 if (settings == null || !settings.IsEnabled)
                 {
-                    return BadRequest(new { message = "QR Code chưa được cấu hình hoặc bị tắt" });
+                    return BadRequest(new { message = "QR Code chÆ°a Ä‘Æ°á»£c cáº¥u hÃ¬nh hoáº·c bá»‹ táº¯t" });
                 }
 
-                // Tạo mô tả với format mới
+                // Táº¡o mÃ´ táº£ vá»›i format má»›i
                 var qrDescription = "";
                 if (!string.IsNullOrEmpty(orderId))
                 {
@@ -215,7 +217,7 @@ namespace RetailPointBackend.Controllers
                     qrImageUrl = $"https://api.vietqr.io/image/{settings.BankCode}-{settings.BankAccountNumber}-{template}.jpg" +
                                $"?accountName={Uri.EscapeDataString(settings.BankAccountHolder)}" +
                                $"&amount={amount}" +
-                               $"&size=512";  // Thêm kích thước 512x512 để QR rõ nét hơn
+                               $"&size=512";  // ThÃªm kÃ­ch thÆ°á»›c 512x512 Ä‘á»ƒ QR rÃµ nÃ©t hÆ¡n
                     
                     if (!string.IsNullOrEmpty(qrDescription))
                     {
@@ -234,11 +236,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tạo QR URL", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº¡o QR URL", error = ex.Message });
             }
         }
 
-        // Helper method để tạo mô tả QR theo format mới
+        // Helper method Ä‘á»ƒ táº¡o mÃ´ táº£ QR theo format má»›i
         private string GetQRDescription(string? description, string? orderId, string? defaultDescription)
         {
             if (!string.IsNullOrEmpty(orderId))

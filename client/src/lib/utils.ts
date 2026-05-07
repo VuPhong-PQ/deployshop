@@ -1,4 +1,4 @@
-export { apiRequest } from "./queryClient";
+﻿export { apiRequest } from "./queryClient";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -55,6 +55,9 @@ export function getProductImageUrl(imageUrl?: string | null) {
   if (!imageUrl) return placeholder;
   if (typeof imageUrl !== 'string') return placeholder;
   if (!imageUrl) return placeholder;
-  if (imageUrl.startsWith('/')) return `http://101.53.9.76:5273${imageUrl}`;
+  if (imageUrl.startsWith('/')) {
+    const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+    return `${base}${imageUrl}`;
+  }
   return imageUrl;
 }

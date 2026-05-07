@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using QRCoder;
 using System;
@@ -11,6 +12,7 @@ using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class VietQRController : ControllerBase
@@ -28,15 +30,15 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Lấy cấu hình QR từ database
+                // Láº¥y cáº¥u hÃ¬nh QR tá»« database
                 var qrSettings = await _context.QRSettings.FirstOrDefaultAsync();
                 
                 if (qrSettings == null || !qrSettings.IsEnabled)
                 {
-                    return BadRequest("Chưa cấu hình QR hoặc QR bị tắt");
+                    return BadRequest("ChÆ°a cáº¥u hÃ¬nh QR hoáº·c QR bá»‹ táº¯t");
                 }
 
-                // Kiểm tra provider
+                // Kiá»ƒm tra provider
                 if (qrSettings.QRProvider.ToLower() == "vietqr")
                 {
                     return await GenerateVietQR(request, qrSettings);
@@ -47,25 +49,25 @@ namespace RetailPointBackend.Controllers
                 }
                 else
                 {
-                    return BadRequest("Provider QR không được hỗ trợ");
+                    return BadRequest("Provider QR khÃ´ng Ä‘Æ°á»£c há»— trá»£");
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi khi tạo QR: {ex.Message}");
+                return StatusCode(500, $"Lá»—i khi táº¡o QR: {ex.Message}");
             }
         }
 
         private async Task<IActionResult> GenerateVietQR(VietQRRequest request, QRSettings settings)
         {
-            // Sử dụng thông tin từ cấu hình thay vì request
+            // Sá»­ dá»¥ng thÃ´ng tin tá»« cáº¥u hÃ¬nh thay vÃ¬ request
             var bankCode = !string.IsNullOrEmpty(request.BankCode) ? request.BankCode : settings.BankCode;
             var accountNumber = !string.IsNullOrEmpty(request.AccountNumber) ? request.AccountNumber : settings.BankAccountNumber;
             var accountHolder = !string.IsNullOrEmpty(request.AccountHolder) ? request.AccountHolder : settings.BankAccountHolder;
 
             var client = new HttpClient();
             
-            // Sử dụng API keys từ cấu hình
+            // Sá»­ dá»¥ng API keys tá»« cáº¥u hÃ¬nh
             var clientId = !string.IsNullOrEmpty(settings.VietQRClientId) ? settings.VietQRClientId : "487346d7-ebb2-4bf0-97a0-13ad72cff87a";
             var apiKey = !string.IsNullOrEmpty(settings.VietQRApiKey) ? settings.VietQRApiKey : "b3a63288-6624-4a0e-abca-c3c0a43390fe";
 
@@ -87,12 +89,12 @@ namespace RetailPointBackend.Controllers
             
             if (!response.IsSuccessStatusCode)
             {
-                return BadRequest($"Không tạo được QR từ API VietQR: {json}");
+                return BadRequest($"KhÃ´ng táº¡o Ä‘Æ°á»£c QR tá»« API VietQR: {json}");
             }
 
             var result = System.Text.Json.JsonSerializer.Deserialize<VietQRApiResponse>(json);
             if (result?.data?.qrDataURL == null)
-                return BadRequest("API VietQR trả về dữ liệu không hợp lệ");
+                return BadRequest("API VietQR tráº£ vá» dá»¯ liá»‡u khÃ´ng há»£p lá»‡");
             
             var base64 = result.data.qrDataURL.Replace("data:image/png;base64,", "");
             var bytes = Convert.FromBase64String(base64);
@@ -116,9 +118,9 @@ namespace RetailPointBackend.Controllers
 
         private Task<IActionResult> GenerateVNPayQR(VietQRRequest request, QRSettings settings)
         {
-            // Placeholder cho VNPay QR - có thể implement sau
+            // Placeholder cho VNPay QR - cÃ³ thá»ƒ implement sau
             return Task.FromResult<IActionResult>(Ok(new { 
-                message = "VNPay QR chưa được triển khai",
+                message = "VNPay QR chÆ°a Ä‘Æ°á»£c triá»ƒn khai",
                 provider = "VNPayQR",
                 amount = request.Amount,
                 bankInfo = $"{settings.BankName} - {settings.BankAccountNumber}"
@@ -135,7 +137,7 @@ namespace RetailPointBackend.Controllers
                 
                 if (qrSettings == null)
                 {
-                    return BadRequest("Chưa cấu hình QR");
+                    return BadRequest("ChÆ°a cáº¥u hÃ¬nh QR");
                 }
 
                 var qrContent = $"Bank: {qrSettings.BankName}\nAccount: {qrSettings.BankAccountNumber}\nHolder: {qrSettings.BankAccountHolder}";
@@ -152,7 +154,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi khi tạo QR test: {ex.Message}");
+                return StatusCode(500, $"Lá»—i khi táº¡o QR test: {ex.Message}");
             }
         }
 
@@ -192,3 +194,4 @@ namespace RetailPointBackend.Controllers
         public string? addInfo { get; set; }
     }
 }
+

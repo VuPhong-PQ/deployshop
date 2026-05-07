@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.DTOs;
@@ -6,6 +7,7 @@ using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CustomerTierManagementController : ControllerBase
@@ -48,7 +50,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting customer tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -61,7 +63,7 @@ namespace RetailPointBackend.Controllers
                 var tier = await _context.CustomerTiers.FindAsync(id);
                 if (tier == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 var tierDto = new CustomerTierDto
@@ -82,7 +84,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting tier {TierId}", id);
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -102,7 +104,7 @@ namespace RetailPointBackend.Controllers
                     .FirstOrDefaultAsync(t => t.TierName == tierDto.TierName && t.IsActive);
                 if (existingTier != null)
                 {
-                    return BadRequest(new { message = "Tên hạng đã tồn tại" });
+                    return BadRequest(new { message = "TÃªn háº¡ng Ä‘Ã£ tá»“n táº¡i" });
                 }
 
                 var newTier = new CustomerTier
@@ -130,7 +132,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating tier");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -142,7 +144,7 @@ namespace RetailPointBackend.Controllers
             {
                 if (id != tierDto.TierId)
                 {
-                    return BadRequest(new { message = "ID không khớp" });
+                    return BadRequest(new { message = "ID khÃ´ng khá»›p" });
                 }
 
                 if (!ModelState.IsValid)
@@ -153,7 +155,7 @@ namespace RetailPointBackend.Controllers
                 var tier = await _context.CustomerTiers.FindAsync(id);
                 if (tier == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 // Check name uniqueness (excluding current tier)
@@ -161,7 +163,7 @@ namespace RetailPointBackend.Controllers
                     .FirstOrDefaultAsync(t => t.TierName == tierDto.TierName && t.TierId != id && t.IsActive);
                 if (existingTier != null)
                 {
-                    return BadRequest(new { message = "Tên hạng đã tồn tại" });
+                    return BadRequest(new { message = "TÃªn háº¡ng Ä‘Ã£ tá»“n táº¡i" });
                 }
 
                 tier.TierName = tierDto.TierName;
@@ -178,12 +180,12 @@ namespace RetailPointBackend.Controllers
                 // Update all customers to recheck tier eligibility
                 _ = Task.Run(async () => await _loyaltyService.CheckAndUpdateAllCustomerTiersAsync());
 
-                return Ok(new { message = "Cập nhật hạng thành công" });
+                return Ok(new { message = "Cáº­p nháº­t háº¡ng thÃ nh cÃ´ng" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating tier {TierId}", id);
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -196,7 +198,7 @@ namespace RetailPointBackend.Controllers
                 var tier = await _context.CustomerTiers.FindAsync(id);
                 if (tier == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 // Check if any customers are using this tier
@@ -204,7 +206,7 @@ namespace RetailPointBackend.Controllers
                 if (customersCount > 0)
                 {
                     return BadRequest(new { 
-                        message = $"Không thể xóa hạng này vì có {customersCount} khách hàng đang sử dụng. Hãy chuyển khách hàng sang hạng khác trước." 
+                        message = $"KhÃ´ng thá»ƒ xÃ³a háº¡ng nÃ y vÃ¬ cÃ³ {customersCount} khÃ¡ch hÃ ng Ä‘ang sá»­ dá»¥ng. HÃ£y chuyá»ƒn khÃ¡ch hÃ ng sang háº¡ng khÃ¡c trÆ°á»›c." 
                     });
                 }
 
@@ -212,12 +214,12 @@ namespace RetailPointBackend.Controllers
                 tier.IsActive = false;
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Xóa hạng thành công" });
+                return Ok(new { message = "XÃ³a háº¡ng thÃ nh cÃ´ng" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting tier {TierId}", id);
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -255,7 +257,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting tier statistics");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -267,12 +269,12 @@ namespace RetailPointBackend.Controllers
             {
                 // This could be used if you want to implement manual tier ordering
                 // For now, tiers are automatically ordered by MinSpent
-                return Ok(new { message = "Thứ tự hạng được sắp xếp theo chi tiêu tối thiểu" });
+                return Ok(new { message = "Thá»© tá»± háº¡ng Ä‘Æ°á»£c sáº¯p xáº¿p theo chi tiÃªu tá»‘i thiá»ƒu" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error reordering tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -285,7 +287,7 @@ namespace RetailPointBackend.Controllers
                 var tier = await _context.CustomerTiers.FindAsync(tierId);
                 if (tier == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 var query = _context.Orders.Where(o => o.Status == "pending" || o.Status == "processing");
@@ -313,14 +315,14 @@ namespace RetailPointBackend.Controllers
                 await _context.SaveChangesAsync();
 
                 return Ok(new { 
-                    message = $"Đã áp dụng giảm giá {tier.DiscountPercentage}% cho {updatedCount} đơn hàng",
+                    message = $"ÄÃ£ Ã¡p dá»¥ng giáº£m giÃ¡ {tier.DiscountPercentage}% cho {updatedCount} Ä‘Æ¡n hÃ ng",
                     updatedOrders = updatedCount
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error applying tier discount");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
     }

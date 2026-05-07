@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class PaymentSettingsController : ControllerBase
@@ -52,3 +54,4 @@ namespace RetailPointBackend.Controllers
         }
     }
 }
+

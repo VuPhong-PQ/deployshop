@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,7 +56,8 @@ export default function Dashboard() {
   const { data: storesResponse } = useQuery({
     queryKey: ["/api/dashboard/metrics/stores", user?.username],
     queryFn: async () => {
-      const response = await fetch("http://101.53.9.76:5273/api/dashboard/metrics/stores", {
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const response = await authFetch(`${base}/api/dashboard/metrics/stores`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +87,6 @@ export default function Dashboard() {
     
     if (hasAccess) {
       // Chuyển đến trang bán hàng với storeId
-      console.log('Dashboard - Clicking authorized store with ID:', storeId);
       navigate(`/sales?storeId=${storeId}`);
     } else {
       console.warn('Dashboard - User không có quyền truy cập store:', storeId);
@@ -454,3 +455,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

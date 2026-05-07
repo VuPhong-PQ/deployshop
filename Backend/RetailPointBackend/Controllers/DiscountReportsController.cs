@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/discount-reports")]
     public class DiscountReportsController : ControllerBase
@@ -23,7 +25,7 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Sử dụng Date comparison để tránh timezone issues
+                // Sá»­ dá»¥ng Date comparison Ä‘á»ƒ trÃ¡nh timezone issues
                 var start = startDate?.Date ?? DateTime.Today.AddDays(-30);
                 var end = (endDate?.Date.AddDays(1) ?? DateTime.Today.AddDays(1));
 
@@ -31,10 +33,10 @@ namespace RetailPointBackend.Controllers
                 Console.WriteLine($"Summary - Date params: startDate={startDate}, endDate={endDate}");
                 Console.WriteLine($"Summary filter range: {start:yyyy-MM-dd} to {end:yyyy-MM-dd}");
 
-                // Nếu không có date filter, lấy tất cả để test
+                // Náº¿u khÃ´ng cÃ³ date filter, láº¥y táº¥t cáº£ Ä‘á»ƒ test
                 var query = _context.OrderDiscounts.AsQueryable();
                 
-                // Chỉ apply date filter khi có startDate AND endDate
+                // Chá»‰ apply date filter khi cÃ³ startDate AND endDate
                 if (startDate.HasValue && endDate.HasValue)
                 {
                     query = query.Where(od => od.AppliedAt.Date >= start.Date && od.AppliedAt.Date <= end.Date);
@@ -85,7 +87,7 @@ namespace RetailPointBackend.Controllers
                         .Select(g => new TopDiscountReport
                         {
                             DiscountId = g.Key.DiscountId,
-                            DiscountName = g.Key.DiscountName ?? "Giảm giá thủ công",
+                            DiscountName = g.Key.DiscountName ?? "Giáº£m giÃ¡ thá»§ cÃ´ng",
                             UsageCount = g.Count(),
                             TotalAmount = g.Sum(d => d.DiscountAmount),
                             AverageAmount = g.Any() ? g.Average(d => d.DiscountAmount) : 0
@@ -116,7 +118,7 @@ namespace RetailPointBackend.Controllers
             }
         }
 
-        // GET: api/discount-reports/orders-v2 - Lấy từ Orders.DiscountAmount thay vì OrderDiscounts
+        // GET: api/discount-reports/orders-v2 - Láº¥y tá»« Orders.DiscountAmount thay vÃ¬ OrderDiscounts
         [HttpGet("orders-v2")]
         public async Task<ActionResult<DiscountOrdersResponse>> GetDiscountedOrdersV2(
             [FromQuery] DateTime? startDate = null,
@@ -131,11 +133,11 @@ namespace RetailPointBackend.Controllers
 
                 Console.WriteLine($"V2 API - Filter range: {start:yyyy-MM-dd} to {end:yyyy-MM-dd}");
 
-                // Lấy Orders có DiscountAmount > 0 (đã được giảm giá)
+                // Láº¥y Orders cÃ³ DiscountAmount > 0 (Ä‘Ã£ Ä‘Æ°á»£c giáº£m giÃ¡)
                 var discountedOrders = await _context.Orders
                     .Where(o => o.CreatedAt.Date >= start.Date && o.CreatedAt.Date < end.Date 
                                && o.DiscountAmount > 0)
-                    .Include(o => o.Items) // Include OrderItems để xem item-level discounts
+                    .Include(o => o.Items) // Include OrderItems Ä‘á»ƒ xem item-level discounts
                     .OrderByDescending(o => o.CreatedAt)
                     .ToListAsync();
 
@@ -157,9 +159,9 @@ namespace RetailPointBackend.Controllers
                 {
                     OrderId = order.OrderId,
                     OrderNumber = order.OrderNumber ?? $"ORD-{order.OrderId}",
-                    CustomerName = order.CustomerName ?? "Khách vãng lai",
+                    CustomerName = order.CustomerName ?? "KhÃ¡ch vÃ£ng lai",
                     OrderTotal = order.TotalAmount,
-                    TotalDiscountAmount = order.DiscountAmount, // Từ Orders.DiscountAmount
+                    TotalDiscountAmount = order.DiscountAmount, // Tá»« Orders.DiscountAmount
                     DiscountCount = order.Items.Count(item => item.DiscountAmount > 0) + (order.DiscountAmount > 0 ? 1 : 0),
                     OrderDate = order.CreatedAt,
                     PaymentStatus = order.PaymentStatus ?? "",
@@ -169,20 +171,20 @@ namespace RetailPointBackend.Controllers
                         // Order-level discount
                         new OrderDiscountDetail
                         {
-                            DiscountName = "Giảm giá thủ công",
+                            DiscountName = "Giáº£m giÃ¡ thá»§ cÃ´ng",
                             DiscountType = DiscountType.FixedAmountTotal,
-                            DiscountTypeName = "Giảm tiền tổng bill",
+                            DiscountTypeName = "Giáº£m tiá»n tá»•ng bill",
                             DiscountValue = order.DiscountAmount,
                             DiscountAmount = order.DiscountAmount,
                             AppliedAt = order.CreatedAt
                         }
                     }
-                    // TODO: Thêm item-level discounts nếu cần
+                    // TODO: ThÃªm item-level discounts náº¿u cáº§n
                     .Concat(order.Items.Where(item => item.DiscountAmount > 0).Select(item => new OrderDiscountDetail
                     {
-                        DiscountName = $"Giảm giá {item.ProductName}",
+                        DiscountName = $"Giáº£m giÃ¡ {item.ProductName}",
                         DiscountType = DiscountType.FixedAmountItem,
-                        DiscountTypeName = "Giảm tiền mặt hàng",
+                        DiscountTypeName = "Giáº£m tiá»n máº·t hÃ ng",
                         DiscountValue = item.DiscountAmount,
                         DiscountAmount = item.DiscountAmount,
                         AppliedAt = order.CreatedAt
@@ -356,15 +358,15 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Sử dụng local timezone và đặt time cho đầu ngày và cuối ngày
+                // Sá»­ dá»¥ng local timezone vÃ  Ä‘áº·t time cho Ä‘áº§u ngÃ y vÃ  cuá»‘i ngÃ y
                 var start = startDate?.Date ?? DateTime.Today.AddDays(-30); // 00:00:00
-                var end = (endDate?.Date.AddDays(1) ?? DateTime.Today.AddDays(1)); // 23:59:59 của ngày endDate
+                var end = (endDate?.Date.AddDays(1) ?? DateTime.Today.AddDays(1)); // 23:59:59 cá»§a ngÃ y endDate
 
                 // Debug log
                 Console.WriteLine($"Date params - startDate: {startDate}, endDate: {endDate}");
                 Console.WriteLine($"Filter range: {start:yyyy-MM-dd HH:mm:ss} to {end:yyyy-MM-dd HH:mm:ss}");
 
-                // Lấy dữ liệu OrderDiscounts - chỉ filter khi có cả startDate và endDate
+                // Láº¥y dá»¯ liá»‡u OrderDiscounts - chá»‰ filter khi cÃ³ cáº£ startDate vÃ  endDate
                 var query = _context.OrderDiscounts.AsQueryable();
                 
                 if (startDate.HasValue && endDate.HasValue)
@@ -385,7 +387,7 @@ namespace RetailPointBackend.Controllers
 
                 if (!orderDiscounts.Any())
                 {
-                    // Kiểm tra tổng số records để debug
+                    // Kiá»ƒm tra tá»•ng sá»‘ records Ä‘á»ƒ debug
                     var totalRecords = await _context.OrderDiscounts.CountAsync();
                     Console.WriteLine($"Total OrderDiscounts in DB: {totalRecords}");
                     
@@ -399,15 +401,15 @@ namespace RetailPointBackend.Controllers
                     });
                 }
 
-                // Lấy OrderIds unique
+                // Láº¥y OrderIds unique
                 var orderIds = orderDiscounts.Select(od => od.OrderId).Distinct().ToList();
                 
-                // Lấy thông tin Orders
+                // Láº¥y thÃ´ng tin Orders
                 var orders = await _context.Orders
                     .Where(o => orderIds.Contains(o.OrderId))
                     .ToListAsync();
 
-                // Tạo dictionary để lookup nhanh
+                // Táº¡o dictionary Ä‘á»ƒ lookup nhanh
                 var orderDict = orders.ToDictionary(o => o.OrderId);
 
                 // Group OrderDiscounts theo OrderId
@@ -426,7 +428,7 @@ namespace RetailPointBackend.Controllers
                         {
                             OrderId = orderId,
                             OrderNumber = order.OrderNumber ?? $"ORD-{orderId}",
-                            CustomerName = order.CustomerName ?? "Khách vãng lai",
+                            CustomerName = order.CustomerName ?? "KhÃ¡ch vÃ£ng lai",
                             OrderTotal = order.TotalAmount,
                             TotalDiscountAmount = group.Sum(od => od.DiscountAmount),
                             DiscountCount = group.Count(),
@@ -435,7 +437,7 @@ namespace RetailPointBackend.Controllers
                             PaymentMethod = order.PaymentMethod ?? "",
                             DiscountDetails = group.Select(od => new OrderDiscountDetail
                             {
-                                DiscountName = od.DiscountName ?? "Giảm giá thủ công",
+                                DiscountName = od.DiscountName ?? "Giáº£m giÃ¡ thá»§ cÃ´ng",
                                 DiscountType = od.DiscountType,
                                 DiscountTypeName = GetDiscountTypeName(od.DiscountType),
                                 DiscountValue = od.DiscountValue,
@@ -502,10 +504,10 @@ namespace RetailPointBackend.Controllers
         {
             return type switch
             {
-                DiscountType.PercentageTotal => "Giảm % tổng bill",
-                DiscountType.FixedAmountItem => "Giảm tiền mặt hàng",
-                DiscountType.FixedAmountTotal => "Giảm tiền tổng bill",
-                _ => "Không xác định"
+                DiscountType.PercentageTotal => "Giáº£m % tá»•ng bill",
+                DiscountType.FixedAmountItem => "Giáº£m tiá»n máº·t hÃ ng",
+                DiscountType.FixedAmountTotal => "Giáº£m tiá»n tá»•ng bill",
+                _ => "KhÃ´ng xÃ¡c Ä‘á»‹nh"
             };
         }
     }

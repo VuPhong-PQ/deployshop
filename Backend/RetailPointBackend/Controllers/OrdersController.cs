@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
@@ -7,6 +8,7 @@ using System.Text.Json;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
@@ -958,4 +960,5 @@ namespace RetailPointBackend.Controllers
         public decimal UnitPrice { get; set; }
     }
 }
+
 

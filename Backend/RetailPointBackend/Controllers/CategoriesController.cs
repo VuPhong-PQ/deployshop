@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 
@@ -13,6 +14,7 @@ namespace RetailPointBackend.Controllers
         public bool IsVisible { get; set; }
     }
 
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
@@ -118,7 +120,7 @@ namespace RetailPointBackend.Controllers
             return Ok(categoryDto);
         }
 
-        // Sửa nhóm sản phẩm
+        // Sá»­a nhÃ³m sáº£n pháº©m
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] CategoryDto categoryDto)
         {
@@ -137,7 +139,7 @@ namespace RetailPointBackend.Controllers
             return NoContent();
         }
 
-        // Xóa nhóm sản phẩm
+        // XÃ³a nhÃ³m sáº£n pháº©m
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
@@ -150,3 +152,4 @@ namespace RetailPointBackend.Controllers
         }
     }
 }
+

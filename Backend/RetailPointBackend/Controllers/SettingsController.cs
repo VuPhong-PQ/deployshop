@@ -1,7 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/settings")]
     public class SettingsController : ControllerBase
@@ -21,7 +23,7 @@ namespace RetailPointBackend.Controllers
         [HttpGet("store")]
         public IActionResult GetStore()
         {
-            return Ok(new { storeName = "Cửa hàng ABC", phone = "0123456789", email = "abc@store.com" });
+            return Ok(new { storeName = "Cá»­a hÃ ng ABC", phone = "0123456789", email = "abc@store.com" });
         }
 
         [HttpGet("print")]
@@ -31,3 +33,4 @@ namespace RetailPointBackend.Controllers
         }
     }
 }
+

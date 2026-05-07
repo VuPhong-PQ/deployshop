@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RetailPointBackend.Models;
 using System.Linq;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class OrderItemsController : ControllerBase
@@ -14,7 +16,7 @@ namespace RetailPointBackend.Controllers
             _context = context;
         }
 
-        // Lấy tất cả OrderItem của 1 đơn hàng
+        // Láº¥y táº¥t cáº£ OrderItem cá»§a 1 Ä‘Æ¡n hÃ ng
         [HttpGet("order/{orderId}")]
         public IActionResult GetItemsByOrder(int orderId)
         {
@@ -22,7 +24,7 @@ namespace RetailPointBackend.Controllers
             return Ok(items);
         }
 
-        // Thêm mới 1 OrderItem
+        // ThÃªm má»›i 1 OrderItem
         [HttpPost]
         public IActionResult AddOrderItem([FromBody] OrderItem item)
         {
@@ -31,7 +33,7 @@ namespace RetailPointBackend.Controllers
             return Ok(new { item.OrderItemId, Status = "Success" });
         }
 
-        // Cập nhật 1 OrderItem
+        // Cáº­p nháº­t 1 OrderItem
         [HttpPut("{id}")]
         public IActionResult UpdateOrderItem(int id, [FromBody] OrderItem updatedItem)
         {
@@ -46,7 +48,7 @@ namespace RetailPointBackend.Controllers
             return Ok(new { item.OrderItemId, Status = "Updated" });
         }
 
-        // Xóa 1 OrderItem
+        // XÃ³a 1 OrderItem
         [HttpDelete("{id}")]
         public IActionResult DeleteOrderItem(int id)
         {

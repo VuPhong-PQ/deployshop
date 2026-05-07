@@ -3,6 +3,8 @@ using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 using OfficeOpenXml;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,21 +14,24 @@ var builder = WebApplication.CreateBuilder(args);
 // self-host scenarios (not under IIS) we keep the explicit binding.
 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_IIS_PHYSICAL_PATH")))
 {
-    builder.WebHost.UseUrls("http://101.53.9.76:5273");
+    builder.WebHost.UseUrls("http://localhost:5273");
 }
 
 // Cấu hình encoding UTF-8
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-// Thêm cấu hình CORS cho phép từ frontend
+// Thêm cấu hình CORS - chỉ cho phép các origin hợp lệ
+var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',') 
+    ?? new[] { "http://101.53.9.76", "http://localhost:5173" };
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) // Cho phép mọi origin
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Hỗ trợ credentials
+              .AllowCredentials();
     });
 });
 
@@ -59,6 +64,31 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddOpenApi();
+
+// Cấu hình JWT Authentication
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] 
+    ?? throw new InvalidOperationException("JWT SecretKey not configured in appsettings.json");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Đăng ký JwtService
+builder.Services.AddSingleton<IJwtService, JwtService>();
 
 // Add DbContext for EF Core - chỉ sử dụng AppDbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -138,11 +168,33 @@ app.UseCors();
 // Bật phục vụ file tĩnh (ảnh upload)
 app.UseStaticFiles();
 
-// HTTPS redirection after CORS - tạm thời comment để test
-// app.UseHttpsRedirection();
+// JWT Authentication & Authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Thêm session middleware
 app.UseSession();
+
+// WebSocket support
+app.UseWebSockets();
+app.Map("/ws", async context =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+        var buffer = new byte[1024 * 4];
+        var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        while (!result.CloseStatus.HasValue)
+        {
+            result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        }
+        await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+    }
+    else
+    {
+        context.Response.StatusCode = 400;
+    }
+});
 
 // Kích hoạt các route controller (api/...)
 app.MapControllers();

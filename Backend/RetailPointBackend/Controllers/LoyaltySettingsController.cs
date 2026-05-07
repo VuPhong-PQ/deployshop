@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.DTOs;
@@ -6,6 +7,7 @@ using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class LoyaltySettingsController : ControllerBase
@@ -75,7 +77,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting loyalty settings");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -94,7 +96,7 @@ namespace RetailPointBackend.Controllers
 
                 try
                 {
-                    // Cập nhật LoyaltyConfig
+                    // Cáº­p nháº­t LoyaltyConfig
                     var existingConfig = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
                     if (existingConfig == null)
                     {
@@ -143,10 +145,10 @@ namespace RetailPointBackend.Controllers
                         existingConfig.UpdatedAt = DateTime.Now;
                     }
 
-                    // Cập nhật CustomerTiers
+                    // Cáº­p nháº­t CustomerTiers
                     var existingTiers = await _context.CustomerTiers.ToListAsync();
                     
-                    // Xóa (soft delete) các tier không còn trong danh sách
+                    // XÃ³a (soft delete) cÃ¡c tier khÃ´ng cÃ²n trong danh sÃ¡ch
                     foreach (var existingTier in existingTiers)
                     {
                         if (!settingsDto.Tiers.Any(t => t.TierId == existingTier.TierId))
@@ -155,12 +157,12 @@ namespace RetailPointBackend.Controllers
                         }
                     }
 
-                    // Cập nhật hoặc thêm mới các tier
+                    // Cáº­p nháº­t hoáº·c thÃªm má»›i cÃ¡c tier
                     foreach (var tierDto in settingsDto.Tiers)
                     {
                         if (tierDto.TierId == 0)
                         {
-                            // Thêm mới
+                            // ThÃªm má»›i
                             var newTier = new CustomerTier
                             {
                                 TierName = tierDto.TierName,
@@ -177,7 +179,7 @@ namespace RetailPointBackend.Controllers
                         }
                         else
                         {
-                            // Cập nhật
+                            // Cáº­p nháº­t
                             var existingTier = existingTiers.FirstOrDefault(t => t.TierId == tierDto.TierId);
                             if (existingTier != null)
                             {
@@ -195,13 +197,13 @@ namespace RetailPointBackend.Controllers
 
                     await _context.SaveChangesAsync();
 
-                    // Cập nhật lại hạng cho tất cả khách hàng
+                    // Cáº­p nháº­t láº¡i háº¡ng cho táº¥t cáº£ khÃ¡ch hÃ ng
                     _ = Task.Run(async () => await _loyaltyService.CheckAndUpdateAllCustomerTiersAsync());
 
                     await transaction.CommitAsync();
 
                     _logger.LogInformation("Loyalty settings updated successfully");
-                    return Ok(new { message = "Cập nhật cài đặt tích điểm thành công" });
+                    return Ok(new { message = "Cáº­p nháº­t cÃ i Ä‘áº·t tÃ­ch Ä‘iá»ƒm thÃ nh cÃ´ng" });
                 }
                 catch (Exception)
                 {
@@ -212,7 +214,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating loyalty settings");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -228,7 +230,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting customer loyalty status for {CustomerId}", customerId);
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -246,7 +248,7 @@ namespace RetailPointBackend.Controllers
                 {
                     return Ok(new PointsCalculationDto { 
                         Points = 0, 
-                        Message = "Hệ thống tích điểm chưa được kích hoạt" 
+                        Message = "Há»‡ thá»‘ng tÃ­ch Ä‘iá»ƒm chÆ°a Ä‘Æ°á»£c kÃ­ch hoáº¡t" 
                     });
                 }
 
@@ -254,7 +256,7 @@ namespace RetailPointBackend.Controllers
                 {
                     return Ok(new PointsCalculationDto { 
                         Points = 0, 
-                        Message = $"Đơn hàng tối thiểu {config.MinOrderAmountForPoints:C0} để tích điểm" 
+                        Message = $"ÄÆ¡n hÃ ng tá»‘i thiá»ƒu {config.MinOrderAmountForPoints:C0} Ä‘á»ƒ tÃ­ch Ä‘iá»ƒm" 
                     });
                 }
 
@@ -262,42 +264,42 @@ namespace RetailPointBackend.Controllers
                 var multiplier = 1.0m;
                 var bonusInfo = new List<string>();
 
-                // Kiểm tra Happy Hour
+                // Kiá»ƒm tra Happy Hour
                 if (config.HappyHourEnabled)
                 {
                     var currentTime = DateTime.Now.TimeOfDay;
                     if (currentTime >= config.HappyHourStartTime && currentTime <= config.HappyHourEndTime)
                     {
                         multiplier *= config.HappyHourMultiplier;
-                        bonusInfo.Add($"Giờ vàng x{config.HappyHourMultiplier}");
+                        bonusInfo.Add($"Giá» vÃ ng x{config.HappyHourMultiplier}");
                     }
                 }
 
-                // Kiểm tra Weekend Bonus
+                // Kiá»ƒm tra Weekend Bonus
                 if (config.WeekendBonusEnabled && (DateTime.Now.DayOfWeek == DayOfWeek.Saturday || DateTime.Now.DayOfWeek == DayOfWeek.Sunday))
                 {
                     multiplier *= config.WeekendMultiplier;
-                    bonusInfo.Add($"Cuối tuần x{config.WeekendMultiplier}");
+                    bonusInfo.Add($"Cuá»‘i tuáº§n x{config.WeekendMultiplier}");
                 }
 
-                // Kiểm tra Customer Tier nếu có customerId
+                // Kiá»ƒm tra Customer Tier náº¿u cÃ³ customerId
                 if (customerId.HasValue)
                 {
                     var customer = await _context.Customers.Include(c => c.CustomerTier).FirstOrDefaultAsync(c => c.CustomerId == customerId);
                     if (customer?.CustomerTier != null)
                     {
                         multiplier *= customer.CustomerTier.PointsMultiplier;
-                        bonusInfo.Add($"Hạng {customer.CustomerTier.TierName} x{customer.CustomerTier.PointsMultiplier}");
+                        bonusInfo.Add($"Háº¡ng {customer.CustomerTier.TierName} x{customer.CustomerTier.PointsMultiplier}");
                     }
                 }
 
                 var finalPoints = (int)(basePoints * multiplier);
 
-                // Áp dụng giới hạn điểm tối đa
+                // Ãp dá»¥ng giá»›i háº¡n Ä‘iá»ƒm tá»‘i Ä‘a
                 if (config.MaxPointsPerOrder.HasValue && finalPoints > config.MaxPointsPerOrder.Value)
                 {
                     finalPoints = config.MaxPointsPerOrder.Value;
-                    bonusInfo.Add($"Giới hạn tối đa {config.MaxPointsPerOrder.Value} điểm/đơn");
+                    bonusInfo.Add($"Giá»›i háº¡n tá»‘i Ä‘a {config.MaxPointsPerOrder.Value} Ä‘iá»ƒm/Ä‘Æ¡n");
                 }
 
                 return Ok(new PointsCalculationDto
@@ -306,13 +308,13 @@ namespace RetailPointBackend.Controllers
                     BasePoints = basePoints,
                     Multiplier = multiplier,
                     BonusInfo = bonusInfo,
-                    Formula = $"{amount:C0} ÷ {config.PointsPerCurrency:C0} × {multiplier} = {finalPoints} điểm"
+                    Formula = $"{amount:C0} Ã· {config.PointsPerCurrency:C0} Ã— {multiplier} = {finalPoints} Ä‘iá»ƒm"
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error calculating points");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -325,14 +327,14 @@ namespace RetailPointBackend.Controllers
                 var success = await _loyaltyService.CheckAndUpdateAllCustomerTiersAsync();
                 if (success)
                 {
-                    return Ok(new { message = "Đã cập nhật hạng cho tất cả khách hàng" });
+                    return Ok(new { message = "ÄÃ£ cáº­p nháº­t háº¡ng cho táº¥t cáº£ khÃ¡ch hÃ ng" });
                 }
-                return StatusCode(500, new { message = "Có lỗi khi cập nhật hạng khách hàng" });
+                return StatusCode(500, new { message = "CÃ³ lá»—i khi cáº­p nháº­t háº¡ng khÃ¡ch hÃ ng" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating all customer tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -354,10 +356,10 @@ namespace RetailPointBackend.Controllers
                     {
                         var correctEnum = customer.CustomerTier.TierName switch
                         {
-                            "Kim cương" => CustomerRank.Platinum,  // Cao nhất (3)
-                            "Vàng" => CustomerRank.VIP,            // Cao (2)
-                            "Bạc" => CustomerRank.Premium,         // Trung bình (1)
-                            "Đồng" => CustomerRank.Thuong,        // Thấp nhất (0)
+                            "Kim cÆ°Æ¡ng" => CustomerRank.Platinum,  // Cao nháº¥t (3)
+                            "VÃ ng" => CustomerRank.VIP,            // Cao (2)
+                            "Báº¡c" => CustomerRank.Premium,         // Trung bÃ¬nh (1)
+                            "Äá»“ng" => CustomerRank.Thuong,        // Tháº¥p nháº¥t (0)
                             _ => CustomerRank.Thuong
                         };
 
@@ -374,7 +376,7 @@ namespace RetailPointBackend.Controllers
                 await _context.SaveChangesAsync();
                 
                 return Ok(new { 
-                    message = $"Đã sửa enum mapping cho {fixedCount} khách hàng",
+                    message = $"ÄÃ£ sá»­a enum mapping cho {fixedCount} khÃ¡ch hÃ ng",
                     fixedCount = fixedCount,
                     totalCustomers = customers.Count
                 });
@@ -382,7 +384,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fixing enum mapping");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
     }

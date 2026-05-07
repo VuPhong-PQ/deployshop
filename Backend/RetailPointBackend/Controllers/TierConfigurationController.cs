@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.DTOs;
@@ -7,6 +8,7 @@ using RetailPointBackend.Validators;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class TierConfigurationController : ControllerBase
@@ -69,7 +71,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting tier configuration");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -91,7 +93,7 @@ namespace RetailPointBackend.Controllers
                 {
                     return BadRequest(new 
                     { 
-                        message = "Cấu hình không hợp lệ", 
+                        message = "Cáº¥u hÃ¬nh khÃ´ng há»£p lá»‡", 
                         errors = errors,
                         warnings = warnings
                     });
@@ -124,7 +126,7 @@ namespace RetailPointBackend.Controllers
 
                         return Ok(new
                         {
-                            message = "Cập nhật cấu hình hạng khách hàng thành công",
+                            message = "Cáº­p nháº­t cáº¥u hÃ¬nh háº¡ng khÃ¡ch hÃ ng thÃ nh cÃ´ng",
                             updatedTiers = tierUpdates.Count,
                             warnings = warnings.Any() ? warnings : null
                         });
@@ -139,7 +141,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error batch updating tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -154,8 +156,8 @@ namespace RetailPointBackend.Controllers
                 {
                     return BadRequest(new
                     {
-                        message = "Cần xác nhận để reset về cấu hình mặc định",
-                        instruction = "Thêm header X-Confirm-Reset: true để xác nhận"
+                        message = "Cáº§n xÃ¡c nháº­n Ä‘á»ƒ reset vá» cáº¥u hÃ¬nh máº·c Ä‘á»‹nh",
+                        instruction = "ThÃªm header X-Confirm-Reset: true Ä‘á»ƒ xÃ¡c nháº­n"
                     });
                 }
 
@@ -175,48 +177,48 @@ namespace RetailPointBackend.Controllers
                         {
                             new CustomerTier
                             {
-                                TierName = "Đồng",
+                                TierName = "Äá»“ng",
                                 MinSpent = 0,
                                 MinPoints = 0,
                                 PointsMultiplier = 1.0m,
                                 DiscountPercentage = 0,
-                                Description = "Hạng khách hàng cơ bản",
+                                Description = "Háº¡ng khÃ¡ch hÃ ng cÆ¡ báº£n",
                                 TierColor = "#CD7F32",
                                 IsActive = true,
                                 CreatedAt = DateTime.Now
                             },
                             new CustomerTier
                             {
-                                TierName = "Bạc",
+                                TierName = "Báº¡c",
                                 MinSpent = 5000000,
                                 MinPoints = 500,
                                 PointsMultiplier = 1.2m,
                                 DiscountPercentage = 2,
-                                Description = "Khách hàng thân thiết",
+                                Description = "KhÃ¡ch hÃ ng thÃ¢n thiáº¿t",
                                 TierColor = "#C0C0C0",
                                 IsActive = true,
                                 CreatedAt = DateTime.Now
                             },
                             new CustomerTier
                             {
-                                TierName = "Vàng",
+                                TierName = "VÃ ng",
                                 MinSpent = 20000000,
                                 MinPoints = 2000,
                                 PointsMultiplier = 1.5m,
                                 DiscountPercentage = 5,
-                                Description = "Khách hàng VIP",
+                                Description = "KhÃ¡ch hÃ ng VIP",
                                 TierColor = "#FFD700",
                                 IsActive = true,
                                 CreatedAt = DateTime.Now
                             },
                             new CustomerTier
                             {
-                                TierName = "Kim cương",
+                                TierName = "Kim cÆ°Æ¡ng",
                                 MinSpent = 50000000,
                                 MinPoints = 5000,
                                 PointsMultiplier = 2.0m,
                                 DiscountPercentage = 10,
-                                Description = "Khách hàng VVIP",
+                                Description = "KhÃ¡ch hÃ ng VVIP",
                                 TierColor = "#B9F2FF",
                                 IsActive = true,
                                 CreatedAt = DateTime.Now
@@ -232,7 +234,7 @@ namespace RetailPointBackend.Controllers
 
                         return Ok(new
                         {
-                            message = "Đã reset về cấu hình hạng mặc định",
+                            message = "ÄÃ£ reset vá» cáº¥u hÃ¬nh háº¡ng máº·c Ä‘á»‹nh",
                             defaultTiers = defaultTiers.Select(t => new
                             {
                                 tierName = t.TierName,
@@ -253,7 +255,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error resetting to default tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -272,17 +274,17 @@ namespace RetailPointBackend.Controllers
                     warnings = warnings,
                     suggestions = new[]
                     {
-                        "Đảm bảo các hạng cao hơn có quyền lợi tốt hơn",
-                        "Xem xét khoảng cách hợp lý giữa các hạng",
-                        "Kiểm tra tính khả thi của điều kiện đạt hạng",
-                        "Nên có hạng cơ bản cho khách hàng mới (chi tiêu = 0)"
+                        "Äáº£m báº£o cÃ¡c háº¡ng cao hÆ¡n cÃ³ quyá»n lá»£i tá»‘t hÆ¡n",
+                        "Xem xÃ©t khoáº£ng cÃ¡ch há»£p lÃ½ giá»¯a cÃ¡c háº¡ng",
+                        "Kiá»ƒm tra tÃ­nh kháº£ thi cá»§a Ä‘iá»u kiá»‡n Ä‘áº¡t háº¡ng",
+                        "NÃªn cÃ³ háº¡ng cÆ¡ báº£n cho khÃ¡ch hÃ ng má»›i (chi tiÃªu = 0)"
                     }
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating tier configuration");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -301,7 +303,7 @@ namespace RetailPointBackend.Controllers
                 {
                     return Ok(new
                     {
-                        message = "Không có hạng nào bị vô hiệu hóa để xóa",
+                        message = "KhÃ´ng cÃ³ háº¡ng nÃ o bá»‹ vÃ´ hiá»‡u hÃ³a Ä‘á»ƒ xÃ³a",
                         deletedTiers = 0
                     });
                 }
@@ -315,7 +317,7 @@ namespace RetailPointBackend.Controllers
                     
                     if (customerCount > 0)
                     {
-                        tiersWithCustomers.Add($"{tier.TierName} ({customerCount} khách hàng)");
+                        tiersWithCustomers.Add($"{tier.TierName} ({customerCount} khÃ¡ch hÃ ng)");
                     }
                 }
 
@@ -323,9 +325,9 @@ namespace RetailPointBackend.Controllers
                 {
                     return BadRequest(new
                     {
-                        message = "Không thể xóa một số hạng vì vẫn có khách hàng sử dụng",
+                        message = "KhÃ´ng thá»ƒ xÃ³a má»™t sá»‘ háº¡ng vÃ¬ váº«n cÃ³ khÃ¡ch hÃ ng sá»­ dá»¥ng",
                         tiersWithCustomers = tiersWithCustomers,
-                        suggestion = "Hãy chuyển khách hàng sang hạng khác trước khi xóa"
+                        suggestion = "HÃ£y chuyá»ƒn khÃ¡ch hÃ ng sang háº¡ng khÃ¡c trÆ°á»›c khi xÃ³a"
                     });
                 }
 
@@ -340,7 +342,7 @@ namespace RetailPointBackend.Controllers
 
                 return Ok(new
                 {
-                    message = $"Đã xóa {disabledTiers.Count} hạng vô hiệu hóa",
+                    message = $"ÄÃ£ xÃ³a {disabledTiers.Count} háº¡ng vÃ´ hiá»‡u hÃ³a",
                     deletedTiers = disabledTiers.Count,
                     deletedTierNames = tierNames
                 });
@@ -348,7 +350,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error cleaning up disabled tiers");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -361,23 +363,23 @@ namespace RetailPointBackend.Controllers
                 // Validate parameters
                 if (tierId <= 0)
                 {
-                    return BadRequest(new { message = "TierId phải lớn hơn 0" });
+                    return BadRequest(new { message = "TierId pháº£i lá»›n hÆ¡n 0" });
                 }
 
                 if (newMinSpent < 0)
                 {
-                    return BadRequest(new { message = "Chi tiêu tối thiểu không được âm" });
+                    return BadRequest(new { message = "Chi tiÃªu tá»‘i thiá»ƒu khÃ´ng Ä‘Æ°á»£c Ã¢m" });
                 }
 
                 if (newMinPoints < 0)
                 {
-                    return BadRequest(new { message = "Điểm tối thiểu không được âm" });
+                    return BadRequest(new { message = "Äiá»ƒm tá»‘i thiá»ƒu khÃ´ng Ä‘Æ°á»£c Ã¢m" });
                 }
 
                 var tier = await _context.CustomerTiers.FindAsync(tierId);
                 if (tier == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy hạng khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y háº¡ng khÃ¡ch hÃ ng" });
                 }
 
                 // Current customers in this tier
@@ -422,7 +424,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error previewing tier impact");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
     }

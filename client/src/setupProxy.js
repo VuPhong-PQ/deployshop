@@ -1,10 +1,10 @@
-import { createProxyMiddleware } from 'http-proxy-middleware';
+﻿import { createProxyMiddleware } from 'http-proxy-middleware';
 
 export default function (app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://101.53.9.76:5273',
+  target: process.env.REACT_APP_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273'),
       changeOrigin: true,
     })
   );

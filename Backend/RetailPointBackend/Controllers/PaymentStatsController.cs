@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.Globalization;
@@ -6,6 +7,7 @@ using System.Text.Json;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class PaymentStatsController : ControllerBase
@@ -39,7 +41,7 @@ namespace RetailPointBackend.Controllers
         {
             public int OrderId { get; set; }
             public string? OrderNumber { get; set; }
-            public string CustomerName { get; set; } = "Khách lẻ";
+            public string CustomerName { get; set; } = "KhÃ¡ch láº»";
             public decimal TotalAmount { get; set; }
             public DateTime CreatedAt { get; set; }
             public string? Currency { get; set; }
@@ -112,7 +114,7 @@ namespace RetailPointBackend.Controllers
                                     {
                                         OrderId = order.OrderId,
                                         OrderNumber = order.OrderNumber,
-                                        CustomerName = order.CustomerName ?? "Khách lẻ",
+                                        CustomerName = order.CustomerName ?? "KhÃ¡ch láº»",
                                         TotalAmount = order.TotalAmount,
                                         CreatedAt = order.CreatedAt,
                                         Currency = order.Currency,
@@ -148,7 +150,7 @@ namespace RetailPointBackend.Controllers
                     {
                         OrderId = order.OrderId,
                         OrderNumber = order.OrderNumber,
-                        CustomerName = order.CustomerName ?? "Khách lẻ",
+                        CustomerName = order.CustomerName ?? "KhÃ¡ch láº»",
                         TotalAmount = order.TotalAmount,
                         CreatedAt = order.CreatedAt,
                         Currency = order.Currency,
@@ -192,7 +194,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy thống kê thanh toán", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y thá»‘ng kÃª thanh toÃ¡n", error = ex.Message });
             }
         }
 
@@ -221,14 +223,14 @@ namespace RetailPointBackend.Controllers
                         Amount = g.Sum(o => o.TotalAmount)
                     })
                     .OrderByDescending(x => x.Amount)
-                    .Take(5) // Top 5 phương thức
+                    .Take(5) // Top 5 phÆ°Æ¡ng thá»©c
                     .ToList();
 
                 return Ok(summary);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy tóm tắt thanh toán", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y tÃ³m táº¯t thanh toÃ¡n", error = ex.Message });
             }
         }
 
@@ -236,20 +238,20 @@ namespace RetailPointBackend.Controllers
         {
             return method switch
             {
-                "cash" => "Tiền mặt",
-                "card" => "Thẻ ngân hàng",
+                "cash" => "Tiá»n máº·t",
+                "card" => "Tháº» ngÃ¢n hÃ ng",
                 "qr" => "QR Code",
-                "ewallet" => "Ví điện tử",
-                "banktransfer" => "Chuyển khoản",
-                "foreignusd" => "Ngoại tệ USD",
-                "foreigneur" => "Ngoại tệ EUR",
-                "banktransfer_USD" => "Ngoại tệ USD",
-                "banktransfer_EUR" => "Ngoại tệ EUR",
-                "ngoại tệ" => "Ngoại tệ",
-                "ngoại tệ_USD" => "Ngoại tệ USD",
-                "ngoại tệ_EUR" => "Ngoại tệ EUR",
-                "split" => "Thanh toán chia nhỏ",
-                _ => "Tiền mặt"
+                "ewallet" => "VÃ­ Ä‘iá»‡n tá»­",
+                "banktransfer" => "Chuyá»ƒn khoáº£n",
+                "foreignusd" => "Ngoáº¡i tá»‡ USD",
+                "foreigneur" => "Ngoáº¡i tá»‡ EUR",
+                "banktransfer_USD" => "Ngoáº¡i tá»‡ USD",
+                "banktransfer_EUR" => "Ngoáº¡i tá»‡ EUR",
+                "ngoáº¡i tá»‡" => "Ngoáº¡i tá»‡",
+                "ngoáº¡i tá»‡_USD" => "Ngoáº¡i tá»‡ USD",
+                "ngoáº¡i tá»‡_EUR" => "Ngoáº¡i tá»‡ EUR",
+                "split" => "Thanh toÃ¡n chia nhá»",
+                _ => "Tiá»n máº·t"
             };
         }
 
@@ -257,11 +259,11 @@ namespace RetailPointBackend.Controllers
         {
             var method = paymentMethod ?? "cash";
 
-            // Debug log để kiểm tra
+            // Debug log Ä‘á»ƒ kiá»ƒm tra
             Console.WriteLine($"GetPaymentMethodKey: method='{method}', currency='{currency}'");
 
-            // Nếu là chuyển khoản / ngoại tệ và có currency, map sang các key chuẩn
-            if ((method == "banktransfer" || method == "ngoại tệ") && !string.IsNullOrEmpty(currency))
+            // Náº¿u lÃ  chuyá»ƒn khoáº£n / ngoáº¡i tá»‡ vÃ  cÃ³ currency, map sang cÃ¡c key chuáº©n
+            if ((method == "banktransfer" || method == "ngoáº¡i tá»‡") && !string.IsNullOrEmpty(currency))
             {
                 var cur = currency.ToUpperInvariant();
                 if (cur.StartsWith("USD"))

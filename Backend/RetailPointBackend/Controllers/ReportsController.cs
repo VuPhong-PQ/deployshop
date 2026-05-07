@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.Globalization;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class ReportsController : ControllerBase
@@ -24,11 +26,11 @@ namespace RetailPointBackend.Controllers
                 var start = DateTime.Parse(startDate);
                 var end = DateTime.Parse(endDate).AddDays(1); // Include end date
 
-                // Lấy đơn hàng trong khoảng thời gian đã thanh toán và chưa bị hủy
+                // Láº¥y Ä‘Æ¡n hÃ ng trong khoáº£ng thá»i gian Ä‘Ã£ thanh toÃ¡n vÃ  chÆ°a bá»‹ há»§y
                 var ordersQuery = _context.Orders
                     .Where(o => o.CreatedAt >= start && o.CreatedAt < end && 
                            (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") &&
-                           o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                           o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -38,13 +40,13 @@ namespace RetailPointBackend.Controllers
 
                 var orders = await ordersQuery.Include(o => o.Items).ToListAsync();
 
-                // Tính tổng doanh thu
+                // TÃ­nh tá»•ng doanh thu
                 var totalRevenue = orders.Sum(o => o.TotalAmount);
 
-                // Tổng số đơn hàng
+                // Tá»•ng sá»‘ Ä‘Æ¡n hÃ ng
                 var totalOrders = orders.Count;
 
-                // Tổng số khách hàng unique - filter by store if needed
+                // Tá»•ng sá»‘ khÃ¡ch hÃ ng unique - filter by store if needed
                 var customersQuery = _context.Customers.AsQueryable();
                 if (storeId.HasValue)
                 {
@@ -52,11 +54,11 @@ namespace RetailPointBackend.Controllers
                 }
                 var totalCustomers = await customersQuery.CountAsync();
 
-                // Tính tổng số sản phẩm bán ra từ OrderItems (loại trừ đơn hàng đã hủy)
+                // TÃ­nh tá»•ng sá»‘ sáº£n pháº©m bÃ¡n ra tá»« OrderItems (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var orderItemsQuery = _context.OrderItems
                     .Where(oi => oi.Order != null && oi.Order.CreatedAt >= start && oi.Order.CreatedAt < end && 
                                 (oi.Order.PaymentStatus == "paid" || oi.Order.PaymentStatus == "completed") &&
-                                oi.Order.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                                oi.Order.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -66,7 +68,7 @@ namespace RetailPointBackend.Controllers
 
                 var totalProductsSold = await orderItemsQuery.SumAsync(oi => oi.Quantity);
 
-                // Tính tổng số tiền giảm giá
+                // TÃ­nh tá»•ng sá»‘ tiá»n giáº£m giÃ¡
                 var totalDiscountAmount = await _context.OrderDiscounts
                     .Where(od => od.AppliedAt >= start && od.AppliedAt < end &&
                                 od.Order != null &&
@@ -74,7 +76,7 @@ namespace RetailPointBackend.Controllers
                                 od.Order.Status != "cancelled")
                     .SumAsync(od => od.DiscountAmount);
 
-                // Tính số lượng giảm giá đã sử dụng
+                // TÃ­nh sá»‘ lÆ°á»£ng giáº£m giÃ¡ Ä‘Ã£ sá»­ dá»¥ng
                 var totalDiscountUsage = await _context.OrderDiscounts
                     .Where(od => od.AppliedAt >= start && od.AppliedAt < end &&
                                 od.Order != null &&
@@ -84,11 +86,11 @@ namespace RetailPointBackend.Controllers
 
                 var response = new
                 {
-                    totalRevenue = totalRevenue.ToString("N0") + "₫",
+                    totalRevenue = totalRevenue.ToString("N0") + "â‚«",
                     totalOrders = totalOrders,
                     totalCustomers = totalCustomers,
                     totalProductsSold = totalProductsSold,
-                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "₫",
+                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "â‚«",
                     totalDiscountUsage = totalDiscountUsage,
                     discountRate = totalRevenue > 0 ? Math.Round((totalDiscountAmount / (totalRevenue + totalDiscountAmount)) * 100, 2) : 0
                 };
@@ -97,7 +99,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải báo cáo tổng quan", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº£i bÃ¡o cÃ¡o tá»•ng quan", error = ex.Message });
             }
         }
 
@@ -109,11 +111,11 @@ namespace RetailPointBackend.Controllers
                 var start = DateTime.Parse(startDate);
                 var end = DateTime.Parse(endDate).AddDays(1);
 
-                // Lấy các sản phẩm bán chạy từ OrderItems với thông tin cost (loại trừ đơn hàng đã hủy)
+                // Láº¥y cÃ¡c sáº£n pháº©m bÃ¡n cháº¡y tá»« OrderItems vá»›i thÃ´ng tin cost (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var orderItemsQuery = _context.OrderItems
                     .Where(oi => oi.Order != null && oi.Order.CreatedAt >= start && oi.Order.CreatedAt < end && 
                                 (oi.Order.PaymentStatus == "paid" || oi.Order.PaymentStatus == "completed") &&
-                                oi.Order.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                                oi.Order.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -140,10 +142,10 @@ namespace RetailPointBackend.Controllers
                         return new
                         {
                             productId = g.Key.ProductId,
-                            name = g.Key.ProductName ?? "Sản phẩm #" + g.Key.ProductId,
+                            name = g.Key.ProductName ?? "Sáº£n pháº©m #" + g.Key.ProductId,
                             totalSold = g.Sum(oi => oi.Quantity),
                             revenue = g.Sum(oi => oi.TotalPrice),
-                            // Tính lợi nhuận đúng: (Giá bán - Giá nhập) × Số lượng
+                            // TÃ­nh lá»£i nhuáº­n Ä‘Ãºng: (GiÃ¡ bÃ¡n - GiÃ¡ nháº­p) Ã— Sá»‘ lÆ°á»£ng
                             profit = g.Sum(oi => oi.Quantity * (oi.Price - costPrice))
                         };
                     })
@@ -155,18 +157,18 @@ namespace RetailPointBackend.Controllers
                 {
                     name = p.name,
                     totalSold = p.totalSold,
-                    revenue = p.revenue.ToString("N0") + "₫",
-                    profit = p.profit.ToString("N0") + "₫"
+                    revenue = p.revenue.ToString("N0") + "â‚«",
+                    profit = p.profit.ToString("N0") + "â‚«"
                 }).ToList();
 
-                // Tính tổng sản phẩm bán ra (loại trừ đơn hàng đã hủy)
+                // TÃ­nh tá»•ng sáº£n pháº©m bÃ¡n ra (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var totalProductsSold = await _context.OrderItems
                     .Where(oi => oi.Order != null && oi.Order.CreatedAt >= start && oi.Order.CreatedAt < end && 
                                 (oi.Order.PaymentStatus == "paid" || oi.Order.PaymentStatus == "completed") &&
-                                oi.Order.Status != "cancelled") // Loại trừ đơn hàng đã hủy
+                                oi.Order.Status != "cancelled") // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                     .SumAsync(oi => oi.Quantity);
 
-                // Sản phẩm phổ biến nhất
+                // Sáº£n pháº©m phá»• biáº¿n nháº¥t
                 var mostPopularProduct = topProducts.FirstOrDefault()?.name ?? "N/A";
 
                 var response = new
@@ -180,7 +182,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải báo cáo sản phẩm", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº£i bÃ¡o cÃ¡o sáº£n pháº©m", error = ex.Message });
             }
         }
 
@@ -192,7 +194,7 @@ namespace RetailPointBackend.Controllers
                 var start = DateTime.Parse(startDate);
                 var end = DateTime.Parse(endDate).AddDays(1);
 
-                // Tổng số khách hàng - filter by store if needed
+                // Tá»•ng sá»‘ khÃ¡ch hÃ ng - filter by store if needed
                 var customersQuery = _context.Customers.AsQueryable();
                 if (storeId.HasValue)
                 {
@@ -200,14 +202,14 @@ namespace RetailPointBackend.Controllers
                 }
                 var totalCustomers = await customersQuery.CountAsync();
 
-                // Khách hàng mới trong kỳ (nếu có trường CreatedAt)
-                var newCustomers = 0; // Tạm thời = 0 vì Customer model chưa có CreatedAt
+                // KhÃ¡ch hÃ ng má»›i trong ká»³ (náº¿u cÃ³ trÆ°á»ng CreatedAt)
+                var newCustomers = 0; // Táº¡m thá»i = 0 vÃ¬ Customer model chÆ°a cÃ³ CreatedAt
 
-                // Tổng số đơn hàng trong kỳ (bao gồm cả khách lẻ, loại trừ đơn hàng đã hủy)
+                // Tá»•ng sá»‘ Ä‘Æ¡n hÃ ng trong ká»³ (bao gá»“m cáº£ khÃ¡ch láº», loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var ordersQuery = _context.Orders
                     .Where(o => o.CreatedAt >= start && o.CreatedAt < end && 
                                (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") &&
-                               o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                               o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -217,12 +219,12 @@ namespace RetailPointBackend.Controllers
 
                 var totalOrdersInPeriod = await ordersQuery.CountAsync();
 
-                // Khách hàng có đơn hàng trong kỳ (chỉ tính những đơn có CustomerId, loại trừ đơn hàng đã hủy)
+                // KhÃ¡ch hÃ ng cÃ³ Ä‘Æ¡n hÃ ng trong ká»³ (chá»‰ tÃ­nh nhá»¯ng Ä‘Æ¡n cÃ³ CustomerId, loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var activeCustomersQuery = _context.Orders
                     .Where(o => o.CreatedAt >= start && o.CreatedAt < end && 
                                (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") && 
                                o.CustomerId.HasValue &&
-                               o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                               o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -235,11 +237,11 @@ namespace RetailPointBackend.Controllers
                     .Distinct()
                     .CountAsync();
 
-                // Khách hàng quay lại (có > 1 đơn hàng, loại trừ đơn hàng đã hủy)
+                // KhÃ¡ch hÃ ng quay láº¡i (cÃ³ > 1 Ä‘Æ¡n hÃ ng, loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var returningCustomersQuery = _context.Orders
                     .Where(o => (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") && 
                                o.CustomerId.HasValue &&
-                               o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                               o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -252,12 +254,12 @@ namespace RetailPointBackend.Controllers
                     .Where(g => g.Count() > 1)
                     .CountAsync();
 
-                // Top khách hàng VIP (loại trừ đơn hàng đã hủy)
+                // Top khÃ¡ch hÃ ng VIP (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var topCustomersQuery = _context.Orders
                     .Where(o => o.CreatedAt >= start && o.CreatedAt < end && 
                                (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") && 
                                o.CustomerId.HasValue &&
-                               o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                               o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -271,7 +273,7 @@ namespace RetailPointBackend.Controllers
                     .Select(g => new
                     {
                         customerId = g.Key.CustomerId,
-                        name = g.Key.CustomerName ?? "Khách hàng #" + g.Key.CustomerId,
+                        name = g.Key.CustomerName ?? "KhÃ¡ch hÃ ng #" + g.Key.CustomerId,
                         orders = g.Count(),
                         totalSpent = g.Sum(o => o.TotalAmount)
                     })
@@ -279,7 +281,7 @@ namespace RetailPointBackend.Controllers
                     .Take(5)
                     .ToListAsync();
 
-                // Trung bình đơn hàng trên khách (tính cả khách lẻ)
+                // Trung bÃ¬nh Ä‘Æ¡n hÃ ng trÃªn khÃ¡ch (tÃ­nh cáº£ khÃ¡ch láº»)
                 var averageOrdersPerCustomer = totalCustomers > 0 
                     ? Math.Round((double)totalOrdersInPeriod / Math.Max(totalCustomers, 1), 1)
                     : totalOrdersInPeriod;
@@ -288,7 +290,7 @@ namespace RetailPointBackend.Controllers
                 {
                     name = c.name,
                     orders = c.orders,
-                    totalSpent = c.totalSpent.ToString("N0") + "₫"
+                    totalSpent = c.totalSpent.ToString("N0") + "â‚«"
                 }).ToList();
 
                 var response = new
@@ -296,8 +298,8 @@ namespace RetailPointBackend.Controllers
                     totalCustomers = totalCustomers,
                     newCustomers = newCustomers,
                     returningCustomers = returningCustomers,
-                    activeCustomers = activeCustomers, // Thêm số khách hàng có đơn hàng trong kỳ
-                    totalOrdersInPeriod = totalOrdersInPeriod, // Thêm tổng số đơn hàng
+                    activeCustomers = activeCustomers, // ThÃªm sá»‘ khÃ¡ch hÃ ng cÃ³ Ä‘Æ¡n hÃ ng trong ká»³
+                    totalOrdersInPeriod = totalOrdersInPeriod, // ThÃªm tá»•ng sá»‘ Ä‘Æ¡n hÃ ng
                     averageOrdersPerCustomer = averageOrdersPerCustomer.ToString("F1"),
                     topCustomers = formattedTopCustomers
                 };
@@ -306,7 +308,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải phân tích khách hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº£i phÃ¢n tÃ­ch khÃ¡ch hÃ ng", error = ex.Message });
             }
         }
 
@@ -318,11 +320,11 @@ namespace RetailPointBackend.Controllers
                 var start = DateTime.Parse(startDate);
                 var end = DateTime.Parse(endDate).AddDays(1);
 
-                // Lấy đơn hàng trong kỳ với OrderItems (loại trừ đơn hàng đã hủy)
+                // Láº¥y Ä‘Æ¡n hÃ ng trong ká»³ vá»›i OrderItems (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var ordersQuery = _context.Orders
                     .Where(o => o.CreatedAt >= start && o.CreatedAt < end && 
                                (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") &&
-                               o.Status != "cancelled"); // Loại trừ đơn hàng đã hủy
+                               o.Status != "cancelled"); // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                 
                 // Filter by storeId if provided
                 if (storeId.HasValue)
@@ -332,7 +334,7 @@ namespace RetailPointBackend.Controllers
 
                 var orders = await ordersQuery.Include(o => o.Items).ToListAsync();
 
-                // Lấy thông tin sản phẩm để có CostPrice - filter by store if needed
+                // Láº¥y thÃ´ng tin sáº£n pháº©m Ä‘á»ƒ cÃ³ CostPrice - filter by store if needed
                 var productsQuery = _context.Products.AsQueryable();
                 if (storeId.HasValue)
                 {
@@ -340,43 +342,43 @@ namespace RetailPointBackend.Controllers
                 }
                 var products = await productsQuery.ToListAsync();
 
-                // Lấy cấu hình thuế
+                // Láº¥y cáº¥u hÃ¬nh thuáº¿
                 var taxConfig = await _context.TaxConfigs.FirstOrDefaultAsync() ?? new TaxConfig();
 
-                // Tính tổng doanh thu (bao gồm thuế) - đây là TotalAmount trong Orders
+                // TÃ­nh tá»•ng doanh thu (bao gá»“m thuáº¿) - Ä‘Ã¢y lÃ  TotalAmount trong Orders
                 var totalRevenueIncludingTax = orders.Sum(o => o.TotalAmount);
 
-                // Tính thuế VAT và doanh thu chưa thuế
+                // TÃ­nh thuáº¿ VAT vÃ  doanh thu chÆ°a thuáº¿
                 decimal totalTax = 0;
                 decimal totalRevenueExcludingTax = totalRevenueIncludingTax;
 
                 if (taxConfig.EnableVAT)
                 {
-                    // Tính tổng tax amount từ orders (vì sales page đã tính sẵn)
+                    // TÃ­nh tá»•ng tax amount tá»« orders (vÃ¬ sales page Ä‘Ã£ tÃ­nh sáºµn)
                     totalTax = orders.Sum(o => o.TaxAmount);
                     
-                    // Doanh thu chưa thuế = Tổng tiền - Thuế
+                    // Doanh thu chÆ°a thuáº¿ = Tá»•ng tiá»n - Thuáº¿
                     totalRevenueExcludingTax = totalRevenueIncludingTax - totalTax;
                 }
 
                 var totalRevenue = totalRevenueExcludingTax;
 
-                // Tính chi phí hàng bán thực tế dựa trên CostPrice
+                // TÃ­nh chi phÃ­ hÃ ng bÃ¡n thá»±c táº¿ dá»±a trÃªn CostPrice
                 decimal costOfGoodsSold = 0;
-                decimal totalLoss = 0; // Tổng số tiền lỗ
+                decimal totalLoss = 0; // Tá»•ng sá»‘ tiá»n lá»—
                 
                 foreach (var order in orders)
                 {
                     foreach (var item in order.Items)
                     {
                         var product = products.FirstOrDefault(p => p.ProductId == item.ProductId);
-                        var costPrice = product?.CostPrice ?? (item.Price * 0.6m); // Fallback 60% nếu không có CostPrice
+                        var costPrice = product?.CostPrice ?? (item.Price * 0.6m); // Fallback 60% náº¿u khÃ´ng cÃ³ CostPrice
                         var itemCost = item.Quantity * costPrice;
                         var itemRevenue = item.Quantity * item.Price;
                         
                         costOfGoodsSold += itemCost;
                         
-                        // Tính lỗ (nếu giá bán thấp hơn giá vốn)
+                        // TÃ­nh lá»— (náº¿u giÃ¡ bÃ¡n tháº¥p hÆ¡n giÃ¡ vá»‘n)
                         if (item.Price < costPrice)
                         {
                             totalLoss += item.Quantity * (costPrice - item.Price);
@@ -384,13 +386,13 @@ namespace RetailPointBackend.Controllers
                     }
                 }
 
-                // Lợi nhuận trước thuế = Doanh thu (chưa thuế) - Chi phí hàng bán
+                // Lá»£i nhuáº­n trÆ°á»›c thuáº¿ = Doanh thu (chÆ°a thuáº¿) - Chi phÃ­ hÃ ng bÃ¡n
                 var profitBeforeTax = totalRevenue - costOfGoodsSold;
 
-                // Lợi nhuận sau thuế = Lợi nhuận trước thuế - Thuế VAT
+                // Lá»£i nhuáº­n sau thuáº¿ = Lá»£i nhuáº­n trÆ°á»›c thuáº¿ - Thuáº¿ VAT
                 var profitAfterTax = profitBeforeTax - totalTax;
 
-                // Tính tổng giảm giá
+                // TÃ­nh tá»•ng giáº£m giÃ¡
                 var totalDiscountAmount = await _context.OrderDiscounts
                     .Where(od => od.AppliedAt >= start && od.AppliedAt < end &&
                                 od.Order != null &&
@@ -398,20 +400,20 @@ namespace RetailPointBackend.Controllers
                                 od.Order.Status != "cancelled")
                     .SumAsync(od => od.DiscountAmount);
 
-                // Lợi nhuận thực tế (bao gồm cả giảm giá) = Lợi nhuận sau thuế - Giảm giá
+                // Lá»£i nhuáº­n thá»±c táº¿ (bao gá»“m cáº£ giáº£m giÃ¡) = Lá»£i nhuáº­n sau thuáº¿ - Giáº£m giÃ¡
                 var actualProfit = profitAfterTax - totalDiscountAmount;
 
-                // Tỷ suất lợi nhuận = Lợi nhuận sau thuế / Doanh thu (chưa thuế) * 100
+                // Tá»· suáº¥t lá»£i nhuáº­n = Lá»£i nhuáº­n sau thuáº¿ / Doanh thu (chÆ°a thuáº¿) * 100
                 var profitMargin = totalRevenue > 0 ? (profitAfterTax / totalRevenue * 100) : 0;
 
-                // Tỷ suất lợi nhuận thực tế (bao gồm giảm giá)
+                // Tá»· suáº¥t lá»£i nhuáº­n thá»±c táº¿ (bao gá»“m giáº£m giÃ¡)
                 var actualProfitMargin = totalRevenue > 0 ? (actualProfit / totalRevenue * 100) : 0;
 
-                // Top sản phẩm có lợi nhuận cao từ OrderItems với thông tin chi tiết (loại trừ đơn hàng đã hủy)
+                // Top sáº£n pháº©m cÃ³ lá»£i nhuáº­n cao tá»« OrderItems vá»›i thÃ´ng tin chi tiáº¿t (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                 var orderItems = await _context.OrderItems
                     .Where(oi => oi.Order != null && oi.Order.CreatedAt >= start && oi.Order.CreatedAt < end && 
                                 (oi.Order.PaymentStatus == "paid" || oi.Order.PaymentStatus == "completed") &&
-                                oi.Order.Status != "cancelled") // Loại trừ đơn hàng đã hủy
+                                oi.Order.Status != "cancelled") // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                     .ToListAsync();
 
                 var profitableProducts = orderItems
@@ -429,7 +431,7 @@ namespace RetailPointBackend.Controllers
                         
                         return new
                         {
-                            name = g.Key ?? "Sản phẩm không tên",
+                            name = g.Key ?? "Sáº£n pháº©m khÃ´ng tÃªn",
                             totalSold = totalSold,
                             revenue = totalRevenue,
                             profit = totalProfit,
@@ -439,39 +441,39 @@ namespace RetailPointBackend.Controllers
                             sellPrice = firstItem.Price
                         };
                     })
-                    .OrderByDescending(p => p.profit) // Sắp xếp theo tổng lợi nhuận
+                    .OrderByDescending(p => p.profit) // Sáº¯p xáº¿p theo tá»•ng lá»£i nhuáº­n
                     .Take(10)
                     .Select(p => new
                     {
                         name = p.name,
                         totalSold = p.totalSold,
-                        revenue = p.revenue.ToString("N0") + "₫",
-                        profit = p.profit.ToString("N0") + "₫",
-                        profitPerUnit = p.profitPerUnit.ToString("N0") + "₫",
+                        revenue = p.revenue.ToString("N0") + "â‚«",
+                        profit = p.profit.ToString("N0") + "â‚«",
+                        profitPerUnit = p.profitPerUnit.ToString("N0") + "â‚«",
                         margin = p.margin,
-                        costPrice = p.costPrice.ToString("N0") + "₫",
-                        sellPrice = p.sellPrice.ToString("N0") + "₫"
+                        costPrice = p.costPrice.ToString("N0") + "â‚«",
+                        sellPrice = p.sellPrice.ToString("N0") + "â‚«"
                     })
                     .ToList();
 
-                // Xu hướng lợi nhuận theo tháng (6 tháng gần nhất)
+                // Xu hÆ°á»›ng lá»£i nhuáº­n theo thÃ¡ng (6 thÃ¡ng gáº§n nháº¥t)
                 var monthlyTrend = new List<object>();
                 for (int i = 5; i >= 0; i--)
                 {
                     var monthStart = DateTime.Now.AddMonths(-i).Date.AddDays(1 - DateTime.Now.AddMonths(-i).Day);
                     var monthEnd = monthStart.AddMonths(1);
                     
-                    // Lấy đơn hàng trong tháng (loại trừ đơn hàng đã hủy)
+                    // Láº¥y Ä‘Æ¡n hÃ ng trong thÃ¡ng (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
                     var monthOrders = await _context.Orders
                         .Where(o => o.CreatedAt >= monthStart && o.CreatedAt < monthEnd && 
                                    (o.PaymentStatus == "paid" || o.PaymentStatus == "completed") &&
-                                   o.Status != "cancelled") // Loại trừ đơn hàng đã hủy
+                                   o.Status != "cancelled") // Loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y
                         .Include(o => o.Items)
                         .ToListAsync();
 
                     var monthTotalRevenue = monthOrders.Sum(o => o.TotalAmount);
                     
-                    // Tính chi phí hàng bán cho tháng này
+                    // TÃ­nh chi phÃ­ hÃ ng bÃ¡n cho thÃ¡ng nÃ y
                     decimal monthCostOfGoodsSold = 0;
                     decimal monthTax = 0;
                     
@@ -481,12 +483,12 @@ namespace RetailPointBackend.Controllers
                         foreach (var item in order.Items)
                         {
                             var product = products.FirstOrDefault(p => p.ProductId == item.ProductId);
-                            var costPrice = product?.CostPrice ?? (item.Price * 0.6m); // Fallback 60% nếu không có CostPrice
+                            var costPrice = product?.CostPrice ?? (item.Price * 0.6m); // Fallback 60% náº¿u khÃ´ng cÃ³ CostPrice
                             monthCostOfGoodsSold += item.Quantity * costPrice;
                         }
                     }
                     
-                    // Tính lợi nhuận thực tế cho tháng
+                    // TÃ­nh lá»£i nhuáº­n thá»±c táº¿ cho thÃ¡ng
                     var monthRevenueExcludingTax = monthTotalRevenue - monthTax;
                     var monthProfit = monthRevenueExcludingTax - monthCostOfGoodsSold;
                     var monthProfitMargin = monthRevenueExcludingTax > 0 ? (monthProfit / monthRevenueExcludingTax * 100) : 0;
@@ -494,34 +496,34 @@ namespace RetailPointBackend.Controllers
                     monthlyTrend.Add(new
                     {
                         month = monthStart.ToString("MM/yyyy"),
-                        profit = monthProfit.ToString("N0") + "₫",
+                        profit = monthProfit.ToString("N0") + "â‚«",
                         margin = monthProfitMargin.ToString("F1") + "%"
                     });
                 }
 
                 var response = new
                 {
-                    // Doanh thu và thuế
-                    totalRevenueIncludingTax = totalRevenueIncludingTax.ToString("N0") + "₫",
-                    totalRevenueExcludingTax = totalRevenueExcludingTax.ToString("N0") + "₫",
-                    totalTax = totalTax.ToString("N0") + "₫",
+                    // Doanh thu vÃ  thuáº¿
+                    totalRevenueIncludingTax = totalRevenueIncludingTax.ToString("N0") + "â‚«",
+                    totalRevenueExcludingTax = totalRevenueExcludingTax.ToString("N0") + "â‚«",
+                    totalTax = totalTax.ToString("N0") + "â‚«",
                     vatRate = taxConfig.EnableVAT ? taxConfig.VATRate.ToString("F1") + "%" : "0%",
                     
-                    // Lợi nhuận đơn giản
-                    costOfGoodsSold = costOfGoodsSold.ToString("N0") + "₫",
-                    profitBeforeTax = profitBeforeTax.ToString("N0") + "₫",
-                    profitAfterTax = profitAfterTax.ToString("N0") + "₫",
+                    // Lá»£i nhuáº­n Ä‘Æ¡n giáº£n
+                    costOfGoodsSold = costOfGoodsSold.ToString("N0") + "â‚«",
+                    profitBeforeTax = profitBeforeTax.ToString("N0") + "â‚«",
+                    profitAfterTax = profitAfterTax.ToString("N0") + "â‚«",
                     profitMargin = profitMargin.ToString("F1") + "%",
-                    totalLoss = totalLoss.ToString("N0") + "₫",
+                    totalLoss = totalLoss.ToString("N0") + "â‚«",
                     
-                    // Thông tin giảm giá
-                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "₫",
-                    actualProfit = actualProfit.ToString("N0") + "₫",
+                    // ThÃ´ng tin giáº£m giÃ¡
+                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "â‚«",
+                    actualProfit = actualProfit.ToString("N0") + "â‚«",
                     actualProfitMargin = actualProfitMargin.ToString("F1") + "%",
                     discountImpact = totalRevenue > 0 ? (totalDiscountAmount / totalRevenue * 100).ToString("F1") + "%" : "0%",
                     
-                    // Giữ lại cho tương thích
-                    totalProfit = profitAfterTax.ToString("N0") + "₫",
+                    // Giá»¯ láº¡i cho tÆ°Æ¡ng thÃ­ch
+                    totalProfit = profitAfterTax.ToString("N0") + "â‚«",
                     profitableProducts = profitableProducts,
                     topProfitableProducts = profitableProducts, // Alias cho frontend
                     monthlyTrend = monthlyTrend
@@ -531,7 +533,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải phân tích lợi nhuận", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº£i phÃ¢n tÃ­ch lá»£i nhuáº­n", error = ex.Message });
             }
         }
 
@@ -571,10 +573,10 @@ namespace RetailPointBackend.Controllers
                 {
                     OrderId = order.OrderId,
                     OrderNumber = order.OrderNumber,
-                    CustomerName = order.CustomerName ?? order.Customer?.HoTen ?? "Khách lẻ",
+                    CustomerName = order.CustomerName ?? order.Customer?.HoTen ?? "KhÃ¡ch láº»",
                     CreatedAt = order.CreatedAt,
                     CancelledAt = order.CreatedAt, // Assuming cancellation time is tracked in CreatedAt for now
-                    CancellationReason = order.CancellationReason ?? "Không có lý do",
+                    CancellationReason = order.CancellationReason ?? "KhÃ´ng cÃ³ lÃ½ do",
                     TotalAmount = order.TotalAmount,
                     SubTotal = order.SubTotal,
                     TaxAmount = order.TaxAmount,
@@ -622,7 +624,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải báo cáo hủy hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi táº£i bÃ¡o cÃ¡o há»§y hÃ ng", error = ex.Message });
             }
         }
     }

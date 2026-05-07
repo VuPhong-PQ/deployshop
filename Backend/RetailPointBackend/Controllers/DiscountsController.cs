@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class DiscountsController : ControllerBase
@@ -160,7 +162,7 @@ namespace RetailPointBackend.Controllers
                     {
                         CanApply = false,
                         DiscountAmount = 0,
-                        Message = "Không thể áp dụng giảm giá này"
+                        Message = "KhÃ´ng thá»ƒ Ã¡p dá»¥ng giáº£m giÃ¡ nÃ y"
                     });
                 }
 

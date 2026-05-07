@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import React, { useState, useEffect } from 'react';
 import { Store } from 'lucide-react';
 
@@ -28,7 +29,8 @@ const StoreInfoHeader: React.FC = () => {
 
   const fetchCurrentStoreInfo = async () => {
     try {
-      const response = await fetch('http://101.53.9.76:5273/api/storeswitch/current-info', {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/storeswitch/current-info`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

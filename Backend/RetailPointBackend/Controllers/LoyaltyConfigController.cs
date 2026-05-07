@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class LoyaltyConfigController : ControllerBase
@@ -25,7 +27,7 @@ namespace RetailPointBackend.Controllers
                 
                 if (config == null)
                 {
-                    // Tạo config mặc định nếu chưa có
+                    // Táº¡o config máº·c Ä‘á»‹nh náº¿u chÆ°a cÃ³
                     config = new LoyaltyConfig();
                     _context.LoyaltyConfigs.Add(config);
                     await _context.SaveChangesAsync();
@@ -35,7 +37,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -74,11 +76,11 @@ namespace RetailPointBackend.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Cập nhật cấu hình tích điểm thành công" });
+                return Ok(new { message = "Cáº­p nháº­t cáº¥u hÃ¬nh tÃ­ch Ä‘iá»ƒm thÃ nh cÃ´ng" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -91,54 +93,54 @@ namespace RetailPointBackend.Controllers
                 var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.IsEnabled)
                 {
-                    return Ok(new { points = 0, message = "Hệ thống tích điểm chưa được kích hoạt" });
+                    return Ok(new { points = 0, message = "Há»‡ thá»‘ng tÃ­ch Ä‘iá»ƒm chÆ°a Ä‘Æ°á»£c kÃ­ch hoáº¡t" });
                 }
 
                 if (amount < config.MinOrderAmountForPoints)
                 {
-                    return Ok(new { points = 0, message = $"Đơn hàng tối thiểu {config.MinOrderAmountForPoints:C0} để tích điểm" });
+                    return Ok(new { points = 0, message = $"ÄÆ¡n hÃ ng tá»‘i thiá»ƒu {config.MinOrderAmountForPoints:C0} Ä‘á»ƒ tÃ­ch Ä‘iá»ƒm" });
                 }
 
                 var basePoints = Math.Floor(amount / config.PointsPerCurrency);
                 var multiplier = 1.0m;
                 var bonusInfo = new List<string>();
 
-                // Kiểm tra Happy Hour
+                // Kiá»ƒm tra Happy Hour
                 if (config.HappyHourEnabled)
                 {
                     var currentTime = DateTime.Now.TimeOfDay;
                     if (currentTime >= config.HappyHourStartTime && currentTime <= config.HappyHourEndTime)
                     {
                         multiplier *= config.HappyHourMultiplier;
-                        bonusInfo.Add($"Giờ vàng x{config.HappyHourMultiplier}");
+                        bonusInfo.Add($"Giá» vÃ ng x{config.HappyHourMultiplier}");
                     }
                 }
 
-                // Kiểm tra Weekend Bonus
+                // Kiá»ƒm tra Weekend Bonus
                 if (config.WeekendBonusEnabled && (DateTime.Now.DayOfWeek == DayOfWeek.Saturday || DateTime.Now.DayOfWeek == DayOfWeek.Sunday))
                 {
                     multiplier *= config.WeekendMultiplier;
-                    bonusInfo.Add($"Cuối tuần x{config.WeekendMultiplier}");
+                    bonusInfo.Add($"Cuá»‘i tuáº§n x{config.WeekendMultiplier}");
                 }
 
-                // Kiểm tra Customer Tier nếu có customerId
+                // Kiá»ƒm tra Customer Tier náº¿u cÃ³ customerId
                 if (customerId.HasValue)
                 {
                     var customer = await _context.Customers.Include(c => c.CustomerTier).FirstOrDefaultAsync(c => c.CustomerId == customerId);
                     if (customer?.CustomerTier != null)
                     {
                         multiplier *= customer.CustomerTier.PointsMultiplier;
-                        bonusInfo.Add($"Hạng {customer.CustomerTier.TierName} x{customer.CustomerTier.PointsMultiplier}");
+                        bonusInfo.Add($"Háº¡ng {customer.CustomerTier.TierName} x{customer.CustomerTier.PointsMultiplier}");
                     }
                 }
 
                 var finalPoints = (int)Math.Floor(basePoints * multiplier);
 
-                // Áp dụng giới hạn điểm tối đa
+                // Ãp dá»¥ng giá»›i háº¡n Ä‘iá»ƒm tá»‘i Ä‘a
                 if (config.MaxPointsPerOrder.HasValue && finalPoints > config.MaxPointsPerOrder.Value)
                 {
                     finalPoints = config.MaxPointsPerOrder.Value;
-                    bonusInfo.Add($"Giới hạn tối đa {config.MaxPointsPerOrder.Value} điểm/đơn");
+                    bonusInfo.Add($"Giá»›i háº¡n tá»‘i Ä‘a {config.MaxPointsPerOrder.Value} Ä‘iá»ƒm/Ä‘Æ¡n");
                 }
 
                 return Ok(new 
@@ -147,12 +149,12 @@ namespace RetailPointBackend.Controllers
                     basePoints = (int)basePoints,
                     multiplier = multiplier,
                     bonusInfo = bonusInfo,
-                    formula = $"{amount:C0} ÷ {config.PointsPerCurrency:C0} × {multiplier} = {finalPoints} điểm"
+                    formula = $"{amount:C0} Ã· {config.PointsPerCurrency:C0} Ã— {multiplier} = {finalPoints} Ä‘iá»ƒm"
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
     }

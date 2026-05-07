@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using RetailPointBackend.Models;
@@ -9,6 +10,7 @@ using System.Text.Json.Serialization;
 namespace RetailPointBackend.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class DataManagementController : ControllerBase
     {
@@ -26,7 +28,7 @@ namespace RetailPointBackend.Controllers
             _permissionService = permissionService;
         }
 
-        // Correct order delete method - theo đúng foreign key dependencies
+        // Correct order delete method - theo Ä‘Ãºng foreign key dependencies
         [HttpDelete("sales-data-correct-order")]
         public async Task<IActionResult> DeleteSalesDataCorrectOrder([FromBody] DeleteConfirmationDto confirmation)
         {
@@ -37,12 +39,12 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "DeleteSalesData"))
                 // {
-                //     return Forbid("Bạn không có quyền xóa dữ liệu bán hàng");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
                 // }
 
                 if (confirmation.ConfirmationText != "DELETE SALES DATA")
                 {
-                    return BadRequest(new { message = "Vui lòng nhập đúng text xác nhận: DELETE SALES DATA" });
+                    return BadRequest(new { message = "Vui lÃ²ng nháº­p Ä‘Ãºng text xÃ¡c nháº­n: DELETE SALES DATA" });
                 }
 
                 var result = new List<object>();
@@ -56,7 +58,7 @@ namespace RetailPointBackend.Controllers
                     {
                         try
                         {
-                            // Xóa theo thứ tự đúng dựa trên foreign key dependencies
+                            // XÃ³a theo thá»© tá»± Ä‘Ãºng dá»±a trÃªn foreign key dependencies
                             
                             // 1. EInvoiceItems (child of EInvoices, OrderItems, Products)
                             var eInvoiceItemsCmd = new SqlCommand("SELECT COUNT(*) FROM EInvoiceItems", connection, transaction);
@@ -138,7 +140,7 @@ namespace RetailPointBackend.Controllers
 
                             return Ok(new 
                             { 
-                                message = "Đã xóa dữ liệu bán hàng thành công (correct order method)", 
+                                message = "ÄÃ£ xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng thÃ nh cÃ´ng (correct order method)", 
                                 details = result,
                                 timestamp = DateTime.Now 
                             });
@@ -146,7 +148,7 @@ namespace RetailPointBackend.Controllers
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng (correct order)");
+                            _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng (correct order)");
                             throw;
                         }
                     }
@@ -154,12 +156,12 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng (correct order)");
-                return StatusCode(500, new { message = "Lỗi khi xóa dữ liệu bán hàng", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng (correct order)");
+                return StatusCode(500, new { message = "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // Debug endpoint để xem foreign key constraints
+        // Debug endpoint Ä‘á»ƒ xem foreign key constraints
         [HttpGet("foreign-keys")]
         public async Task<IActionResult> GetForeignKeys()
         {
@@ -211,8 +213,8 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy foreign keys");
-                return StatusCode(500, new { message = "Lỗi khi lấy foreign keys", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y foreign keys");
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y foreign keys", error = ex.Message });
             }
         }
 
@@ -227,19 +229,19 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "DownloadBackup"))
                 // {
-                //     return Forbid("Bạn không có quyền download backup");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n download backup");
                 // }
 
-                // Validate filename để tránh path traversal
+                // Validate filename Ä‘á»ƒ trÃ¡nh path traversal
                 if (string.IsNullOrWhiteSpace(fileName) || 
                     fileName.Contains("..") || 
                     fileName.Contains("\\") || 
                     fileName.Contains("/"))
                 {
-                    return BadRequest(new { message = "Tên file không hợp lệ" });
+                    return BadRequest(new { message = "TÃªn file khÃ´ng há»£p lá»‡" });
                 }
 
-                // Tìm file trong các thư mục backup có thể
+                // TÃ¬m file trong cÃ¡c thÆ° má»¥c backup cÃ³ thá»ƒ
                 var possiblePaths = new[]
                 {
                     Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "backups", fileName),
@@ -249,7 +251,7 @@ namespace RetailPointBackend.Controllers
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName)
                 };
 
-                // Tìm file từ lịch sử backup
+                // TÃ¬m file tá»« lá»‹ch sá»­ backup
                 var backupHistory = await _context.BackupHistories
                     .Where(bh => bh.FileName == fileName && bh.Status == "Success")
                     .OrderByDescending(bh => bh.BackupDate)
@@ -257,7 +259,7 @@ namespace RetailPointBackend.Controllers
 
                 string filePath = null;
 
-                // Ưu tiên đường dẫn từ lịch sử backup
+                // Æ¯u tiÃªn Ä‘Æ°á»ng dáº«n tá»« lá»‹ch sá»­ backup
                 if (backupHistory != null && !string.IsNullOrEmpty(backupHistory.FilePath) && 
                     System.IO.File.Exists(backupHistory.FilePath))
                 {
@@ -265,13 +267,13 @@ namespace RetailPointBackend.Controllers
                 }
                 else
                 {
-                    // Tìm trong các đường dẫn có thể
+                    // TÃ¬m trong cÃ¡c Ä‘Æ°á»ng dáº«n cÃ³ thá»ƒ
                     filePath = possiblePaths.FirstOrDefault(path => System.IO.File.Exists(path));
                 }
 
                 if (filePath == null)
                 {
-                    return NotFound(new { message = $"Không tìm thấy file backup: {fileName}" });
+                    return NotFound(new { message = $"KhÃ´ng tÃ¬m tháº¥y file backup: {fileName}" });
                 }
 
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
@@ -288,8 +290,8 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi download backup file: {FileName}", fileName);
-                return StatusCode(500, new { message = "Lỗi khi download backup file", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi download backup file: {FileName}", fileName);
+                return StatusCode(500, new { message = "Lá»—i khi download backup file", error = ex.Message });
             }
         }
 
@@ -309,7 +311,7 @@ namespace RetailPointBackend.Controllers
             }
         }
 
-        // Backup với tùy chọn download trực tiếp
+        // Backup vá»›i tÃ¹y chá»n download trá»±c tiáº¿p
         [HttpPost("backup-and-download")]
         public async Task<IActionResult> BackupAndDownload()
         {
@@ -320,7 +322,7 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "BackupDatabase"))
                 // {
-                //     return Forbid("Bạn không có quyền sao lưu dữ liệu");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n sao lÆ°u dá»¯ liá»‡u");
                 // }
                 
                 _logger.LogInformation("Starting backup-and-download operation");
@@ -329,7 +331,7 @@ namespace RetailPointBackend.Controllers
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     _logger.LogError("Connection string is null or empty");
-                    return BadRequest(new { message = "Connection string không được cấu hình" });
+                    return BadRequest(new { message = "Connection string khÃ´ng Ä‘Æ°á»£c cáº¥u hÃ¬nh" });
                 }
                 
                 var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
@@ -337,14 +339,14 @@ namespace RetailPointBackend.Controllers
                 
                 _logger.LogInformation($"Database name: {databaseName}");
 
-                // Tạo tên file backup với timestamp
+                // Táº¡o tÃªn file backup vá»›i timestamp
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var backupFileName = $"{databaseName}_backup_{timestamp}.bak";
                 
-                // Sử dụng C:\temp - thư mục có quyền ghi rộng rãi
+                // Sá»­ dá»¥ng C:\temp - thÆ° má»¥c cÃ³ quyá»n ghi rá»™ng rÃ£i
                 string tempBackupPath;
                 
-                // Tạo thư mục C:\temp nếu chưa tồn tại
+                // Táº¡o thÆ° má»¥c C:\temp náº¿u chÆ°a tá»“n táº¡i
                 var tempDir = @"C:\temp";
                 if (!Directory.Exists(tempDir))
                 {
@@ -354,7 +356,7 @@ namespace RetailPointBackend.Controllers
                 tempBackupPath = Path.Combine(tempDir, backupFileName);
                 _logger.LogInformation($"Using C:\\temp directory for backup: {tempBackupPath}");
 
-                // Câu lệnh backup SQL
+                // CÃ¢u lá»‡nh backup SQL
                 var backupQuery = $@"
                     BACKUP DATABASE [{databaseName}] 
                     TO DISK = '{tempBackupPath}' 
@@ -367,20 +369,20 @@ namespace RetailPointBackend.Controllers
                     await connection.OpenAsync();
                     using (var command = new SqlCommand(backupQuery, connection))
                     {
-                        command.CommandTimeout = 300; // 5 phút timeout
+                        command.CommandTimeout = 300; // 5 phÃºt timeout
                         await command.ExecuteNonQueryAsync();
                     }
                 }
                 _logger.LogInformation("Backup command completed");
 
-                // Kiểm tra file có tồn tại không
+                // Kiá»ƒm tra file cÃ³ tá»“n táº¡i khÃ´ng
                 if (!System.IO.File.Exists(tempBackupPath))
                 {
                     _logger.LogError($"Backup file not found at: {tempBackupPath}");
-                    return StatusCode(500, new { message = "File backup không được tạo" });
+                    return StatusCode(500, new { message = "File backup khÃ´ng Ä‘Æ°á»£c táº¡o" });
                 }
 
-                // Lấy thông tin file backup
+                // Láº¥y thÃ´ng tin file backup
                 var fileInfo = new FileInfo(tempBackupPath);
                 var fileSizeMB = Math.Round(fileInfo.Length / (1024.0 * 1024.0), 2);
                 _logger.LogInformation($"Backup file size: {fileSizeMB} MB");
@@ -388,11 +390,11 @@ namespace RetailPointBackend.Controllers
                 // Skip saving backup history for now to avoid database issues
                 _logger.LogInformation("Skipping backup history save for debugging");
 
-                // Đọc file để download
+                // Äá»c file Ä‘á»ƒ download
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(tempBackupPath);
                 _logger.LogInformation($"File read successfully, {fileBytes.Length} bytes");
                 
-                // Xóa file tạm sau khi đọc
+                // XÃ³a file táº¡m sau khi Ä‘á»c
                 try
                 {
                     System.IO.File.Delete(tempBackupPath);
@@ -400,53 +402,53 @@ namespace RetailPointBackend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Không thể xóa file tạm: {TempPath}", tempBackupPath);
+                    _logger.LogWarning(ex, "KhÃ´ng thá»ƒ xÃ³a file táº¡m: {TempPath}", tempBackupPath);
                 }
 
-                // Thiết lập Content-Disposition header cho download
+                // Thiáº¿t láº­p Content-Disposition header cho download
                 Response.Headers.Add("Content-Disposition", $"attachment; filename=\"{backupFileName}\"");
                 
                 return File(fileBytes, "application/octet-stream", backupFileName);
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogError(ex, "Lỗi quyền truy cập khi backup và download database");
+                _logger.LogError(ex, "Lá»—i quyá»n truy cáº­p khi backup vÃ  download database");
                 return StatusCode(500, new { 
-                    message = "Không có quyền truy cập thư mục backup", 
-                    error = "Server không có quyền ghi vào thư mục. Vui lòng liên hệ quản trị viên.",
+                    message = "KhÃ´ng cÃ³ quyá»n truy cáº­p thÆ° má»¥c backup", 
+                    error = "Server khÃ´ng cÃ³ quyá»n ghi vÃ o thÆ° má»¥c. Vui lÃ²ng liÃªn há»‡ quáº£n trá»‹ viÃªn.",
                     details = ex.Message 
                 });
             }
             catch (DirectoryNotFoundException ex)
             {
-                _logger.LogError(ex, "Không tìm thấy thư mục backup");
+                _logger.LogError(ex, "KhÃ´ng tÃ¬m tháº¥y thÆ° má»¥c backup");
                 return StatusCode(500, new { 
-                    message = "Thư mục backup không tồn tại", 
-                    error = "Không thể tạo thư mục backup. Vui lòng liên hệ quản trị viên.",
+                    message = "ThÆ° má»¥c backup khÃ´ng tá»“n táº¡i", 
+                    error = "KhÃ´ng thá»ƒ táº¡o thÆ° má»¥c backup. Vui lÃ²ng liÃªn há»‡ quáº£n trá»‹ viÃªn.",
                     details = ex.Message 
                 });
             }
             catch (SqlException ex)
             {
-                _logger.LogError(ex, "Lỗi SQL khi backup database");
+                _logger.LogError(ex, "Lá»—i SQL khi backup database");
                 return StatusCode(500, new { 
-                    message = "Lỗi database khi tạo backup", 
-                    error = "Kiểm tra kết nối database và quyền backup",
+                    message = "Lá»—i database khi táº¡o backup", 
+                    error = "Kiá»ƒm tra káº¿t ná»‘i database vÃ  quyá»n backup",
                     details = ex.Message 
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi backup và download database");
+                _logger.LogError(ex, "Lá»—i khi backup vÃ  download database");
                 return StatusCode(500, new { 
-                    message = "Lỗi khi backup và download database", 
+                    message = "Lá»—i khi backup vÃ  download database", 
                     error = ex.Message, 
                     details = ex.ToString() 
                 });
             }
         }
 
-        // Debug endpoint để kiểm tra request
+        // Debug endpoint Ä‘á»ƒ kiá»ƒm tra request
         [HttpPost("debug-backup-path")]
         public IActionResult DebugBackupPath([FromBody] BackupRequestDto request)
         {
@@ -458,7 +460,7 @@ namespace RetailPointBackend.Controllers
             });
         }
 
-        // Test backup endpoint để kiểm tra SQL Server permissions
+        // Test backup endpoint Ä‘á»ƒ kiá»ƒm tra SQL Server permissions
         [HttpPost("test-backup")]
         public async Task<IActionResult> TestBackup()
         {
@@ -472,7 +474,7 @@ namespace RetailPointBackend.Controllers
                 var testFileName = $"test_backup_{timestamp}.bak";
                 var backupDir = @"C:\temp";
                 
-                // Tạo thư mục nếu chưa tồn tại
+                // Táº¡o thÆ° má»¥c náº¿u chÆ°a tá»“n táº¡i
                 if (!Directory.Exists(backupDir))
                 {
                     Directory.CreateDirectory(backupDir);
@@ -511,7 +513,7 @@ namespace RetailPointBackend.Controllers
                 return Ok(new 
                 { 
                     success = true,
-                    message = "Test backup thành công",
+                    message = "Test backup thÃ nh cÃ´ng",
                     backupPath = testBackupPath,
                     fileWasCreated = fileExists,
                     fileSize = fileSize
@@ -523,14 +525,14 @@ namespace RetailPointBackend.Controllers
                 return StatusCode(500, new 
                 { 
                     success = false,
-                    message = "Test backup thất bại", 
+                    message = "Test backup tháº¥t báº¡i", 
                     error = ex.Message,
                     details = ex.ToString()
                 });
             }
         }
 
-        // Debug endpoint để kiểm tra SQL Server backup directory
+        // Debug endpoint Ä‘á»ƒ kiá»ƒm tra SQL Server backup directory
         [HttpGet("debug-sql-backup-dir")]
         public async Task<IActionResult> DebugSqlBackupDir()
         {
@@ -570,7 +572,7 @@ namespace RetailPointBackend.Controllers
             }
         }
 
-        // Backup toàn bộ database
+        // Backup toÃ n bá»™ database
         [HttpPost("backup")]
         public async Task<IActionResult> BackupDatabase([FromBody] BackupRequestDto request)
         {
@@ -581,7 +583,7 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "BackupDatabase"))
                 // {
-                //     return Forbid("Bạn không có quyền sao lưu dữ liệu");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n sao lÆ°u dá»¯ liá»‡u");
                 // }
                 
                 _logger.LogInformation($"Backup request received - BackupPath: '{request.BackupPath}'");
@@ -591,19 +593,19 @@ namespace RetailPointBackend.Controllers
                 var databaseName = sqlConnectionStringBuilder.InitialCatalog;
                 var serverName = sqlConnectionStringBuilder.DataSource;
 
-                // Tạo tên file backup với timestamp
+                // Táº¡o tÃªn file backup vá»›i timestamp
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var backupFileName = $"{databaseName}_backup_{timestamp}.bak";
                 
                 string backupPath;
                 if (!string.IsNullOrWhiteSpace(request.BackupPath))
                 {
-                    // Sử dụng đường dẫn do người dùng chỉ định
+                    // Sá»­ dá»¥ng Ä‘Æ°á»ng dáº«n do ngÆ°á»i dÃ¹ng chá»‰ Ä‘á»‹nh
                     backupPath = Path.Combine(request.BackupPath, backupFileName);
                 }
                 else
                 {
-                    // Sử dụng C:\temp - thư mục có quyền ghi rộng rãi
+                    // Sá»­ dá»¥ng C:\temp - thÆ° má»¥c cÃ³ quyá»n ghi rá»™ng rÃ£i
                     var tempDir = @"C:\temp";
                     if (!Directory.Exists(tempDir))
                     {
@@ -616,7 +618,7 @@ namespace RetailPointBackend.Controllers
                 
                 _logger.LogInformation($"Final backup path: '{backupPath}");
 
-                // Câu lệnh backup SQL
+                // CÃ¢u lá»‡nh backup SQL
                 var backupQuery = $@"
                     BACKUP DATABASE [{databaseName}] 
                     TO DISK = '{backupPath}' 
@@ -628,16 +630,16 @@ namespace RetailPointBackend.Controllers
                     await connection.OpenAsync();
                     using (var command = new SqlCommand(backupQuery, connection))
                     {
-                        command.CommandTimeout = 300; // 5 phút timeout
+                        command.CommandTimeout = 300; // 5 phÃºt timeout
                         await command.ExecuteNonQueryAsync();
                     }
                 }
 
-                // Lấy thông tin file backup
+                // Láº¥y thÃ´ng tin file backup
                 var fileInfo = new FileInfo(backupPath);
                 var fileSizeMB = Math.Round(fileInfo.Length / (1024.0 * 1024.0), 2);
 
-                // Lưu lịch sử backup vào database
+                // LÆ°u lá»‹ch sá»­ backup vÃ o database
                 var backupHistory = new BackupHistory
                 {
                     BackupDate = DateTime.Now,
@@ -646,14 +648,14 @@ namespace RetailPointBackend.Controllers
                     FileName = backupFileName,
                     FileSizeMB = fileSizeMB,
                     Status = "Success",
-                    Note = "Backup thủ công từ Data Management"
+                    Note = "Backup thá»§ cÃ´ng tá»« Data Management"
                 };
 
                 _context.BackupHistories.Add(backupHistory);
                 await _context.SaveChangesAsync();
 
                 return Ok(new { 
-                    message = "Backup database thành công", 
+                    message = "Backup database thÃ nh cÃ´ng", 
                     backupPath = backupPath,
                     fileName = backupFileName,
                     timestamp = timestamp,
@@ -662,36 +664,36 @@ namespace RetailPointBackend.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogError(ex, "Lỗi quyền truy cập khi backup database");
+                _logger.LogError(ex, "Lá»—i quyá»n truy cáº­p khi backup database");
                 return StatusCode(500, new { 
-                    message = "Không có quyền truy cập thư mục backup", 
-                    error = "Vui lòng kiểm tra quyền ghi file hoặc chọn thư mục khác",
+                    message = "KhÃ´ng cÃ³ quyá»n truy cáº­p thÆ° má»¥c backup", 
+                    error = "Vui lÃ²ng kiá»ƒm tra quyá»n ghi file hoáº·c chá»n thÆ° má»¥c khÃ¡c",
                     details = ex.Message 
                 });
             }
             catch (DirectoryNotFoundException ex)
             {
-                _logger.LogError(ex, "Không tìm thấy thư mục backup");
+                _logger.LogError(ex, "KhÃ´ng tÃ¬m tháº¥y thÆ° má»¥c backup");
                 return StatusCode(500, new { 
-                    message = "Thư mục backup không tồn tại", 
-                    error = "Vui lòng tạo thư mục hoặc chọn đường dẫn khác",
+                    message = "ThÆ° má»¥c backup khÃ´ng tá»“n táº¡i", 
+                    error = "Vui lÃ²ng táº¡o thÆ° má»¥c hoáº·c chá»n Ä‘Æ°á»ng dáº«n khÃ¡c",
                     details = ex.Message 
                 });
             }
             catch (SqlException ex)
             {
-                _logger.LogError(ex, "Lỗi SQL khi backup database");
+                _logger.LogError(ex, "Lá»—i SQL khi backup database");
                 return StatusCode(500, new { 
-                    message = "Lỗi database khi tạo backup", 
-                    error = "Kiểm tra kết nối database và quyền backup",
+                    message = "Lá»—i database khi táº¡o backup", 
+                    error = "Kiá»ƒm tra káº¿t ná»‘i database vÃ  quyá»n backup",
                     details = ex.Message 
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi backup database");
+                _logger.LogError(ex, "Lá»—i khi backup database");
                 return StatusCode(500, new { 
-                    message = "Lỗi khi backup database", 
+                    message = "Lá»—i khi backup database", 
                     error = ex.Message,
                     details = ex.ToString() 
                 });
@@ -709,7 +711,7 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "RestoreDatabase"))
                 // {
-                //     return Forbid("Bạn không có quyền xem danh sách backup");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xem danh sÃ¡ch backup");
                 // }
 
                 var backupDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "backups");
@@ -737,8 +739,8 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy danh sách backup files");
-                return StatusCode(500, new { message = "Lỗi khi lấy danh sách backup files", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y danh sÃ¡ch backup files");
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y danh sÃ¡ch backup files", error = ex.Message });
             }
         }
 
@@ -753,7 +755,7 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "ViewDataManagement"))
                 // {
-                //     return Forbid("Bạn không có quyền xem lịch sử backup");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xem lá»‹ch sá»­ backup");
                 // }
 
                 var history = await _context.BackupHistories
@@ -775,8 +777,8 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy lịch sử backup");
-                return StatusCode(500, new { message = "Lỗi khi lấy lịch sử backup", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y lá»‹ch sá»­ backup");
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y lá»‹ch sá»­ backup", error = ex.Message });
             }
         }
 
@@ -791,12 +793,12 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "RestoreDatabase"))
                 // {
-                //     return Forbid("Bạn không có quyền phục hồi dữ liệu");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n phá»¥c há»“i dá»¯ liá»‡u");
                 // }
 
                 if (file == null || file.Length == 0)
                 {
-                    return BadRequest(new { message = "Vui lòng chọn file backup" });
+                    return BadRequest(new { message = "Vui lÃ²ng chá»n file backup" });
                 }
 
                 // Validate file extension
@@ -804,7 +806,7 @@ namespace RetailPointBackend.Controllers
                 var fileExtension = Path.GetExtension(file.FileName).ToLower();
                 if (!allowedExtensions.Contains(fileExtension))
                 {
-                    return BadRequest(new { message = "Chỉ chấp nhận file .bak hoặc .sql" });
+                    return BadRequest(new { message = "Chá»‰ cháº¥p nháº­n file .bak hoáº·c .sql" });
                 }
 
                 // Create backup directory if it doesn't exist
@@ -822,7 +824,7 @@ namespace RetailPointBackend.Controllers
                 }
 
                 return Ok(new { 
-                    message = "Upload file backup thành công",
+                    message = "Upload file backup thÃ nh cÃ´ng",
                     filePath = filePath,
                     fileName = fileName,
                     originalName = file.FileName,
@@ -831,12 +833,12 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi upload backup file");
-                return StatusCode(500, new { message = "Lỗi khi upload backup file", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi upload backup file");
+                return StatusCode(500, new { message = "Lá»—i khi upload backup file", error = ex.Message });
             }
         }
 
-        // Restore database từ file backup
+        // Restore database tá»« file backup
         [HttpPost("restore")]
         public async Task<IActionResult> RestoreDatabase([FromBody] RestoreRequestDto request)
         {
@@ -847,20 +849,20 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "RestoreDatabase"))
                 // {
-                //     return Forbid("Bạn không có quyền phục hồi dữ liệu");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n phá»¥c há»“i dá»¯ liá»‡u");
                 // }
 
                 if (string.IsNullOrWhiteSpace(request.BackupFilePath))
                 {
-                    return BadRequest(new { message = "Đường dẫn file backup không được để trống" });
+                    return BadRequest(new { message = "ÄÆ°á»ng dáº«n file backup khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng" });
                 }
 
                 if (!System.IO.File.Exists(request.BackupFilePath))
                 {
                     return BadRequest(new { 
-                        message = "File backup không tồn tại", 
+                        message = "File backup khÃ´ng tá»“n táº¡i", 
                         filePath = request.BackupFilePath,
-                        suggestion = "Vui lòng upload file backup trước khi thực hiện restore"
+                        suggestion = "Vui lÃ²ng upload file backup trÆ°á»›c khi thá»±c hiá»‡n restore"
                     });
                 }
 
@@ -880,7 +882,7 @@ namespace RetailPointBackend.Controllers
                     InitialCatalog = "master"
                 }.ConnectionString;
 
-                // Đóng tất cả kết nối đến database bằng cách kill sessions
+                // ÄÃ³ng táº¥t cáº£ káº¿t ná»‘i Ä‘áº¿n database báº±ng cÃ¡ch kill sessions
                 var killConnectionsQuery = $@"
                     DECLARE @kill varchar(8000) = '';  
                     SELECT @kill = @kill + 'KILL ' + CONVERT(varchar(5), session_id) + ';'  
@@ -888,7 +890,7 @@ namespace RetailPointBackend.Controllers
                     WHERE database_id = DB_ID('{databaseName}') AND session_id <> @@SPID;
                     EXEC(@kill);";
 
-                // Câu lệnh restore SQL với REPLACE để ghi đè database hiện tại
+                // CÃ¢u lá»‡nh restore SQL vá»›i REPLACE Ä‘á»ƒ ghi Ä‘Ã¨ database hiá»‡n táº¡i
                 var restoreQuery = $@"
                     RESTORE DATABASE [{databaseName}] 
                     FROM DISK = N'{request.BackupFilePath}' 
@@ -897,7 +899,7 @@ namespace RetailPointBackend.Controllers
                 _logger.LogInformation("Starting database restore process for file: {FilePath}", request.BackupFilePath);
                 _logger.LogInformation("Restore SQL Query: {Query}", restoreQuery);
 
-                // Đóng Entity Framework connection trước
+                // ÄÃ³ng Entity Framework connection trÆ°á»›c
                 try 
                 {
                     await _context.Database.CloseConnectionAsync();
@@ -915,7 +917,7 @@ namespace RetailPointBackend.Controllers
                         await connection.OpenAsync();
                         _logger.LogInformation("Connected to master database");
                         
-                        // Đóng các kết nối khác trước
+                        // ÄÃ³ng cÃ¡c káº¿t ná»‘i khÃ¡c trÆ°á»›c
                         _logger.LogInformation("Killing active connections to database");
                         using (var killCommand = new SqlCommand(killConnectionsQuery, connection))
                         {
@@ -937,7 +939,7 @@ namespace RetailPointBackend.Controllers
                         _logger.LogInformation("Starting database restore...");
                         using (var restoreCommand = new SqlCommand(restoreQuery, connection))
                         {
-                            restoreCommand.CommandTimeout = 600; // 10 phút timeout
+                            restoreCommand.CommandTimeout = 600; // 10 phÃºt timeout
                             await restoreCommand.ExecuteNonQueryAsync();
                         }
                         _logger.LogInformation("Database restore completed successfully");
@@ -954,7 +956,7 @@ namespace RetailPointBackend.Controllers
                     throw;
                 }
 
-                // Làm sạch Entity Framework context sau khi restore thành công
+                // LÃ m sáº¡ch Entity Framework context sau khi restore thÃ nh cÃ´ng
                 try
                 {
                     _logger.LogInformation("Cleaning up Entity Framework context after restore");
@@ -967,13 +969,13 @@ namespace RetailPointBackend.Controllers
                 }
 
                 return Ok(new { 
-                    message = "Restore database thành công",
+                    message = "Restore database thÃ nh cÃ´ng",
                     restoredFrom = request.BackupFilePath
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi restore database. File: {BackupFilePath}, Error: {ErrorMessage}", request.BackupFilePath, ex.Message);
+                _logger.LogError(ex, "Lá»—i khi restore database. File: {BackupFilePath}, Error: {ErrorMessage}", request.BackupFilePath, ex.Message);
                 
                 // Try to set database back to multi-user if single-user was set
                 try
@@ -1002,7 +1004,7 @@ namespace RetailPointBackend.Controllers
                 }
 
                 return StatusCode(500, new { 
-                    message = "Lỗi khi restore database", 
+                    message = "Lá»—i khi restore database", 
                     error = ex.Message,
                     details = ex.InnerException?.Message,
                     filePath = request.BackupFilePath
@@ -1010,7 +1012,7 @@ namespace RetailPointBackend.Controllers
             }
         }
 
-        // Simple delete method - xóa một cách an toàn
+        // Simple delete method - xÃ³a má»™t cÃ¡ch an toÃ n
         [HttpDelete("sales-data-simple")]
         public async Task<IActionResult> DeleteSalesDataSimple([FromBody] DeleteConfirmationDto confirmation)
         {
@@ -1021,20 +1023,20 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "DeleteSalesData"))
                 // {
-                //     return Forbid("Bạn không có quyền xóa dữ liệu bán hàng");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
                 // }
 
                 if (confirmation.ConfirmationText != "DELETE SALES DATA")
                 {
-                    return BadRequest(new { message = "Vui lòng nhập đúng text xác nhận: DELETE SALES DATA" });
+                    return BadRequest(new { message = "Vui lÃ²ng nháº­p Ä‘Ãºng text xÃ¡c nháº­n: DELETE SALES DATA" });
                 }
 
                 var result = new List<object>();
 
-                // Xóa từng bảng một cách đơn giản
+                // XÃ³a tá»«ng báº£ng má»™t cÃ¡ch Ä‘Æ¡n giáº£n
                 try
                 {
-                    // 1. Đếm records trước khi xóa
+                    // 1. Äáº¿m records trÆ°á»›c khi xÃ³a
                     var orderItemsCount = await _context.OrderItems.CountAsync();
                     var ordersCount = await _context.Orders.CountAsync();
                     var customersCount = await _context.Customers.CountAsync();
@@ -1042,7 +1044,7 @@ namespace RetailPointBackend.Controllers
 
                     result.Add(new { action = "count_before", orderItems = orderItemsCount, orders = ordersCount, customers = customersCount, inventory = inventoryCount });
 
-                    // 2. Xóa OrderItems
+                    // 2. XÃ³a OrderItems
                     if (orderItemsCount > 0)
                     {
                         var orderItems = await _context.OrderItems.ToListAsync();
@@ -1051,7 +1053,7 @@ namespace RetailPointBackend.Controllers
                         result.Add(new { action = "deleted", table = "OrderItems", count = orderItemsCount });
                     }
 
-                    // 3. Xóa Orders
+                    // 3. XÃ³a Orders
                     if (ordersCount > 0)
                     {
                         var orders = await _context.Orders.ToListAsync();
@@ -1060,7 +1062,7 @@ namespace RetailPointBackend.Controllers
                         result.Add(new { action = "deleted", table = "Orders", count = ordersCount });
                     }
 
-                    // 4. Xóa Customers
+                    // 4. XÃ³a Customers
                     if (customersCount > 0)
                     {
                         var customers = await _context.Customers.ToListAsync();
@@ -1069,7 +1071,7 @@ namespace RetailPointBackend.Controllers
                         result.Add(new { action = "deleted", table = "Customers", count = customersCount });
                     }
 
-                    // 5. Xóa InventoryTransactions
+                    // 5. XÃ³a InventoryTransactions
                     if (inventoryCount > 0)
                     {
                         var inventory = await _context.InventoryTransactions.ToListAsync();
@@ -1087,7 +1089,7 @@ namespace RetailPointBackend.Controllers
                     await _context.SaveChangesAsync();
                     result.Add(new { action = "reset", table = "Products", count = productsToReset.Count });
 
-                    // 7. Đếm lại để kiểm tra
+                    // 7. Äáº¿m láº¡i Ä‘á»ƒ kiá»ƒm tra
                     var remainingOrderItems = await _context.OrderItems.CountAsync();
                     var remainingOrders = await _context.Orders.CountAsync();
                     var remainingCustomers = await _context.Customers.CountAsync();
@@ -1100,25 +1102,25 @@ namespace RetailPointBackend.Controllers
                     return Ok(new
                     {
                         success = success,
-                        message = success ? "Xóa dữ liệu bán hàng thành công!" : "Có một số dữ liệu chưa được xóa hoàn toàn",
+                        message = success ? "XÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng thÃ nh cÃ´ng!" : "CÃ³ má»™t sá»‘ dá»¯ liá»‡u chÆ°a Ä‘Æ°á»£c xÃ³a hoÃ n toÃ n",
                         details = result,
                         timestamp = DateTime.Now
                     });
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng đơn giản");
-                    return StatusCode(500, new { message = "Lỗi khi xóa dữ liệu", error = ex.Message, details = result });
+                    _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng Ä‘Æ¡n giáº£n");
+                    return StatusCode(500, new { message = "Lá»—i khi xÃ³a dá»¯ liá»‡u", error = ex.Message, details = result });
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi tổng quát khi xóa dữ liệu bán hàng");
-                return StatusCode(500, new { message = "Lỗi khi xóa dữ liệu bán hàng", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i tá»•ng quÃ¡t khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
+                return StatusCode(500, new { message = "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // Ultra safe delete method - xóa từng record một
+        // Ultra safe delete method - xÃ³a tá»«ng record má»™t
         [HttpDelete("sales-data-ultra-safe")]
         public async Task<IActionResult> DeleteSalesDataUltraSafe([FromBody] DeleteConfirmationDto confirmation)
         {
@@ -1129,12 +1131,12 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "DeleteSalesData"))
                 // {
-                //     return Forbid("Bạn không có quyền xóa dữ liệu bán hàng");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
                 // }
 
                 if (confirmation.ConfirmationText != "DELETE SALES DATA")
                 {
-                    return BadRequest(new { message = "Vui lòng nhập đúng text xác nhận: DELETE SALES DATA" });
+                    return BadRequest(new { message = "Vui lÃ²ng nháº­p Ä‘Ãºng text xÃ¡c nháº­n: DELETE SALES DATA" });
                 }
 
                 var result = new List<object>();
@@ -1144,12 +1146,12 @@ namespace RetailPointBackend.Controllers
                 {
                     await connection.OpenAsync();
 
-                    // Xóa theo thứ tự an toàn bằng raw SQL với transaction
+                    // XÃ³a theo thá»© tá»± an toÃ n báº±ng raw SQL vá»›i transaction
                     using (var transaction = connection.BeginTransaction())
                     {
                         try
                         {
-                            // 1. Xóa OrderItems (child table)
+                            // 1. XÃ³a OrderItems (child table)
                             var orderItemsCmd = new SqlCommand("SELECT COUNT(*) FROM OrderItems", connection, transaction);
                             var orderItemsCount = (int)(await orderItemsCmd.ExecuteScalarAsync() ?? 0);
                             
@@ -1160,7 +1162,7 @@ namespace RetailPointBackend.Controllers
                                 result.Add(new { table = "OrderItems", deletedCount = deletedOrderItems });
                             }
 
-                            // 2. Xóa Orders (parent table)
+                            // 2. XÃ³a Orders (parent table)
                             var ordersCmd = new SqlCommand("SELECT COUNT(*) FROM Orders", connection, transaction);
                             var ordersCount = (int)(await ordersCmd.ExecuteScalarAsync() ?? 0);
                             
@@ -1171,7 +1173,7 @@ namespace RetailPointBackend.Controllers
                                 result.Add(new { table = "Orders", deletedCount = deletedOrders });
                             }
 
-                            // 3. Xóa Customers
+                            // 3. XÃ³a Customers
                             var customersCmd = new SqlCommand("SELECT COUNT(*) FROM Customers", connection, transaction);
                             var customersCount = (int)(await customersCmd.ExecuteScalarAsync() ?? 0);
                             
@@ -1182,7 +1184,7 @@ namespace RetailPointBackend.Controllers
                                 result.Add(new { table = "Customers", deletedCount = deletedCustomers });
                             }
 
-                            // 4. Xóa InventoryTransactions
+                            // 4. XÃ³a InventoryTransactions
                             var inventoryCmd = new SqlCommand("SELECT COUNT(*) FROM InventoryTransactions", connection, transaction);
                             var inventoryCount = (int)(await inventoryCmd.ExecuteScalarAsync() ?? 0);
                             
@@ -1203,7 +1205,7 @@ namespace RetailPointBackend.Controllers
 
                             return Ok(new 
                             { 
-                                message = "Đã xóa dữ liệu bán hàng thành công (ultra safe method)", 
+                                message = "ÄÃ£ xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng thÃ nh cÃ´ng (ultra safe method)", 
                                 details = result,
                                 timestamp = DateTime.Now 
                             });
@@ -1211,7 +1213,7 @@ namespace RetailPointBackend.Controllers
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng (ultra safe)");
+                            _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng (ultra safe)");
                             throw;
                         }
                     }
@@ -1219,12 +1221,12 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng (ultra safe)");
-                return StatusCode(500, new { message = "Lỗi khi xóa dữ liệu bán hàng", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng (ultra safe)");
+                return StatusCode(500, new { message = "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // Xóa dữ liệu bán hàng (giữ lại sản phẩm, nhóm hàng)
+        // XÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng (giá»¯ láº¡i sáº£n pháº©m, nhÃ³m hÃ ng)
         [HttpDelete("sales-data")]
         public async Task<IActionResult> DeleteSalesData([FromBody] DeleteConfirmationDto confirmation)
         {
@@ -1235,53 +1237,53 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "DeleteSalesData"))
                 // {
-                //     return Forbid("Bạn không có quyền xóa dữ liệu bán hàng");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
                 // }
                 if (confirmation.ConfirmationText != "DELETE SALES DATA")
                 {
-                    return BadRequest(new { message = "Vui lòng nhập đúng text xác nhận: DELETE SALES DATA" });
+                    return BadRequest(new { message = "Vui lÃ²ng nháº­p Ä‘Ãºng text xÃ¡c nháº­n: DELETE SALES DATA" });
                 }
 
                 using (var transaction = await _context.Database.BeginTransactionAsync())
                 {
                     try
                     {
-                        _logger.LogInformation("Bắt đầu xóa dữ liệu bán hàng...");
+                        _logger.LogInformation("Báº¯t Ä‘áº§u xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng...");
 
-                        // Danh sách bảng cần xóa theo thứ tự (từ child đến parent)
+                        // Danh sÃ¡ch báº£ng cáº§n xÃ³a theo thá»© tá»± (tá»« child Ä‘áº¿n parent)
                         var tablesToDelete = new[]
                         {
-                            // Dữ liệu chi tiết đơn hàng
+                            // Dá»¯ liá»‡u chi tiáº¿t Ä‘Æ¡n hÃ ng
                             "OrderItems",
                             
-                            // Dữ liệu đơn hàng
+                            // Dá»¯ liá»‡u Ä‘Æ¡n hÃ ng
                             "Orders",
                             
-                            // Dữ liệu khách hàng
+                            // Dá»¯ liá»‡u khÃ¡ch hÃ ng
                             "Customers",
                             
-                            // Dữ liệu kho và giao dịch
+                            // Dá»¯ liá»‡u kho vÃ  giao dá»‹ch
                             "InventoryMovements",
                             "InventoryTransactions",
                             
-                            // Dữ liệu thanh toán
+                            // Dá»¯ liá»‡u thanh toÃ¡n
                             "PaymentTransactions",
                             "PaymentStats",
                             
-                            // Dữ liệu báo cáo
+                            // Dá»¯ liá»‡u bÃ¡o cÃ¡o
                             "SalesReports",
                             "DailySalesReports",
                             "MonthlySalesReports",
                             "ProductSalesReports",
                             
-                            // Hóa đơn điện tử
+                            // HÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­
                             "EInvoiceItems",
                             "EInvoices",
                             
-                            // Thông báo liên quan đến bán hàng
+                            // ThÃ´ng bÃ¡o liÃªn quan Ä‘áº¿n bÃ¡n hÃ ng
                             "Notifications",
                             
-                            // Log activities liên quan
+                            // Log activities liÃªn quan
                             "ActivityLogs",
                             "AuditLogs"
                         };
@@ -1289,18 +1291,18 @@ namespace RetailPointBackend.Controllers
                         var deletedTables = new List<string>();
                         var skippedTables = new List<string>();
 
-                        // Tắt foreign key constraints tạm thời
+                        // Táº¯t foreign key constraints táº¡m thá»i
                         try
                         {
                             await _context.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'");
-                            _logger.LogInformation("Đã tắt foreign key constraints");
+                            _logger.LogInformation("ÄÃ£ táº¯t foreign key constraints");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning($"Lỗi khi tắt constraints: {ex.Message}");
+                            _logger.LogWarning($"Lá»—i khi táº¯t constraints: {ex.Message}");
                         }
 
-                        // Xóa từng bảng (không cần kiểm tra tồn tại, sẽ catch exception nếu không có)
+                        // XÃ³a tá»«ng báº£ng (khÃ´ng cáº§n kiá»ƒm tra tá»“n táº¡i, sáº½ catch exception náº¿u khÃ´ng cÃ³)
                         foreach (var table in tablesToDelete)
                         {
                             try
@@ -1310,24 +1312,24 @@ namespace RetailPointBackend.Controllers
                                 var result = await _context.Database.ExecuteSqlRawAsync($"DELETE FROM [{table}] WHERE 1=1");
                                 #pragma warning restore EF1002
                                 deletedTables.Add($"{table}");
-                                _logger.LogInformation($"Đã xóa {table}");
+                                _logger.LogInformation($"ÄÃ£ xÃ³a {table}");
                             }
                             catch (Exception ex)
                             {
-                                skippedTables.Add($"{table} (lỗi: {ex.Message})");
-                                _logger.LogWarning($"Lỗi khi xóa {table}: {ex.Message}");
+                                skippedTables.Add($"{table} (lá»—i: {ex.Message})");
+                                _logger.LogWarning($"Lá»—i khi xÃ³a {table}: {ex.Message}");
                             }
                         }
                         
-                        // Reset inventory quantities về 0
+                        // Reset inventory quantities vá» 0
                         try
                         {
                             await _context.Database.ExecuteSqlRawAsync("UPDATE Products SET StockQuantity = 0 WHERE StockQuantity IS NOT NULL");
-                            _logger.LogInformation("Đã reset StockQuantity");
+                            _logger.LogInformation("ÄÃ£ reset StockQuantity");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning($"Lỗi khi reset StockQuantity: {ex.Message}");
+                            _logger.LogWarning($"Lá»—i khi reset StockQuantity: {ex.Message}");
                         }
                         
                         // Reset identity columns
@@ -1340,34 +1342,34 @@ namespace RetailPointBackend.Controllers
                                 #pragma warning disable EF1002
                                 await _context.Database.ExecuteSqlRawAsync($"DBCC CHECKIDENT ('[{table}]', RESEED, 0)");
                                 #pragma warning restore EF1002
-                                _logger.LogInformation($"Đã reset identity cho {table}");
+                                _logger.LogInformation($"ÄÃ£ reset identity cho {table}");
                             }
                             catch (Exception ex)
                             {
-                                _logger.LogWarning($"Lỗi khi reset identity cho {table}: {ex.Message}");
+                                _logger.LogWarning($"Lá»—i khi reset identity cho {table}: {ex.Message}");
                             }
                         }
 
-                        // Bật lại foreign key constraints
+                        // Báº­t láº¡i foreign key constraints
                         try
                         {
                             await _context.Database.ExecuteSqlRawAsync("EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL'");
-                            _logger.LogInformation("Đã bật lại foreign key constraints");
+                            _logger.LogInformation("ÄÃ£ báº­t láº¡i foreign key constraints");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning($"Lỗi khi bật lại constraints: {ex.Message}");
+                            _logger.LogWarning($"Lá»—i khi báº­t láº¡i constraints: {ex.Message}");
                         }
 
                         await transaction.CommitAsync();
-                        _logger.LogInformation("Hoàn thành xóa dữ liệu bán hàng");
+                        _logger.LogInformation("HoÃ n thÃ nh xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
 
                         return Ok(new { 
-                            message = "Đã xóa toàn bộ dữ liệu bán hàng thành công. Sản phẩm và cấu hình hệ thống được giữ lại.",
+                            message = "ÄÃ£ xÃ³a toÃ n bá»™ dá»¯ liá»‡u bÃ¡n hÃ ng thÃ nh cÃ´ng. Sáº£n pháº©m vÃ  cáº¥u hÃ¬nh há»‡ thá»‘ng Ä‘Æ°á»£c giá»¯ láº¡i.",
                             timestamp = DateTime.Now,
                             deletedTables = deletedTables,
                             skippedTables = skippedTables,
-                            note = "Đã xóa: đơn hàng, khách hàng, giao dịch kho, thanh toán, báo cáo, hóa đơn điện tử, thông báo"
+                            note = "ÄÃ£ xÃ³a: Ä‘Æ¡n hÃ ng, khÃ¡ch hÃ ng, giao dá»‹ch kho, thanh toÃ¡n, bÃ¡o cÃ¡o, hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­, thÃ´ng bÃ¡o"
                         });
                     }
                     catch
@@ -1379,12 +1381,12 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa dữ liệu bán hàng");
-                return StatusCode(500, new { message = "Lỗi khi xóa dữ liệu bán hàng", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng");
+                return StatusCode(500, new { message = "Lá»—i khi xÃ³a dá»¯ liá»‡u bÃ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // Lấy thông tin database
+        // Láº¥y thÃ´ng tin database
         [HttpGet("database-info")]
         public async Task<IActionResult> GetDatabaseInfo()
         {
@@ -1395,13 +1397,13 @@ namespace RetailPointBackend.Controllers
                 // if (!int.TryParse(staffIdHeader, out int staffId) || 
                 //     !await _permissionService.HasPermissionAsync(staffId, "ViewDataManagement"))
                 // {
-                //     return Forbid("Bạn không có quyền xem thông tin dữ liệu");
+                //     return Forbid("Báº¡n khÃ´ng cÃ³ quyá»n xem thÃ´ng tin dá»¯ liá»‡u");
                 // }
 
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
                 if (string.IsNullOrEmpty(connectionString))
                 {
-                    return BadRequest(new { message = "Connection string không được cấu hình" });
+                    return BadRequest(new { message = "Connection string khÃ´ng Ä‘Æ°á»£c cáº¥u hÃ¬nh" });
                 }
 
                 try
@@ -1410,31 +1412,31 @@ namespace RetailPointBackend.Controllers
                     var databaseName = sqlConnectionStringBuilder.InitialCatalog;
                     var serverName = sqlConnectionStringBuilder.DataSource;
                     
-                    // Lấy thông tin backup cuối cùng từ BackupHistory
+                    // Láº¥y thÃ´ng tin backup cuá»‘i cÃ¹ng tá»« BackupHistory
                     var lastBackup = await _context.BackupHistories
                         .Where(bh => bh.Status == "Success")
                         .OrderByDescending(bh => bh.BackupDate)
                         .FirstOrDefaultAsync();
 
-                    string lastBackupInfo = "Chưa có thông tin";
+                    string lastBackupInfo = "ChÆ°a cÃ³ thÃ´ng tin";
                     if (lastBackup != null)
                     {
                         var timeAgo = DateTime.Now - lastBackup.BackupDate;
                         if (timeAgo.TotalMinutes < 60)
                         {
-                            lastBackupInfo = $"{(int)timeAgo.TotalMinutes} phút trước ({lastBackup.BackupType})";
+                            lastBackupInfo = $"{(int)timeAgo.TotalMinutes} phÃºt trÆ°á»›c ({lastBackup.BackupType})";
                         }
                         else if (timeAgo.TotalHours < 24)
                         {
-                            lastBackupInfo = $"{(int)timeAgo.TotalHours} giờ trước ({lastBackup.BackupType})";
+                            lastBackupInfo = $"{(int)timeAgo.TotalHours} giá» trÆ°á»›c ({lastBackup.BackupType})";
                         }
                         else
                         {
-                            lastBackupInfo = $"{(int)timeAgo.TotalDays} ngày trước ({lastBackup.BackupType})";
+                            lastBackupInfo = $"{(int)timeAgo.TotalDays} ngÃ y trÆ°á»›c ({lastBackup.BackupType})";
                         }
                     }
 
-                    // Lấy kích thước database
+                    // Láº¥y kÃ­ch thÆ°á»›c database
                     double sizeMB = 0.0;
                     try
                     {
@@ -1459,14 +1461,14 @@ namespace RetailPointBackend.Controllers
                     }
                     catch (Exception sizeEx)
                     {
-                        _logger.LogWarning(sizeEx, "Không thể lấy kích thước database");
+                        _logger.LogWarning(sizeEx, "KhÃ´ng thá»ƒ láº¥y kÃ­ch thÆ°á»›c database");
                     }
                     
-                    // Sau khi restore, Entity Framework context có thể bị lỗi
-                    // Thử refresh context bằng cách tạo connection mới
+                    // Sau khi restore, Entity Framework context cÃ³ thá»ƒ bá»‹ lá»—i
+                    // Thá»­ refresh context báº±ng cÃ¡ch táº¡o connection má»›i
                     try
                     {
-                        // Sử dụng Entity Framework để lấy thông tin đơn giản
+                        // Sá»­ dá»¥ng Entity Framework Ä‘á»ƒ láº¥y thÃ´ng tin Ä‘Æ¡n giáº£n
                         var dbName = await _context.Database.SqlQueryRaw<string>("SELECT DB_NAME()").FirstOrDefaultAsync();
                         
                         return Ok(new {
@@ -1483,7 +1485,7 @@ namespace RetailPointBackend.Controllers
                     {
                         _logger.LogWarning(efError, "Entity Framework error, fallback to direct SQL connection");
                         
-                        // Fallback: Sử dụng direct SQL connection
+                        // Fallback: Sá»­ dá»¥ng direct SQL connection
                         using (var connection = new SqlConnection(connectionString))
                         {
                             await connection.OpenAsync();
@@ -1506,34 +1508,34 @@ namespace RetailPointBackend.Controllers
                 }
                 catch (Exception sqlEx)
                 {
-                    _logger.LogError(sqlEx, "Lỗi kết nối SQL Server");
+                    _logger.LogError(sqlEx, "Lá»—i káº¿t ná»‘i SQL Server");
                     
-                    // Fallback: trả về thông tin cơ bản từ connection string
+                    // Fallback: tráº£ vá» thÃ´ng tin cÆ¡ báº£n tá»« connection string
                     try
                     {
                         var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
                         
-                        // Vẫn cố gắng lấy thông tin backup cuối từ BackupHistory
+                        // Váº«n cá»‘ gáº¯ng láº¥y thÃ´ng tin backup cuá»‘i tá»« BackupHistory
                         var lastBackup = await _context.BackupHistories
                             .Where(bh => bh.Status == "Success")
                             .OrderByDescending(bh => bh.BackupDate)
                             .FirstOrDefaultAsync();
 
-                        string lastBackupInfo = "Chưa có thông tin";
+                        string lastBackupInfo = "ChÆ°a cÃ³ thÃ´ng tin";
                         if (lastBackup != null)
                         {
                             var timeAgo = DateTime.Now - lastBackup.BackupDate;
                             if (timeAgo.TotalMinutes < 60)
                             {
-                                lastBackupInfo = $"{(int)timeAgo.TotalMinutes} phút trước ({lastBackup.BackupType})";
+                                lastBackupInfo = $"{(int)timeAgo.TotalMinutes} phÃºt trÆ°á»›c ({lastBackup.BackupType})";
                             }
                             else if (timeAgo.TotalHours < 24)
                             {
-                                lastBackupInfo = $"{(int)timeAgo.TotalHours} giờ trước ({lastBackup.BackupType})";
+                                lastBackupInfo = $"{(int)timeAgo.TotalHours} giá» trÆ°á»›c ({lastBackup.BackupType})";
                             }
                             else
                             {
-                                lastBackupInfo = $"{(int)timeAgo.TotalDays} ngày trước ({lastBackup.BackupType})";
+                                lastBackupInfo = $"{(int)timeAgo.TotalDays} ngÃ y trÆ°á»›c ({lastBackup.BackupType})";
                             }
                         }
                         
@@ -1553,7 +1555,7 @@ namespace RetailPointBackend.Controllers
                             databaseName = "RetailPointDB",
                             sizeMB = 0.0,
                             serverName = "localhost",
-                            lastBackup = "Không thể lấy thông tin",
+                            lastBackup = "KhÃ´ng thá»ƒ láº¥y thÃ´ng tin",
                             lastBackupDate = (DateTime?)null,
                             lastBackupType = (string?)null,
                             lastBackupSize = (double?)null
@@ -1563,8 +1565,8 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy thông tin database");
-                return StatusCode(500, new { message = "Lỗi khi lấy thông tin database", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y thÃ´ng tin database");
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y thÃ´ng tin database", error = ex.Message });
             }
         }
     }

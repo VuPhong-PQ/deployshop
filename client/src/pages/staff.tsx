@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -48,6 +49,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
 
 const staffFormSchema = z.object({
   fullName: z.string().min(1, "Họ tên là bắt buộc"),
@@ -120,7 +123,7 @@ export default function Staff() {
   const { data: staff = [], isLoading: staffLoading } = useQuery<any[]>({
     queryKey: ['/api/staff'],
     queryFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/staff');
+        const response = await authFetch(`${API_BASE}/api/staff`);
       if (!response.ok) throw new Error('Failed to fetch staff');
       return response.json();
     },
@@ -129,7 +132,7 @@ export default function Staff() {
   const { data: roles = [], isLoading: rolesLoading } = useQuery<any[]>({
     queryKey: ['/api/role'],
     queryFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/role');
+        const response = await authFetch(`${API_BASE}/api/role`);
       if (!response.ok) throw new Error('Failed to fetch roles');
       return response.json();
     },
@@ -138,7 +141,7 @@ export default function Staff() {
   const { data: permissions = [], isLoading: permissionsLoading } = useQuery<any[]>({
     queryKey: ['/api/permission'],
     queryFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/permission');
+        const response = await authFetch(`${API_BASE}/api/permission`);
       if (!response.ok) throw new Error('Failed to fetch permissions');
       return response.json();
     },
@@ -148,7 +151,7 @@ export default function Staff() {
   const { data: stores = [], isLoading: storesLoading } = useQuery<any[]>({
     queryKey: ['/api/stores'],
     queryFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/stores');
+        const response = await authFetch(`${API_BASE}/api/stores`);
       if (!response.ok) throw new Error('Failed to fetch stores');
       return response.json();
     },
@@ -158,7 +161,7 @@ export default function Staff() {
   const { data: staffStoreAssignments = [], isLoading: assignmentsLoading } = useQuery<any[]>({
     queryKey: ['/api/staffstores/staff-assignments'],
     queryFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/staffstores/staff-assignments');
+        const response = await authFetch(`${API_BASE}/api/staffstores/staff-assignments`);
       if (!response.ok) throw new Error('Failed to fetch staff assignments');
       return response.json();
     },
@@ -179,7 +182,7 @@ export default function Staff() {
       
       // Add new store assignments
       for (const storeId of storesToAdd) {
-        const response = await fetch('http://101.53.9.76:5273/api/staffstores/assign', {
+        const response = await authFetch(`${API_BASE}/api/staffstores/assign`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ staffId, storeId }),
@@ -193,7 +196,7 @@ export default function Staff() {
       
       // Remove old store assignments
       for (const storeId of storesToRemove) {
-        const response = await fetch(`http://101.53.9.76:5273/api/staffstores/unassign?staffId=${staffId}&storeId=${storeId}`, {
+        const response = await authFetch(`${API_BASE}/api/staffstores/unassign?staffId=${staffId}&storeId=${storeId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
@@ -244,7 +247,7 @@ export default function Staff() {
       // Separate store assignments from staff data
       const { assignedStores, ...staffInfo } = staffData;
       
-      const response = await fetch('http://101.53.9.76:5273/api/staff', {
+      const response = await authFetch(`${API_BASE}/api/staff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(staffInfo)
@@ -310,20 +313,14 @@ export default function Staff() {
 
   const updateStaffMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<StaffFormData> }) => {
-      console.log('Updating staff with ID:', id);
-      console.log('Data being sent:', data);
-      
       // Separate store assignments from staff data
       const { assignedStores, ...staffInfo } = data;
       
-      const response = await fetch(`http://101.53.9.76:5273/api/staff/${id}`, {
+      const response = await authFetch(`${API_BASE}/api/staff/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(staffInfo)
       });
-      
-      console.log('Response status:', response.status);
-      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Update failed:', response.status, errorText);
@@ -373,7 +370,7 @@ export default function Staff() {
 
   const deleteStaffMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`http://101.53.9.76:5273/api/staff/${id}`, {
+      const response = await authFetch(`${API_BASE}/api/staff/${id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Failed to delete staff');
@@ -416,7 +413,7 @@ export default function Staff() {
   // Role management mutations
   const addRoleMutation = useMutation({
     mutationFn: async (roleData: RoleFormData) => {
-      const response = await fetch('http://101.53.9.76:5273/api/role', {
+      const response = await authFetch(`${API_BASE}/api/role`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(roleData)
@@ -449,7 +446,7 @@ export default function Staff() {
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<RoleFormData> }) => {
-      const response = await fetch(`http://101.53.9.76:5273/api/role/${id}`, {
+      const response = await authFetch(`${API_BASE}/api/role/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -483,7 +480,7 @@ export default function Staff() {
 
   const deleteRoleMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`http://101.53.9.76:5273/api/role/${id}`, {
+      const response = await authFetch(`${API_BASE}/api/role/${id}`, {
         method: 'DELETE'
       });
       
@@ -512,10 +509,10 @@ export default function Staff() {
   const togglePermission = useMutation({
     mutationFn: async ({ roleId, permissionId, action }: { roleId: number, permissionId: number, action: 'add' | 'remove' }) => {
       const url = action === 'add' 
-        ? 'http://101.53.9.76:5273/api/role/assign-permission' 
-        : 'http://101.53.9.76:5273/api/role/remove-permission';
+        ? `${API_BASE}/api/role/assign-permission` 
+        : `${API_BASE}/api/role/remove-permission`;
       
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roleId, permissionId })
@@ -573,15 +570,10 @@ export default function Staff() {
       permissionId,
       action: (hasPermission ? 'remove' : 'add') as 'add' | 'remove'
     };
-    
-    console.log('Toggling permission:', requestData);
-    console.log('Selected role:', selectedConfigRole);
-    
     togglePermission.mutate(requestData);
   };
 
   const openConfigDialog = (role: any) => {
-    console.log('Opening config dialog for role:', role);
     setSelectedConfigRole(role);
     setIsConfigDialogOpen(true);
   };
@@ -607,7 +599,7 @@ export default function Staff() {
       
       // Assign missing permissions
       for (const permissionId of toAssign) {
-        const response = await fetch('http://101.53.9.76:5273/api/role/assign-permission', {
+        const response = await authFetch(`${API_BASE}/api/role/assign-permission`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roleId: selectedConfigRole.roleId, permissionId })
@@ -641,7 +633,7 @@ export default function Staff() {
       
       // Remove all permissions
       for (const permissionId of currentPermissionIds) {
-        const response = await fetch('http://101.53.9.76:5273/api/role/remove-permission', {
+        const response = await authFetch(`${API_BASE}/api/role/remove-permission`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ roleId: selectedConfigRole.roleId, permissionId })
@@ -686,9 +678,6 @@ export default function Staff() {
   });
 
   const onSubmit = (data: StaffFormData) => {
-    console.log('onSubmit called with data:', data);
-    console.log('editingStaff:', editingStaff);
-    
     // For new staff, password is required
     if (!editingStaff && (!data.password || data.password.length < 6)) {
       toast({
@@ -705,10 +694,8 @@ export default function Staff() {
       if (!data.password || data.password.length === 0) {
         delete updateData.password;
       }
-      console.log('Calling updateStaffMutation with:', { id: editingStaff.staffId, data: updateData });
       updateStaffMutation.mutate({ id: editingStaff.staffId, data: updateData });
     } else {
-      console.log('Calling addStaffMutation with:', data);
       addStaffMutation.mutate(data);
     }
   };
@@ -742,9 +729,6 @@ export default function Staff() {
 
   // Role management functions
   const onRoleSubmit = (data: RoleFormData) => {
-    console.log('onRoleSubmit called with data:', data);
-    console.log('editingRole:', editingRole);
-    
     if (editingRole) {
       updateRoleMutation.mutate({ id: editingRole.roleId, data });
     } else {
@@ -1725,3 +1709,4 @@ export default function Staff() {
     </AppLayout>
   );
 }
+

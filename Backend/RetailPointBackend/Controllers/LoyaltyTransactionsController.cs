@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class LoyaltyTransactionsController : ControllerBase
@@ -44,7 +46,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -61,40 +63,40 @@ namespace RetailPointBackend.Controllers
 
                 if (order == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy đơn hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng" });
                 }
 
                 if (order.CustomerId == null)
                 {
-                    return BadRequest(new { message = "Đơn hàng không có thông tin khách hàng" });
+                    return BadRequest(new { message = "ÄÆ¡n hÃ ng khÃ´ng cÃ³ thÃ´ng tin khÃ¡ch hÃ ng" });
                 }
 
                 var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.IsEnabled)
                 {
-                    return BadRequest(new { message = "Hệ thống tích điểm chưa được kích hoạt" });
+                    return BadRequest(new { message = "Há»‡ thá»‘ng tÃ­ch Ä‘iá»ƒm chÆ°a Ä‘Æ°á»£c kÃ­ch hoáº¡t" });
                 }
 
-                // Kiểm tra đã tích điểm cho đơn hàng này chưa
+                // Kiá»ƒm tra Ä‘Ã£ tÃ­ch Ä‘iá»ƒm cho Ä‘Æ¡n hÃ ng nÃ y chÆ°a
                 var existingTransaction = await _context.LoyaltyTransactions
                     .FirstOrDefaultAsync(t => t.OrderId == request.OrderId && t.TransactionType == LoyaltyTransactionType.EARN);
 
                 if (existingTransaction != null)
                 {
-                    return BadRequest(new { message = "Đơn hàng này đã được tích điểm" });
+                    return BadRequest(new { message = "ÄÆ¡n hÃ ng nÃ y Ä‘Ã£ Ä‘Æ°á»£c tÃ­ch Ä‘iá»ƒm" });
                 }
 
-                // Tính điểm
+                // TÃ­nh Ä‘iá»ƒm
                 var points = await CalculateOrderPoints(order, config);
                 if (points <= 0)
                 {
-                    return Ok(new { message = "Đơn hàng không đủ điều kiện tích điểm", points = 0 });
+                    return Ok(new { message = "ÄÆ¡n hÃ ng khÃ´ng Ä‘á»§ Ä‘iá»u kiá»‡n tÃ­ch Ä‘iá»ƒm", points = 0 });
                 }
 
-                // Cập nhật điểm khách hàng
+                // Cáº­p nháº­t Ä‘iá»ƒm khÃ¡ch hÃ ng
                 order.Customer!.LoyaltyPoints += points;
 
-                // Tạo transaction
+                // Táº¡o transaction
                 var transaction = new LoyaltyTransaction
                 {
                     CustomerId = order.CustomerId.Value,
@@ -102,7 +104,7 @@ namespace RetailPointBackend.Controllers
                     TransactionType = LoyaltyTransactionType.EARN,
                     Points = points,
                     PointsBalance = order.Customer.LoyaltyPoints,
-                    Reason = $"Tích điểm từ đơn hàng #{order.OrderNumber}",
+                    Reason = $"TÃ­ch Ä‘iá»ƒm tá»« Ä‘Æ¡n hÃ ng #{order.OrderNumber}",
                     ExpiryDate = DateTime.Now.AddDays(config.PointExpiryDays),
                     ProcessedAt = DateTime.Now,
                     ProcessedBy = request.StaffId
@@ -110,14 +112,14 @@ namespace RetailPointBackend.Controllers
 
                 _context.LoyaltyTransactions.Add(transaction);
 
-                // Kiểm tra và cập nhật cấp độ khách hàng
+                // Kiá»ƒm tra vÃ  cáº­p nháº­t cáº¥p Ä‘á»™ khÃ¡ch hÃ ng
                 await UpdateCustomerTier(order.Customer);
 
                 await _context.SaveChangesAsync();
 
                 return Ok(new 
                 { 
-                    message = "Tích điểm thành công",
+                    message = "TÃ­ch Ä‘iá»ƒm thÃ nh cÃ´ng",
                     points = points,
                     newBalance = order.Customer.LoyaltyPoints,
                     transactionId = transaction.TransactionId
@@ -125,7 +127,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -138,27 +140,27 @@ namespace RetailPointBackend.Controllers
                 var customer = await _context.Customers.FindAsync(request.CustomerId);
                 if (customer == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy khách hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y khÃ¡ch hÃ ng" });
                 }
 
                 var config = await _context.LoyaltyConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.AllowPointRedemption)
                 {
-                    return BadRequest(new { message = "Hệ thống không cho phép đổi điểm" });
+                    return BadRequest(new { message = "Há»‡ thá»‘ng khÃ´ng cho phÃ©p Ä‘á»•i Ä‘iá»ƒm" });
                 }
 
                 if (customer.LoyaltyPoints < request.PointsToRedeem)
                 {
-                    return BadRequest(new { message = "Không đủ điểm để thực hiện giao dịch" });
+                    return BadRequest(new { message = "KhÃ´ng Ä‘á»§ Ä‘iá»ƒm Ä‘á»ƒ thá»±c hiá»‡n giao dá»‹ch" });
                 }
 
-                // Tính giá trị quy đổi
+                // TÃ­nh giÃ¡ trá»‹ quy Ä‘á»•i
                 var redeemValue = request.PointsToRedeem * config.PointValue / 100;
 
-                // Cập nhật điểm khách hàng
+                // Cáº­p nháº­t Ä‘iá»ƒm khÃ¡ch hÃ ng
                 customer.LoyaltyPoints -= request.PointsToRedeem;
 
-                // Tạo transaction
+                // Táº¡o transaction
                 var transaction = new LoyaltyTransaction
                 {
                     CustomerId = request.CustomerId,
@@ -166,7 +168,7 @@ namespace RetailPointBackend.Controllers
                     TransactionType = LoyaltyTransactionType.REDEEM,
                     Points = -request.PointsToRedeem,
                     PointsBalance = customer.LoyaltyPoints,
-                    Reason = $"Đổi {request.PointsToRedeem} điểm = {redeemValue:C0}",
+                    Reason = $"Äá»•i {request.PointsToRedeem} Ä‘iá»ƒm = {redeemValue:C0}",
                     ProcessedAt = DateTime.Now,
                     ProcessedBy = request.StaffId
                 };
@@ -176,7 +178,7 @@ namespace RetailPointBackend.Controllers
 
                 return Ok(new 
                 { 
-                    message = "Đổi điểm thành công",
+                    message = "Äá»•i Ä‘iá»ƒm thÃ nh cÃ´ng",
                     pointsRedeemed = request.PointsToRedeem,
                     redeemValue = redeemValue,
                     newBalance = customer.LoyaltyPoints
@@ -184,7 +186,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
@@ -198,7 +200,7 @@ namespace RetailPointBackend.Controllers
             var basePoints = Math.Floor(order.TotalAmount / config.PointsPerCurrency);
             var multiplier = 1.0m;
 
-            // Kiểm tra Happy Hour
+            // Kiá»ƒm tra Happy Hour
             if (config.HappyHourEnabled)
             {
                 var orderTime = order.CreatedAt.TimeOfDay;
@@ -208,14 +210,14 @@ namespace RetailPointBackend.Controllers
                 }
             }
 
-            // Kiểm tra Weekend Bonus
+            // Kiá»ƒm tra Weekend Bonus
             if (config.WeekendBonusEnabled && 
                 (order.CreatedAt.DayOfWeek == DayOfWeek.Saturday || order.CreatedAt.DayOfWeek == DayOfWeek.Sunday))
             {
                 multiplier *= config.WeekendMultiplier;
             }
 
-            // Kiểm tra Birthday Bonus
+            // Kiá»ƒm tra Birthday Bonus
             if (config.BirthdayBonusEnabled && order.Customer?.DateOfBirth.HasValue == true)
             {
                 var birthday = order.Customer.DateOfBirth.Value;
@@ -227,7 +229,7 @@ namespace RetailPointBackend.Controllers
                 }
             }
 
-            // Áp dụng hệ số cấp độ khách hàng
+            // Ãp dá»¥ng há»‡ sá»‘ cáº¥p Ä‘á»™ khÃ¡ch hÃ ng
             if (order.Customer?.CustomerTier != null)
             {
                 multiplier *= order.Customer.CustomerTier.PointsMultiplier;
@@ -235,7 +237,7 @@ namespace RetailPointBackend.Controllers
 
             var finalPoints = (int)Math.Floor(basePoints * multiplier);
 
-            // Áp dụng giới hạn điểm tối đa
+            // Ãp dá»¥ng giá»›i háº¡n Ä‘iá»ƒm tá»‘i Ä‘a
             if (config.MaxPointsPerOrder.HasValue && finalPoints > config.MaxPointsPerOrder.Value)
             {
                 finalPoints = config.MaxPointsPerOrder.Value;
@@ -246,12 +248,12 @@ namespace RetailPointBackend.Controllers
 
         private async Task UpdateCustomerTier(Customer customer)
         {
-            // Tính tổng chi tiêu
+            // TÃ­nh tá»•ng chi tiÃªu
             var totalSpent = await _context.Orders
                 .Where(o => o.CustomerId == customer.CustomerId && o.Status == "completed")
                 .SumAsync(o => o.TotalAmount);
 
-            // Tìm cấp độ phù hợp (chọn tier cao nhất mà khách hàng đáp ứng điều kiện)
+            // TÃ¬m cáº¥p Ä‘á»™ phÃ¹ há»£p (chá»n tier cao nháº¥t mÃ  khÃ¡ch hÃ ng Ä‘Ã¡p á»©ng Ä‘iá»u kiá»‡n)
             var appropriateTier = await _context.CustomerTiers
                 .Where(t => t.IsActive && totalSpent >= t.MinSpent && customer.LoyaltyPoints >= t.MinPoints)
                 .OrderByDescending(t => t.MinSpent)
@@ -262,13 +264,13 @@ namespace RetailPointBackend.Controllers
             {
                 customer.TierId = appropriateTier.TierId;
                 
-                // Cập nhật enum HangKhachHang theo tên tier (mapping đúng thứ tự)
+                // Cáº­p nháº­t enum HangKhachHang theo tÃªn tier (mapping Ä‘Ãºng thá»© tá»±)
                 customer.HangKhachHang = appropriateTier.TierName switch
                 {
-                    "Kim cương" => CustomerRank.Platinum,  // Cao nhất (3)
-                    "Vàng" => CustomerRank.VIP,            // Cao (2)
-                    "Bạc" => CustomerRank.Premium,         // Trung bình (1)
-                    "Đồng" => CustomerRank.Thuong,        // Thấp nhất (0)
+                    "Kim cÆ°Æ¡ng" => CustomerRank.Platinum,  // Cao nháº¥t (3)
+                    "VÃ ng" => CustomerRank.VIP,            // Cao (2)
+                    "Báº¡c" => CustomerRank.Premium,         // Trung bÃ¬nh (1)
+                    "Äá»“ng" => CustomerRank.Thuong,        // Tháº¥p nháº¥t (0)
                     _ => CustomerRank.Thuong
                 };
             }

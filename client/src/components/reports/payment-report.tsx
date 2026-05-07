@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ interface PaymentReportProps {
 }
 
 export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }: PaymentReportProps = {}) {
-  // Ngày mặc định: hôm nay nếu không có props
+  // NgÃ y máº·c Ä‘á»‹nh: hÃ´m nay náº¿u khÃ´ng cÃ³ props
   const [localFromDate, setLocalFromDate] = useState(() => {
     const date = new Date();
     return date.toISOString().split('T')[0];
@@ -60,7 +60,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
     return date.toISOString().split('T')[0];
   });
 
-  // Sử dụng props nếu có, không thì dùng state local
+  // Sá»­ dá»¥ng props náº¿u cÃ³, khÃ´ng thÃ¬ dÃ¹ng state local
   const fromDate = propStartDate || localFromDate;
   const toDate = propEndDate || localToDate;
   const setFromDate = setLocalFromDate;
@@ -85,12 +85,12 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         return dt.toISOString().split('T')[0];
       };
 
-      // Tính ngày kết thúc + 1 để bao gồm toàn bộ ngày được chọn
+      // TÃ­nh ngÃ y káº¿t thÃºc + 1 Ä‘á»ƒ bao gá»“m toÃ n bá»™ ngÃ y Ä‘Æ°á»£c chá»n
       const parsedStart = parseToISO(fromDate);
       const parsedEnd = parseToISO(toDate);
       
-      // Tạo Date object và cộng 1 ngày
-      const endDateObj = new Date(parsedEnd + 'T12:00:00'); // Dùng 12:00 để tránh vấn đề timezone
+      // Táº¡o Date object vÃ  cá»™ng 1 ngÃ y
+      const endDateObj = new Date(parsedEnd + 'T12:00:00'); // DÃ¹ng 12:00 Ä‘á»ƒ trÃ¡nh váº¥n Ä‘á» timezone
       endDateObj.setDate(endDateObj.getDate() + 1);
       const apiEndPlusOne = endDateObj.toISOString().split('T')[0];
 
@@ -98,21 +98,10 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         fromDate: parsedStart,
         toDate: apiEndPlusOne,
       });
-
-      console.log('PaymentStats API call:', {
-        fromDate,
-        toDate,
-        parsedStart,
-        parsedEnd,
-        apiEndPlusOne,
-        fullUrl: `/api/PaymentStats?${params.toString()}`
-      });
-
       const res = await apiRequest(`/api/PaymentStats?${params.toString()}`, { method: "GET" });
-      console.log('Payment stats response:', res);
       return res;
     },
-    // Tự động refetch khi ngày thay đổi, không cache
+    // Tá»± Ä‘á»™ng refetch khi ngÃ y thay Ä‘á»•i, khÃ´ng cache
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
@@ -178,39 +167,39 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
 
   const exportToExcel = () => {
     if (!paymentStats?.paymentStats || paymentStats.paymentStats.length === 0) {
-      alert('Không có dữ liệu để xuất');
+      alert('KhÃ´ng cÃ³ dá»¯ liá»‡u Ä‘á»ƒ xuáº¥t');
       return;
     }
 
     const workbook = XLSX.utils.book_new();
 
-    // Sheet 1: Tổng quan
+    // Sheet 1: Tá»•ng quan
     const overviewData = [
-      ['Báo cáo Hình thức Thanh toán'],
-      [`Từ ngày: ${fromDate} đến ${toDate}`],
-      [`Tổng doanh thu: ${paymentStats.totalRevenue?.toLocaleString('vi-VN')}₫`],
-      [`Tổng đơn hàng: ${paymentStats.totalOrders}`],
+      ['BÃ¡o cÃ¡o HÃ¬nh thá»©c Thanh toÃ¡n'],
+      [`Tá»« ngÃ y: ${fromDate} Ä‘áº¿n ${toDate}`],
+      [`Tá»•ng doanh thu: ${paymentStats.totalRevenue?.toLocaleString('vi-VN')}â‚«`],
+      [`Tá»•ng Ä‘Æ¡n hÃ ng: ${paymentStats.totalOrders}`],
       [''],
-      ['Hình thức thanh toán', 'Số đơn hàng', 'Doanh thu', 'Tỷ lệ %']
+      ['HÃ¬nh thá»©c thanh toÃ¡n', 'Sá»‘ Ä‘Æ¡n hÃ ng', 'Doanh thu', 'Tá»· lá»‡ %']
     ];
 
     paymentStats.paymentStats.forEach(stat => {
       overviewData.push([
         stat.paymentMethod,
         stat.orderCount.toString(),
-        `${stat.totalAmount.toLocaleString('vi-VN')}₫`,
+        `${stat.totalAmount.toLocaleString('vi-VN')}â‚«`,
         `${stat.percentage}%`
       ]);
     });
 
     const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
-    XLSX.utils.book_append_sheet(workbook, overviewWs, 'Tổng quan');
+    XLSX.utils.book_append_sheet(workbook, overviewWs, 'Tá»•ng quan');
 
-    // Sheet 2: Chi tiết từng đơn hàng
+    // Sheet 2: Chi tiáº¿t tá»«ng Ä‘Æ¡n hÃ ng
     const detailData = [
-      ['Chi tiết Đơn hàng theo Hình thức Thanh toán'],
+      ['Chi tiáº¿t ÄÆ¡n hÃ ng theo HÃ¬nh thá»©c Thanh toÃ¡n'],
       [''],
-      ['Hình thức thanh toán', 'Số đơn', 'Mã đơn hàng', 'Khách hàng', 'Thời gian', 'Tổng tiền', 'Sản phẩm', 'Số lượng', 'Đơn giá', 'Thành tiền']
+      ['HÃ¬nh thá»©c thanh toÃ¡n', 'Sá»‘ Ä‘Æ¡n', 'MÃ£ Ä‘Æ¡n hÃ ng', 'KhÃ¡ch hÃ ng', 'Thá»i gian', 'Tá»•ng tiá»n', 'Sáº£n pháº©m', 'Sá»‘ lÆ°á»£ng', 'ÄÆ¡n giÃ¡', 'ThÃ nh tiá»n']
     ];
 
     paymentStats.paymentStats.forEach(stat => {
@@ -219,47 +208,47 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
           if (order.items && order.items.length > 0) {
             order.items.forEach((item, itemIndex) => {
               detailData.push([
-                itemIndex === 0 ? stat.paymentMethod : '', // Chỉ hiện tên phương thức ở dòng đầu
+                itemIndex === 0 ? stat.paymentMethod : '', // Chá»‰ hiá»‡n tÃªn phÆ°Æ¡ng thá»©c á»Ÿ dÃ²ng Ä‘áº§u
                 itemIndex === 0 ? order.orderId.toString() : '',
-                itemIndex === 0 ? (order.orderNumber || `Đơn #${order.orderId}`) : '',
+                itemIndex === 0 ? (order.orderNumber || `ÄÆ¡n #${order.orderId}`) : '',
                 itemIndex === 0 ? order.customerName : '',
                 itemIndex === 0 ? formatDate(order.createdAt) : '',
-                itemIndex === 0 ? `${order.totalAmount.toLocaleString('vi-VN')}₫` : '',
+                itemIndex === 0 ? `${order.totalAmount.toLocaleString('vi-VN')}â‚«` : '',
                 item.productName,
                 item.quantity.toString(),
-                `${item.price.toLocaleString('vi-VN')}₫`,
-                `${item.totalPrice.toLocaleString('vi-VN')}₫`
+                `${item.price.toLocaleString('vi-VN')}â‚«`,
+                `${item.totalPrice.toLocaleString('vi-VN')}â‚«`
               ]);
             });
           } else {
-            // Nếu đơn hàng không có items
+            // Náº¿u Ä‘Æ¡n hÃ ng khÃ´ng cÃ³ items
             detailData.push([
               stat.paymentMethod,
               order.orderId.toString(),
-              order.orderNumber || `Đơn #${order.orderId}`,
+              order.orderNumber || `ÄÆ¡n #${order.orderId}`,
               order.customerName,
               formatDate(order.createdAt),
-              `${order.totalAmount.toLocaleString('vi-VN')}₫`,
-              'Không có sản phẩm',
+              `${order.totalAmount.toLocaleString('vi-VN')}â‚«`,
+              'KhÃ´ng cÃ³ sáº£n pháº©m',
               '',
               '',
               ''
             ]);
           }
         });
-        // Thêm dòng trống giữa các phương thức thanh toán
+        // ThÃªm dÃ²ng trá»‘ng giá»¯a cÃ¡c phÆ°Æ¡ng thá»©c thanh toÃ¡n
         detailData.push(['', '', '', '', '', '', '', '', '', '']);
       }
     });
 
     const detailWs = XLSX.utils.aoa_to_sheet(detailData);
-    XLSX.utils.book_append_sheet(workbook, detailWs, 'Chi tiết đơn hàng');
+    XLSX.utils.book_append_sheet(workbook, detailWs, 'Chi tiáº¿t Ä‘Æ¡n hÃ ng');
 
-    // Sheet 3: Xếp hạng phương thức thanh toán
+    // Sheet 3: Xáº¿p háº¡ng phÆ°Æ¡ng thá»©c thanh toÃ¡n
     const rankingData = [
-      ['Xếp hạng Hình thức Thanh toán'],
+      ['Xáº¿p háº¡ng HÃ¬nh thá»©c Thanh toÃ¡n'],
       [''],
-      ['Hạng', 'Hình thức thanh toán', 'Số đơn hàng', 'Doanh thu', 'Tỷ lệ %']
+      ['Háº¡ng', 'HÃ¬nh thá»©c thanh toÃ¡n', 'Sá»‘ Ä‘Æ¡n hÃ ng', 'Doanh thu', 'Tá»· lá»‡ %']
     ];
 
     paymentStats.paymentStats.forEach((stat, index) => {
@@ -267,15 +256,15 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         (index + 1).toString(),
         stat.paymentMethod,
         stat.orderCount.toString(),
-        `${stat.totalAmount.toLocaleString('vi-VN')}₫`,
+        `${stat.totalAmount.toLocaleString('vi-VN')}â‚«`,
         `${stat.percentage}%`
       ]);
     });
 
     const rankingWs = XLSX.utils.aoa_to_sheet(rankingData);
-    XLSX.utils.book_append_sheet(workbook, rankingWs, 'Xếp hạng');
+    XLSX.utils.book_append_sheet(workbook, rankingWs, 'Xáº¿p háº¡ng');
 
-    // Xuất file
+    // Xuáº¥t file
     const fileName = `Bao_cao_hinh_thuc_thanh_toan_${fromDate}_den_${toDate}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
@@ -298,16 +287,16 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
 
   return (
     <div className="space-y-6">
-      {/* Header với bộ lọc ngày */}
+      {/* Header vá»›i bá»™ lá»c ngÃ y */}
       <div className="bg-white rounded-lg border p-6 sm:p-8">
         <div className="space-y-6">
           <div className="text-center sm:text-left">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center sm:justify-start gap-2 mb-3">
               <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-              Báo cáo Hình thức Thanh toán
+              BÃ¡o cÃ¡o HÃ¬nh thá»©c Thanh toÃ¡n
             </h2>
             <p className="text-gray-600 text-sm mb-4">
-              Thống kê doanh thu theo phương thức thanh toán
+              Thá»‘ng kÃª doanh thu theo phÆ°Æ¡ng thá»©c thanh toÃ¡n
             </p>
           </div>
           
@@ -334,7 +323,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={handleRefresh} size="sm" variant="outline" className="w-full sm:w-auto">
                   <RefreshCw className="w-4 h-4 mr-1" />
-                  Làm mới
+                  LÃ m má»›i
                 </Button>
                 <Button 
                   onClick={exportToExcel} 
@@ -342,7 +331,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                   className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                 >
                   <Download className="w-4 h-4 mr-1" />
-                  Xuất Excel
+                  Xuáº¥t Excel
                 </Button>
               </div>
             </div>
@@ -350,15 +339,15 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         </div>
       </div>
 
-      {/* Tổng quan */}
+      {/* Tá»•ng quan */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-600 truncate">Tổng doanh thu</p>
+                <p className="text-sm text-gray-600 truncate">Tá»•ng doanh thu</p>
                 <p className="text-lg sm:text-2xl font-bold text-green-600 truncate">
-                  {paymentStats?.totalRevenue?.toLocaleString('vi-VN')}₫
+                  {paymentStats?.totalRevenue?.toLocaleString('vi-VN')}â‚«
                 </p>
               </div>
               <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 flex-shrink-0" />
@@ -370,7 +359,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-600 truncate">Tổng đơn hàng</p>
+                <p className="text-sm text-gray-600 truncate">Tá»•ng Ä‘Æ¡n hÃ ng</p>
                 <p className="text-lg sm:text-2xl font-bold text-blue-600">
                   {paymentStats?.totalOrders || 0}
                 </p>
@@ -386,9 +375,9 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-600 truncate">Phương thức phổ biến</p>
+                <p className="text-sm text-gray-600 truncate">PhÆ°Æ¡ng thá»©c phá»• biáº¿n</p>
                 <p className="text-sm sm:text-lg font-semibold text-purple-600 truncate">
-                  {paymentStats?.paymentStats?.[0]?.paymentMethod || "Chưa có dữ liệu"}
+                  {paymentStats?.paymentStats?.[0]?.paymentMethod || "ChÆ°a cÃ³ dá»¯ liá»‡u"}
                 </p>
               </div>
               <div className="flex-shrink-0">
@@ -402,7 +391,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-600 truncate">Số phương thức sử dụng</p>
+                <p className="text-sm text-gray-600 truncate">Sá»‘ phÆ°Æ¡ng thá»©c sá»­ dá»¥ng</p>
                 <p className="text-lg sm:text-2xl font-bold text-orange-600">
                   {paymentStats?.paymentStats?.length || 0}
                 </p>
@@ -415,14 +404,14 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         </Card>
       </div>
 
-      {/* Biểu đồ và bảng xếp hạng */}
+      {/* Biá»ƒu Ä‘á»“ vÃ  báº£ng xáº¿p háº¡ng */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Biểu đồ dạng cột */}
+        {/* Biá»ƒu Ä‘á»“ dáº¡ng cá»™t */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-              Biểu đồ Doanh thu theo Hình thức
+              Biá»ƒu Ä‘á»“ Doanh thu theo HÃ¬nh thá»©c
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -435,7 +424,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                       <span className="font-medium text-sm sm:text-base truncate">{stat.paymentMethod}</span>
                     </div>
                     <div className="text-right flex-shrink-0 ml-2">
-                      <div className="font-semibold text-sm sm:text-base">{stat.totalAmount.toLocaleString('vi-VN')}₫</div>
+                      <div className="font-semibold text-sm sm:text-base">{stat.totalAmount.toLocaleString('vi-VN')}â‚«</div>
                       <div className="text-xs sm:text-sm text-gray-500">{stat.percentage}%</div>
                     </div>
                   </div>
@@ -446,7 +435,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                     ></div>
                   </div>
                   <div className="text-xs text-gray-500">
-                    {stat.orderCount} đơn hàng
+                    {stat.orderCount} Ä‘Æ¡n hÃ ng
                   </div>
                 </div>
               ))}
@@ -454,12 +443,12 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
           </CardContent>
         </Card>
 
-        {/* Bảng xếp hạng */}
+        {/* Báº£ng xáº¿p háº¡ng */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
-              Xếp hạng Hình thức Thanh toán
+              Xáº¿p háº¡ng HÃ¬nh thá»©c Thanh toÃ¡n
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -483,13 +472,13 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                   <div className="flex-grow min-w-0">
                     <div className="font-medium text-sm sm:text-base truncate">{stat.paymentMethod}</div>
                     <div className="text-xs sm:text-sm text-gray-500">
-                      {stat.orderCount} đơn hàng • {stat.percentage}%
+                      {stat.orderCount} Ä‘Æ¡n hÃ ng â€¢ {stat.percentage}%
                     </div>
                   </div>
                   
                   <div className="text-right flex-shrink-0">
                     <div className="font-semibold text-sm sm:text-lg">
-                      {stat.totalAmount.toLocaleString('vi-VN')}₫
+                      {stat.totalAmount.toLocaleString('vi-VN')}â‚«
                     </div>
                   </div>
                 </div>
@@ -498,8 +487,8 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
               {(!paymentStats?.paymentStats || paymentStats.paymentStats.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
                   <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-300" />
-                  <p className="text-sm sm:text-base">Chưa có dữ liệu thanh toán</p>
-                  <p className="text-xs sm:text-sm">Hãy thực hiện một số giao dịch để xem báo cáo</p>
+                  <p className="text-sm sm:text-base">ChÆ°a cÃ³ dá»¯ liá»‡u thanh toÃ¡n</p>
+                  <p className="text-xs sm:text-sm">HÃ£y thá»±c hiá»‡n má»™t sá»‘ giao dá»‹ch Ä‘á»ƒ xem bÃ¡o cÃ¡o</p>
                 </div>
               )}
             </div>
@@ -507,12 +496,12 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
         </Card>
       </div>
 
-      {/* Chi tiết đơn hàng theo hình thức thanh toán */}
+      {/* Chi tiáº¿t Ä‘Æ¡n hÃ ng theo hÃ¬nh thá»©c thanh toÃ¡n */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2 mb-2">
             <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-            Chi tiết Đơn hàng theo Hình thức Thanh toán
+            Chi tiáº¿t ÄÆ¡n hÃ ng theo HÃ¬nh thá»©c Thanh toÃ¡n
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -528,7 +517,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-sm sm:text-base truncate">{stat.paymentMethod}</h3>
                       <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        {stat.orderCount} đơn hàng • {stat.totalAmount.toLocaleString('vi-VN')}₫
+                        {stat.orderCount} Ä‘Æ¡n hÃ ng â€¢ {stat.totalAmount.toLocaleString('vi-VN')}â‚«
                       </p>
                     </div>
                   </div>
@@ -544,7 +533,6 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                   <div className="border-t">
                     <div className="p-3 sm:p-4 space-y-3">
                       {(() => {
-                        console.log(`Orders for ${stat.paymentMethodId}:`, stat.orders);
                         return null;
                       })()}
                       {stat.orders?.map((order) => (
@@ -558,7 +546,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                                 <span className="text-blue-600 font-semibold text-xs">#{order.orderId}</span>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="font-medium text-sm sm:text-base truncate">{order.orderNumber || `Đơn #${order.orderId}`}</div>
+                                <div className="font-medium text-sm sm:text-base truncate">{order.orderNumber || `ÄÆ¡n #${order.orderId}`}</div>
                                 <div className="text-xs sm:text-sm text-gray-600">
                                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                                     <span className="flex items-center gap-1 truncate">
@@ -574,14 +562,14 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-2">
-                              <div className="font-semibold text-sm sm:text-base">{order.totalAmount.toLocaleString('vi-VN')}₫</div>
+                              <div className="font-semibold text-sm sm:text-base">{order.totalAmount.toLocaleString('vi-VN')}â‚«</div>
                               {/* Split payment indicator */}
                               {order.splitPaymentDetails && (
-                                <div className="text-xs text-orange-600 font-medium">✂️ Thanh toán chia nhỏ</div>
+                                <div className="text-xs text-orange-600 font-medium">âœ‚ï¸ Thanh toÃ¡n chia nhá»</div>
                               )}
                               {order.splitAmount && order.splitAmount !== order.totalAmount && (
                                 <div className="text-xs text-blue-600 font-medium">
-                                  Phần này: {Number(order.splitAmount).toLocaleString('vi-VN')}₫
+                                  Pháº§n nÃ y: {Number(order.splitAmount).toLocaleString('vi-VN')}â‚«
                                 </div>
                               )}
                               <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 justify-end">
@@ -608,7 +596,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                                       return (
                                         <div className="mb-3">
                                           <h5 className="font-medium mb-2 text-xs sm:text-sm flex items-center gap-1">
-                                            <span>✂️</span> Chi tiết thanh toán chia nhỏ:
+                                            <span>âœ‚ï¸</span> Chi tiáº¿t thanh toÃ¡n chia nhá»:
                                           </h5>
                                           <div className="space-y-1">
                                             {splits.map((sp: any, idx: number) => (
@@ -617,7 +605,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                                                   <span className="font-medium">{sp.methodName}</span>
                                                 </div>
                                                 <div className="font-semibold text-blue-700">
-                                                  {Number(sp.amount).toLocaleString('vi-VN')}₫
+                                                  {Number(sp.amount).toLocaleString('vi-VN')}â‚«
                                                 </div>
                                               </div>
                                             ))}
@@ -629,18 +617,18 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                                   return null;
                                 })()}
                                 
-                                <h5 className="font-medium mb-2 text-xs sm:text-sm">Chi tiết sản phẩm:</h5>
+                                <h5 className="font-medium mb-2 text-xs sm:text-sm">Chi tiáº¿t sáº£n pháº©m:</h5>
                                 <div className="space-y-2">
                                   {order.items?.map((item, index) => (
                                     <div key={index} className="flex items-center justify-between p-2 bg-white rounded border text-xs sm:text-sm">
                                       <div className="flex-1 min-w-0 pr-2">
                                         <div className="font-medium truncate">{item.productName}</div>
                                         <div className="text-gray-600">
-                                          {item.quantity} x {item.price.toLocaleString('vi-VN')}₫
+                                          {item.quantity} x {item.price.toLocaleString('vi-VN')}â‚«
                                         </div>
                                       </div>
                                       <div className="font-semibold flex-shrink-0">
-                                        {item.totalPrice.toLocaleString('vi-VN')}₫
+                                        {item.totalPrice.toLocaleString('vi-VN')}â‚«
                                       </div>
                                     </div>
                                   ))}
@@ -654,7 +642,7 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
                       {(!stat.orders || stat.orders.length === 0) && (
                         <div className="text-center py-4 text-gray-500">
                           <Package className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-2 text-gray-300" />
-                          <p className="text-sm">Chưa có đơn hàng nào</p>
+                          <p className="text-sm">ChÆ°a cÃ³ Ä‘Æ¡n hÃ ng nÃ o</p>
                         </div>
                       )}
                     </div>
@@ -666,8 +654,8 @@ export function PaymentReport({ startDate: propStartDate, endDate: propEndDate }
             {(!paymentStats?.paymentStats || paymentStats.paymentStats.length === 0) && (
               <div className="text-center py-8 text-gray-500">
                 <TrendingUp className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm sm:text-base">Chưa có dữ liệu thanh toán</p>
-                <p className="text-xs sm:text-sm">Hãy thực hiện một số giao dịch để xem báo cáo</p>
+                <p className="text-sm sm:text-base">ChÆ°a cÃ³ dá»¯ liá»‡u thanh toÃ¡n</p>
+                <p className="text-xs sm:text-sm">HÃ£y thá»±c hiá»‡n má»™t sá»‘ giao dá»‹ch Ä‘á»ƒ xem bÃ¡o cÃ¡o</p>
               </div>
             )}
           </div>

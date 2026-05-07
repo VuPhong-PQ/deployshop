@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RetailPointBackend.Models;
 using System.Linq;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class TaxConfigController : ControllerBase
@@ -47,3 +49,4 @@ namespace RetailPointBackend.Controllers
         }
     }
 }
+

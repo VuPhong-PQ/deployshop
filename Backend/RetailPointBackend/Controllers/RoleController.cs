@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
@@ -6,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 namespace RetailPointBackend.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class RoleController : ControllerBase
     {
@@ -86,7 +88,7 @@ namespace RetailPointBackend.Controllers
             // Check if role name already exists
             if (await _context.Roles.AnyAsync(r => r.RoleName == createRoleDto.RoleName))
             {
-                return BadRequest("Tên role đã tồn tại");
+                return BadRequest("TÃªn role Ä‘Ã£ tá»“n táº¡i");
             }
 
             var role = new Role
@@ -148,7 +150,7 @@ namespace RetailPointBackend.Controllers
                 updateRoleDto.RoleName != role.RoleName &&
                 await _context.Roles.AnyAsync(r => r.RoleName == updateRoleDto.RoleName && r.RoleId != id))
             {
-                return BadRequest("Tên role đã tồn tại");
+                return BadRequest("TÃªn role Ä‘Ã£ tá»“n táº¡i");
             }
 
             // Update fields
@@ -214,7 +216,7 @@ namespace RetailPointBackend.Controllers
             // Check if role is being used by any staff
             if (await _context.Staffs.AnyAsync(s => s.RoleId == id))
             {
-                return BadRequest("Không thể xóa role đang được sử dụng bởi nhân viên");
+                return BadRequest("KhÃ´ng thá»ƒ xÃ³a role Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng bá»Ÿi nhÃ¢n viÃªn");
             }
 
             // Remove role permissions first
@@ -233,7 +235,7 @@ namespace RetailPointBackend.Controllers
         [HttpPost("assign-permission")]
         public async Task<ActionResult> AssignPermissionToRole([FromBody] AssignPermissionDto dto)
         {
-            // Kiểm tra role và permission có tồn tại không
+            // Kiá»ƒm tra role vÃ  permission cÃ³ tá»“n táº¡i khÃ´ng
             var roleExists = await _context.Roles.AnyAsync(r => r.RoleId == dto.RoleId);
             if (!roleExists)
             {
@@ -246,7 +248,7 @@ namespace RetailPointBackend.Controllers
                 return NotFound("Permission not found");
             }
 
-            // Kiểm tra xem permission đã được assign chưa
+            // Kiá»ƒm tra xem permission Ä‘Ã£ Ä‘Æ°á»£c assign chÆ°a
             var existingAssignment = await _context.RolePermissions
                 .FirstOrDefaultAsync(rp => rp.RoleId == dto.RoleId && rp.PermissionId == dto.PermissionId);
 
@@ -255,7 +257,7 @@ namespace RetailPointBackend.Controllers
                 return BadRequest("Permission already assigned to this role");
             }
 
-            // Tạo assignment mới
+            // Táº¡o assignment má»›i
             var rolePermission = new RolePermission
             {
                 RoleId = dto.RoleId,

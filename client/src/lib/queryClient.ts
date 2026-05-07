@@ -1,5 +1,5 @@
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://101.53.9.76:5273";
+﻿
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||"http://localhost:5273");
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 
@@ -18,14 +18,22 @@ export async function apiRequest(
 ): Promise<any> {
   const fullUrl = url.startsWith("http") ? url : API_BASE + url;
   
+  // Thêm JWT token vào header
+  const token = sessionStorage.getItem("authToken");
+  const authHeaders: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   // Nếu body là FormData, xóa header Content-Type nếu có (chỉ khi headers là object)
   if (options.body instanceof FormData && options.headers && typeof options.headers === 'object') {
-    if ('Content-Type' in options.headers) {
-      delete options.headers['Content-Type'];
+    if ('Content-Type' in (options.headers as Record<string, string>)) {
+      delete (options.headers as Record<string, string>)['Content-Type'];
     }
   }
   const res = await fetch(fullUrl, {
     ...options,
+    headers: {
+      ...authHeaders,
+      ...(options.headers as Record<string, string> || {}),
+    },
     credentials: "include",
   });
   
@@ -53,7 +61,13 @@ export const getQueryFn: <T>(options: {
 
     const url = queryKey.join("/") as string;
     const fullUrl = url.startsWith("http") ? url : API_BASE + url;
+
+    // Thêm JWT token
+    const token = sessionStorage.getItem("authToken");
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
     const res = await fetch(fullUrl, {
+      headers,
       credentials: "include",
     });
 

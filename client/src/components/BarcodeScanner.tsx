@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader, NotFoundException } from "@zxing/library";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -124,20 +124,20 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
     } catch (err: any) {
       console.error('Camera initialization error:', err);
       
-      let errorMessage = 'Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập camera.';
+      let errorMessage = 'KhÃ´ng thá»ƒ truy cáº­p camera. Vui lÃ²ng kiá»ƒm tra quyá»n truy cáº­p camera.';
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMessage = 'Quyền truy cập camera bị từ chối. Vui lòng:\n\n1. Nhấn vào biểu tượng khóa 🔒 bên cạnh URL\n2. Chọn "Cho phép" cho Camera\n3. Làm mới trang và thử lại';
+        errorMessage = 'Quyá»n truy cáº­p camera bá»‹ tá»« chá»‘i. Vui lÃ²ng:\n\n1. Nháº¥n vÃ o biá»ƒu tÆ°á»£ng khÃ³a ðŸ”’ bÃªn cáº¡nh URL\n2. Chá»n "Cho phÃ©p" cho Camera\n3. LÃ m má»›i trang vÃ  thá»­ láº¡i';
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMessage = 'Không tìm thấy camera trên thiết bị này.\nVui lòng kiểm tra kết nối camera.';
+        errorMessage = 'KhÃ´ng tÃ¬m tháº¥y camera trÃªn thiáº¿t bá»‹ nÃ y.\nVui lÃ²ng kiá»ƒm tra káº¿t ná»‘i camera.';
       } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMessage = 'Camera đang được sử dụng bởi ứng dụng khác.\nVui lòng đóng các ứng dụng camera khác và thử lại.';
+        errorMessage = 'Camera Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng bá»Ÿi á»©ng dá»¥ng khÃ¡c.\nVui lÃ²ng Ä‘Ã³ng cÃ¡c á»©ng dá»¥ng camera khÃ¡c vÃ  thá»­ láº¡i.';
       } else if (err.name === 'OverConstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
-        errorMessage = 'Camera không hỗ trợ cấu hình yêu cầu.\nThử chuyển sang camera khác hoặc làm mới trang.';
+        errorMessage = 'Camera khÃ´ng há»— trá»£ cáº¥u hÃ¬nh yÃªu cáº§u.\nThá»­ chuyá»ƒn sang camera khÃ¡c hoáº·c lÃ m má»›i trang.';
       } else if (err.message === 'MEDIA_DEVICES_NOT_SUPPORTED') {
-        errorMessage = 'Trình duyệt không hỗ trợ camera.\nVui lòng sử dụng Chrome, Firefox hoặc Safari phiên bản mới nhất.';
+        errorMessage = 'TrÃ¬nh duyá»‡t khÃ´ng há»— trá»£ camera.\nVui lÃ²ng sá»­ dá»¥ng Chrome, Firefox hoáº·c Safari phiÃªn báº£n má»›i nháº¥t.';
       } else if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
-        errorMessage = 'Camera chỉ hoạt động trên HTTPS.\nVui lòng truy cập qua đường dẫn HTTPS.';
+        errorMessage = 'Camera chá»‰ hoáº¡t Ä‘á»™ng trÃªn HTTPS.\nVui lÃ²ng truy cáº­p qua Ä‘Æ°á»ng dáº«n HTTPS.';
       }
       
       setError(errorMessage);
@@ -177,7 +177,6 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
             if (now - lastScanTime > 2000) {
               setLastScanTime(now);
               const code = result.getText();
-              console.log('📷 Camera scanned barcode:', code);
               onScan(code);
               
               // Briefly pause scanning to prevent rapid duplicate scans
@@ -197,7 +196,7 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
       
     } catch (err) {
       console.error('Scanning error:', err);
-      setError('Lỗi khi quét mã vạch. Vui lòng thử lại.');
+      setError('Lá»—i khi quÃ©t mÃ£ váº¡ch. Vui lÃ²ng thá»­ láº¡i.');
       setIsScanning(false);
     }
   };
@@ -272,20 +271,20 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
               <Camera className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-gray-900">Quét mã vạch</span>
+              <span className="font-medium text-gray-900">QuÃ©t mÃ£ váº¡ch</span>
               {isInitializing && (
                 <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                  Đang khởi tạo...
+                  Äang khá»Ÿi táº¡o...
                 </Badge>
               )}
               {isScanning && !isInitializing && (
                 <Badge variant="secondary" className="bg-green-100 text-green-800">
-                  Đang quét...
+                  Äang quÃ©t...
                 </Badge>
               )}
               {retryCount > 0 && (
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                  Thử lần {retryCount + 1}
+                  Thá»­ láº§n {retryCount + 1}
                 </Badge>
               )}
             </div>
@@ -308,7 +307,7 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
                       className="bg-white text-black hover:bg-gray-100"
                       onClick={initializeScanner}
                     >
-                      🔄 Thử lại
+                      ðŸ”„ Thá»­ láº¡i
                     </Button>
                     <Button 
                       variant="outline" 
@@ -317,7 +316,7 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
                       onClick={() => setShowPermissionGuide(true)}
                     >
                       <HelpCircle className="w-4 h-4 mr-1" />
-                      Hướng dẫn
+                      HÆ°á»›ng dáº«n
                     </Button>
                     <Button 
                       variant="outline" 
@@ -325,7 +324,7 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
                       className="bg-green-600 text-white hover:bg-green-700 ml-2"
                       onClick={() => setShowManualInput(true)}
                     >
-                      ⌨️ Nhập thủ công
+                      âŒ¨ï¸ Nháº­p thá»§ cÃ´ng
                     </Button>
                   </div>
                 </div>
@@ -384,9 +383,9 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
 
           {/* Instructions */}
           <div className="p-4 text-center text-sm text-gray-600">
-            <p>Đưa mã vạch vào khung hình để quét tự động</p>
+            <p>ÄÆ°a mÃ£ váº¡ch vÃ o khung hÃ¬nh Ä‘á»ƒ quÃ©t tá»± Ä‘á»™ng</p>
             <p className="text-xs text-gray-500 mt-1">
-              Hỗ trợ: Code 128, EAN, UPC, QR Code và nhiều định dạng khác
+              Há»— trá»£: Code 128, EAN, UPC, QR Code vÃ  nhiá»u Ä‘á»‹nh dáº¡ng khÃ¡c
             </p>
             
             {/* Debug info in development */}
@@ -394,12 +393,12 @@ export function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScannerProps)
               <details className="mt-3 text-left">
                 <summary className="text-xs text-gray-400 cursor-pointer">Debug Info</summary>
                 <div className="text-xs text-gray-400 mt-2 space-y-1">
-                  <p>🌐 Protocol: {window.location.protocol}</p>
-                  <p>📱 User Agent: {navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'}</p>
-                  <p>📷 MediaDevices: {navigator.mediaDevices ? '✅' : '❌'}</p>
-                  <p>🔄 Retry Count: {retryCount}</p>
-                  <p>📹 Devices: {devices.length}</p>
-                  <p>🔦 Flash: {hasFlash ? '✅' : '❌'}</p>
+                  <p>ðŸŒ Protocol: {window.location.protocol}</p>
+                  <p>ðŸ“± User Agent: {navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'}</p>
+                  <p>ðŸ“· MediaDevices: {navigator.mediaDevices ? 'âœ…' : 'âŒ'}</p>
+                  <p>ðŸ”„ Retry Count: {retryCount}</p>
+                  <p>ðŸ“¹ Devices: {devices.length}</p>
+                  <p>ðŸ”¦ Flash: {hasFlash ? 'âœ…' : 'âŒ'}</p>
                 </div>
               </details>
             )}

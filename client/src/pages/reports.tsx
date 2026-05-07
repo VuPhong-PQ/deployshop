@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -91,7 +92,7 @@ export default function Reports() {
   // Auto refresh khi window focus (người dùng quay lại tab)
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Window focused, refreshing reports...'); // Debug log
+      // Debug log
       // Invalidate tất cả report queries để refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/reports/sales-summary'] });
       queryClient.invalidateQueries({ queryKey: ['/api/reports/product-performance'] });
@@ -108,7 +109,7 @@ export default function Reports() {
 
     // Listen for custom event từ sales page khi có order mới
     const handleNewOrder = () => {
-      console.log('New order event received, refreshing reports...'); // Debug log
+      // Debug log
       queryClient.invalidateQueries({ queryKey: ['/api/reports/sales-summary'] });
       queryClient.invalidateQueries({ queryKey: ['/api/reports/product-performance'] });
       queryClient.invalidateQueries({ queryKey: ['/api/reports/customer-analytics'] });
@@ -132,7 +133,8 @@ export default function Reports() {
     queryKey: ["/api/storeswitch/my-stores"],
     queryFn: async () => {
       try {
-        const res = await fetch("http://101.53.9.76:5273/api/storeswitch/my-stores", {
+        const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+        const res = await authFetch(`${base}/api/storeswitch/my-stores`, {
           headers: {
             "Username": "admin" // Tạm thời hardcode, sau này sẽ lấy từ auth context
           }
@@ -155,7 +157,8 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/sales-summary?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/reports/sales-summary?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch sales summary');
       }
@@ -170,7 +173,8 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/product-performance?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/reports/product-performance?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch product performance');
       }
@@ -185,7 +189,8 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/customer-analytics?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/reports/customer-analytics?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch customer analytics');
       }
@@ -200,7 +205,8 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-      const response = await fetch(`http://101.53.9.76:5273/api/reports/profit-analysis?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/reports/profit-analysis?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch profit analysis');
       }
@@ -213,20 +219,18 @@ export default function Reports() {
   const { data: discountReports, isLoading: discountLoading } = useQuery<DiscountSummaryReport>({
     queryKey: ['/api/discount-reports/summary', dateRange.startDate, dateRange.endDate],
     queryFn: async (): Promise<DiscountSummaryReport> => {
-      let url = `http://101.53.9.76:5273/api/discount-reports/summary`;
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  let url = `${base}/api/discount-reports/summary`;
       if (dateRange.startDate && dateRange.endDate) {
         const apiStart = parseToISO(dateRange.startDate);
         const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
         url += `?startDate=${apiStart}&endDate=${apiEndExclusive}`;
       }
-      
-      console.log('Fetching discount summary from:', url);
-      const response = await fetch(url);
+      const response = await authFetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch discount reports');
       }
       const result = await response.json();
-      console.log('Discount Summary result:', result);
       return result;
     },
     enabled: !!dateRange.startDate && !!dateRange.endDate, // Re-enabled!
@@ -236,26 +240,18 @@ export default function Reports() {
     const { data: discountOrders, isLoading: discountOrdersLoading } = useQuery<any>({
     queryKey: ['/api/discount-reports/orders', dateRange.startDate, dateRange.endDate],
     queryFn: async (): Promise<any> => {
-      let url = `http://101.53.9.76:5273/api/discount-reports/orders`;
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  let url = `${base}/api/discount-reports/orders`;
       if (dateRange.startDate && dateRange.endDate) {
         const apiStart = parseToISO(dateRange.startDate);
         const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
         url += `?startDate=${apiStart}&endDate=${apiEndExclusive}`;
       }
-      
-      console.log('Fetching discount orders from:', url);
-      const response = await fetch(url);
+      const response = await authFetch(url);
       if (!response.ok) {
         throw new Error('Failed to fetch discount orders');
       }
       const result = await response.json();
-      console.log('Discount Orders result:', result);
-      console.log('Discount Orders structure:', {
-        isArray: Array.isArray(result),
-        hasOrders: !!result.orders,
-        firstOrder: result.orders?.[0] || result[0],
-        totalCount: result.orders?.length || result.length
-      });
       return result; // Return full response object
     },
     enabled: !!dateRange.startDate && !!dateRange.endDate, // Re-enabled!
@@ -267,15 +263,13 @@ export default function Reports() {
     queryKey: ['/api/orders', selectedOrderId, 'detail'],
     queryFn: async () => {
       if (!selectedOrderId) return null;
-      
-      console.log('Fetching order detail for ID:', selectedOrderId);
-      const response = await fetch(`http://101.53.9.76:5273/api/orders/${selectedOrderId}`);
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/orders/${selectedOrderId}`);
       if (!response.ok) {
         console.error('Failed to fetch order detail:', response.status, response.statusText);
         throw new Error('Failed to fetch order detail');
       }
       const result = await response.json();
-      console.log('Order detail response:', result);
       return result;
     },
     enabled: !!selectedOrderId && isOrderDetailOpen,
@@ -304,10 +298,7 @@ export default function Reports() {
 
   // Handle view order detail
   const handleViewOrderDetail = (orderId: number) => {
-    console.log('Viewing order detail for:', orderId);
-    console.log('Available discount orders:', discountOrders);
     const orderWithDiscounts = discountOrders?.orders?.find((o: any) => o.orderId === orderId);
-    console.log('Found order with discounts:', orderWithDiscounts);
     setSelectedOrderId(orderId);
     setIsOrderDetailOpen(true);
   };
@@ -472,7 +463,7 @@ export default function Reports() {
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    console.log('Manual refresh button clicked'); // Debug log
+                    // Debug log
                     queryClient.invalidateQueries({ queryKey: ['/api/reports/sales-summary'] });
                     queryClient.invalidateQueries({ queryKey: ['/api/reports/product-performance'] });
                     queryClient.invalidateQueries({ queryKey: ['/api/reports/customer-analytics'] });
@@ -1130,11 +1121,6 @@ export default function Reports() {
               {/* Discount Details - Get from discountOrders data since backend doesn't include it */}
               {(() => {
                 const orderWithDiscounts = discountOrders?.orders?.find(o => o.orderId === selectedOrderId);
-                console.log('Modal - Looking for orderId:', selectedOrderId);
-                console.log('Modal - Available orders:', discountOrders?.orders?.map(o => ({ id: o.orderId, number: o.orderNumber })));
-                console.log('Modal - Found order with discounts:', orderWithDiscounts);
-                console.log('Modal - Discount details:', orderWithDiscounts?.discountDetails);
-                
                 return orderWithDiscounts?.discountDetails?.length > 0 ? (
                   <div>
                     <h3 className="font-semibold mb-3">Chi tiết giảm giá</h3>
@@ -1203,3 +1189,5 @@ export default function Reports() {
     </AppLayout>
   );
 }
+
+

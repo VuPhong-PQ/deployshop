@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class LoyaltySystemSettingsController : ControllerBase
@@ -21,7 +23,7 @@ namespace RetailPointBackend.Controllers
         }
 
         /// <summary>
-        /// Lấy cài đặt tích điểm thưởng hiện tại
+        /// Láº¥y cÃ i Ä‘áº·t tÃ­ch Ä‘iá»ƒm thÆ°á»Ÿng hiá»‡n táº¡i
         /// </summary>
         [HttpGet("settings")]
         public async Task<ActionResult<LoyaltySettings>> GetLoyaltySettings()
@@ -32,7 +34,7 @@ namespace RetailPointBackend.Controllers
                 
                 if (settings == null)
                 {
-                    // Tạo settings mặc định nếu chưa có
+                    // Táº¡o settings máº·c Ä‘á»‹nh náº¿u chÆ°a cÃ³
                     settings = new LoyaltySettings
                     {
                         IsPointsEnabled = true,
@@ -43,7 +45,7 @@ namespace RetailPointBackend.Controllers
                         MaxRedemptionPercentage = 50,
                         MaxPointsPerOrder = 0,
                         PointsExpirationDays = 365,
-                        Notes = "Cài đặt mặc định được tạo tự động"
+                        Notes = "CÃ i Ä‘áº·t máº·c Ä‘á»‹nh Ä‘Æ°á»£c táº¡o tá»± Ä‘á»™ng"
                     };
                     
                     _context.LoyaltySettings.Add(settings);
@@ -54,13 +56,13 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy cài đặt loyalty");
-                return StatusCode(500, new { message = "Lỗi server khi lấy cài đặt", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y cÃ i Ä‘áº·t loyalty");
+                return StatusCode(500, new { message = "Lá»—i server khi láº¥y cÃ i Ä‘áº·t", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Cập nhật cài đặt tích điểm thưởng
+        /// Cáº­p nháº­t cÃ i Ä‘áº·t tÃ­ch Ä‘iá»ƒm thÆ°á»Ÿng
         /// </summary>
         [HttpPut("settings")]
         public async Task<ActionResult<LoyaltySettings>> UpdateLoyaltySettings([FromBody] LoyaltySettingsUpdateRequest request)
@@ -69,26 +71,26 @@ namespace RetailPointBackend.Controllers
             {
                 if (request == null)
                 {
-                    return BadRequest(new { message = "Dữ liệu cài đặt không hợp lệ" });
+                    return BadRequest(new { message = "Dá»¯ liá»‡u cÃ i Ä‘áº·t khÃ´ng há»£p lá»‡" });
                 }
 
                 // Validate input
                 var validationResult = ValidateSettings(request);
                 if (!validationResult.IsValid)
                 {
-                    return BadRequest(new { message = "Dữ liệu không hợp lệ", errors = validationResult.Errors });
+                    return BadRequest(new { message = "Dá»¯ liá»‡u khÃ´ng há»£p lá»‡", errors = validationResult.Errors });
                 }
 
                 var settings = await _context.LoyaltySettings.FirstOrDefaultAsync();
                 
                 if (settings == null)
                 {
-                    // Tạo mới nếu chưa có
+                    // Táº¡o má»›i náº¿u chÆ°a cÃ³
                     settings = new LoyaltySettings();
                     _context.LoyaltySettings.Add(settings);
                 }
 
-                // Cập nhật các giá trị
+                // Cáº­p nháº­t cÃ¡c giÃ¡ trá»‹
                 settings.IsPointsEnabled = request.IsPointsEnabled;
                 settings.PointsRate = request.PointsRate;
                 settings.IsRedemptionEnabled = request.IsRedemptionEnabled;
@@ -103,19 +105,19 @@ namespace RetailPointBackend.Controllers
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Cài đặt loyalty đã được cập nhật bởi {User}", settings.UpdatedBy);
+                _logger.LogInformation("CÃ i Ä‘áº·t loyalty Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t bá»Ÿi {User}", settings.UpdatedBy);
 
                 return Ok(settings);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật cài đặt loyalty");
-                return StatusCode(500, new { message = "Lỗi server khi cập nhật cài đặt", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi cáº­p nháº­t cÃ i Ä‘áº·t loyalty");
+                return StatusCode(500, new { message = "Lá»—i server khi cáº­p nháº­t cÃ i Ä‘áº·t", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Reset về cài đặt mặc định
+        /// Reset vá» cÃ i Ä‘áº·t máº·c Ä‘á»‹nh
         /// </summary>
         [HttpPost("reset-defaults")]
         public async Task<ActionResult<LoyaltySettings>> ResetToDefaults()
@@ -130,7 +132,7 @@ namespace RetailPointBackend.Controllers
                     _context.LoyaltySettings.Add(settings);
                 }
 
-                // Reset về giá trị mặc định
+                // Reset vá» giÃ¡ trá»‹ máº·c Ä‘á»‹nh
                 settings.IsPointsEnabled = true;
                 settings.PointsRate = 1000;
                 settings.IsRedemptionEnabled = true;
@@ -139,25 +141,25 @@ namespace RetailPointBackend.Controllers
                 settings.MaxRedemptionPercentage = 50;
                 settings.MaxPointsPerOrder = 0;
                 settings.PointsExpirationDays = 365;
-                settings.Notes = "Đã reset về cài đặt mặc định";
+                settings.Notes = "ÄÃ£ reset vá» cÃ i Ä‘áº·t máº·c Ä‘á»‹nh";
                 settings.UpdatedAt = DateTime.UtcNow;
                 settings.UpdatedBy = User?.Identity?.Name ?? "System";
 
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Cài đặt loyalty đã được reset về mặc định bởi {User}", settings.UpdatedBy);
+                _logger.LogInformation("CÃ i Ä‘áº·t loyalty Ä‘Ã£ Ä‘Æ°á»£c reset vá» máº·c Ä‘á»‹nh bá»Ÿi {User}", settings.UpdatedBy);
 
                 return Ok(settings);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi reset cài đặt loyalty");
-                return StatusCode(500, new { message = "Lỗi server khi reset cài đặt", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi reset cÃ i Ä‘áº·t loyalty");
+                return StatusCode(500, new { message = "Lá»—i server khi reset cÃ i Ä‘áº·t", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Kiểm tra trạng thái tích điểm có hoạt động hay không
+        /// Kiá»ƒm tra tráº¡ng thÃ¡i tÃ­ch Ä‘iá»ƒm cÃ³ hoáº¡t Ä‘á»™ng hay khÃ´ng
         /// </summary>
         [HttpGet("status")]
         public async Task<ActionResult<object>> GetLoyaltyStatus()
@@ -185,13 +187,13 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy trạng thái loyalty");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi láº¥y tráº¡ng thÃ¡i loyalty");
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Simulate tích điểm cho một đơn hàng
+        /// Simulate tÃ­ch Ä‘iá»ƒm cho má»™t Ä‘Æ¡n hÃ ng
         /// </summary>
         [HttpPost("simulate-points")]
         public ActionResult<object> SimulatePointsCalculation([FromBody] SimulatePointsRequest request)
@@ -200,7 +202,7 @@ namespace RetailPointBackend.Controllers
             {
                 if (request?.OrderAmount <= 0)
                 {
-                    return BadRequest(new { message = "Số tiền đơn hàng phải > 0" });
+                    return BadRequest(new { message = "Sá»‘ tiá»n Ä‘Æ¡n hÃ ng pháº£i > 0" });
                 }
 
                 var settings = _context.LoyaltySettings.FirstOrDefault();
@@ -210,25 +212,25 @@ namespace RetailPointBackend.Controllers
                     {
                         OrderAmount = request.OrderAmount,
                         EarnedPoints = 0,
-                        Message = "Hệ thống tích điểm đang tắt"
+                        Message = "Há»‡ thá»‘ng tÃ­ch Ä‘iá»ƒm Ä‘ang táº¯t"
                     });
                 }
 
-                // Kiểm tra đơn hàng tối thiểu
+                // Kiá»ƒm tra Ä‘Æ¡n hÃ ng tá»‘i thiá»ƒu
                 if (request.OrderAmount < settings.MinOrderAmount)
                 {
                     return Ok(new
                     {
                         OrderAmount = request.OrderAmount,
                         EarnedPoints = 0,
-                        Message = $"Đơn hàng phải >= {settings.MinOrderAmount:N0} VNĐ để được tích điểm"
+                        Message = $"ÄÆ¡n hÃ ng pháº£i >= {settings.MinOrderAmount:N0} VNÄ Ä‘á»ƒ Ä‘Æ°á»£c tÃ­ch Ä‘iá»ƒm"
                     });
                 }
 
-                // Tính điểm
+                // TÃ­nh Ä‘iá»ƒm
                 var basePoints = (int)(request.OrderAmount / settings.PointsRate);
                 
-                // Áp dụng giới hạn điểm tối đa/đơn hàng
+                // Ãp dá»¥ng giá»›i háº¡n Ä‘iá»ƒm tá»‘i Ä‘a/Ä‘Æ¡n hÃ ng
                 var finalPoints = settings.MaxPointsPerOrder > 0 
                     ? Math.Min(basePoints, settings.MaxPointsPerOrder)
                     : basePoints;
@@ -240,18 +242,18 @@ namespace RetailPointBackend.Controllers
                     BasePoints = basePoints,
                     PointsRate = settings.PointsRate,
                     MaxPointsApplied = settings.MaxPointsPerOrder > 0 && basePoints > settings.MaxPointsPerOrder,
-                    Message = "Tính toán thành công"
+                    Message = "TÃ­nh toÃ¡n thÃ nh cÃ´ng"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi simulate tích điểm");
-                return StatusCode(500, new { message = "Lỗi server", error = ex.Message });
+                _logger.LogError(ex, "Lá»—i khi simulate tÃ­ch Ä‘iá»ƒm");
+                return StatusCode(500, new { message = "Lá»—i server", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// Validate dữ liệu cài đặt
+        /// Validate dá»¯ liá»‡u cÃ i Ä‘áº·t
         /// </summary>
         private ValidationResult ValidateSettings(LoyaltySettingsUpdateRequest request)
         {
@@ -259,32 +261,32 @@ namespace RetailPointBackend.Controllers
 
             if (request.PointsRate <= 0)
             {
-                result.Errors.Add("Tỷ lệ tích điểm phải > 0");
+                result.Errors.Add("Tá»· lá»‡ tÃ­ch Ä‘iá»ƒm pháº£i > 0");
             }
 
             if (request.RedemptionRate <= 0)
             {
-                result.Errors.Add("Giá trị điểm phải > 0");
+                result.Errors.Add("GiÃ¡ trá»‹ Ä‘iá»ƒm pháº£i > 0");
             }
 
             if (request.MinOrderAmount < 0)
             {
-                result.Errors.Add("Đơn hàng tối thiểu không được âm");
+                result.Errors.Add("ÄÆ¡n hÃ ng tá»‘i thiá»ƒu khÃ´ng Ä‘Æ°á»£c Ã¢m");
             }
 
             if (request.MaxRedemptionPercentage < 0 || request.MaxRedemptionPercentage > 100)
             {
-                result.Errors.Add("Phần trăm đổi điểm tối đa phải từ 0-100");
+                result.Errors.Add("Pháº§n trÄƒm Ä‘á»•i Ä‘iá»ƒm tá»‘i Ä‘a pháº£i tá»« 0-100");
             }
 
             if (request.MaxPointsPerOrder < 0)
             {
-                result.Errors.Add("Điểm tối đa/đơn hàng không được âm");
+                result.Errors.Add("Äiá»ƒm tá»‘i Ä‘a/Ä‘Æ¡n hÃ ng khÃ´ng Ä‘Æ°á»£c Ã¢m");
             }
 
             if (request.PointsExpirationDays < 0)
             {
-                result.Errors.Add("Số ngày hết hạn điểm không được âm");
+                result.Errors.Add("Sá»‘ ngÃ y háº¿t háº¡n Ä‘iá»ƒm khÃ´ng Ä‘Æ°á»£c Ã¢m");
             }
 
             result.IsValid = !result.Errors.Any();
@@ -293,7 +295,7 @@ namespace RetailPointBackend.Controllers
     }
 
     /// <summary>
-    /// Request model cho cập nhật cài đặt
+    /// Request model cho cáº­p nháº­t cÃ i Ä‘áº·t
     /// </summary>
     public class LoyaltySettingsUpdateRequest
     {
@@ -309,7 +311,7 @@ namespace RetailPointBackend.Controllers
     }
 
     /// <summary>
-    /// Request model cho simulate tích điểm
+    /// Request model cho simulate tÃ­ch Ä‘iá»ƒm
     /// </summary>
     public class SimulatePointsRequest
     {
@@ -317,7 +319,7 @@ namespace RetailPointBackend.Controllers
     }
 
     /// <summary>
-    /// Kết quả validation
+    /// Káº¿t quáº£ validation
     /// </summary>
     public class ValidationResult
     {

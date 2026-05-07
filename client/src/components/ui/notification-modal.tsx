@@ -1,4 +1,4 @@
-import { X, Info, AlertTriangle, CheckCircle } from "lucide-react";
+﻿import { X, Info, AlertTriangle, CheckCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { NotificationItem } from "@/lib/types";
@@ -26,11 +26,8 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
 
   const handleNotificationItemClick = async (notification: NotificationItem) => {
     try {
-      console.log('Clicking notification:', notification);
       // Get navigation info from API
       const navigationInfo = await getNavigationInfo(parseInt(notification.id));
-      console.log('Navigation info received:', navigationInfo);
-      
       if (navigationInfo.type === 'order' && navigationInfo.data.orderId) {
         // Handle order notifications (new order, payment success)
         setSelectedOrderId(navigationInfo.data.orderId);
@@ -46,8 +43,8 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
         }
         
         toast({
-          title: "Chuyển đến quản lý kho 📦",
-          description: `Đang mở trang kho hàng để xem chi tiết sản phẩm`,
+          title: "Chuyá»ƒn Ä‘áº¿n quáº£n lÃ½ kho ðŸ“¦",
+          description: `Äang má»Ÿ trang kho hÃ ng Ä‘á»ƒ xem chi tiáº¿t sáº£n pháº©m`,
         });
         
         navigate(`/inventory?${searchParams.toString()}`);
@@ -60,21 +57,21 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
     } catch (error) {
       console.error('Error getting navigation info:', error);
       toast({
-        title: "Lỗi",
-        description: "Không thể mở chi tiết thông báo",
+        title: "Lá»—i",
+        description: "KhÃ´ng thá»ƒ má»Ÿ chi tiáº¿t thÃ´ng bÃ¡o",
         variant: "destructive"
       });
     }
   };
 
   const handleReopenOrder = (orderDetail: any) => {
-    // Thông báo ngay lập tức
+    // ThÃ´ng bÃ¡o ngay láº­p tá»©c
     toast({
-      title: "Đang mở lại đơn hàng! 🔄",
-      description: `Đơn hàng #${orderDetail.orderId} của ${orderDetail.customerName || orderDetail.customer?.hoTen || 'khách vãng lai'} đã được tải vào giỏ hàng`,
+      title: "Äang má»Ÿ láº¡i Ä‘Æ¡n hÃ ng! ðŸ”„",
+      description: `ÄÆ¡n hÃ ng #${orderDetail.orderId} cá»§a ${orderDetail.customerName || orderDetail.customer?.hoTen || 'khÃ¡ch vÃ£ng lai'} Ä‘Ã£ Ä‘Æ°á»£c táº£i vÃ o giá» hÃ ng`,
     });
     
-    // Phát âm thanh thông báo
+    // PhÃ¡t Ã¢m thanh thÃ´ng bÃ¡o
     playNotificationSound();
     
     // Store order data in localStorage temporarily
@@ -138,7 +135,7 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900" data-testid="notification-title">
-              Thông báo
+              ThÃ´ng bÃ¡o
             </h3>
             <div className="flex items-center space-x-2">
               {notifications.length > 0 && (
@@ -149,7 +146,7 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
                   disabled={isLoading}
                   className="text-xs"
                 >
-                  Đánh dấu tất cả đã đọc
+                  ÄÃ¡nh dáº¥u táº¥t cáº£ Ä‘Ã£ Ä‘á»c
                 </Button>
               )}
               <Button
@@ -166,8 +163,8 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
         <div className="p-4 space-y-3">
           {notifications.map((notification, index) => {
             const Icon = getIcon(notification.type);
-            const isClickable = (notification.type === 'info' && notification.title === 'Đơn hàng mới') ||
-                               (notification.type === 'warning' && (notification.title === 'Cảnh báo tồn kho thấp' || notification.title === 'Hết hàng'));
+            const isClickable = (notification.type === 'info' && notification.title === 'ÄÆ¡n hÃ ng má»›i') ||
+                               (notification.type === 'warning' && (notification.title === 'Cáº£nh bÃ¡o tá»“n kho tháº¥p' || notification.title === 'Háº¿t hÃ ng'));
             
             return (
               <div 
@@ -184,7 +181,7 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
                 <div className="flex-1">
                   <p className="font-medium text-gray-900" data-testid={`notification-title-${index}`}>
                     {notification.title}
-                    {isClickable && <span className="text-xs text-blue-600 ml-2">(Click để xem chi tiết)</span>}
+                    {isClickable && <span className="text-xs text-blue-600 ml-2">(Click Ä‘á»ƒ xem chi tiáº¿t)</span>}
                   </p>
                   <p className="text-sm text-gray-600" data-testid={`notification-message-${index}`}>
                     {notification.message}
@@ -202,7 +199,7 @@ export function NotificationModal({ show, onClose }: NotificationModalProps) {
           
           {notifications.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              Không có thông báo nào
+              KhÃ´ng cÃ³ thÃ´ng bÃ¡o nÃ o
             </div>
           )}
         </div>

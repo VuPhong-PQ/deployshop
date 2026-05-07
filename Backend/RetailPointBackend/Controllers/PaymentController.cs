@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using QRCoder;
 using System;
 using System.Drawing;
@@ -6,6 +7,7 @@ using System.IO;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/payment")]
     public class PaymentController : ControllerBase
@@ -17,7 +19,7 @@ namespace RetailPointBackend.Controllers
             // Validate input
             if (string.IsNullOrWhiteSpace(request.AccountNumber) || string.IsNullOrWhiteSpace(request.AccountHolder) || string.IsNullOrWhiteSpace(request.BankName))
             {
-                return BadRequest("Thiếu thông tin tài khoản ngân hàng");
+                return BadRequest("Thiáº¿u thÃ´ng tin tÃ i khoáº£n ngÃ¢n hÃ ng");
             }
             var qrContent = $"Account: {request.AccountNumber}\nName: {request.AccountHolder}\nBank: {request.BankName}";
             var base64 = GenerateQrBase64(qrContent);
@@ -43,3 +45,4 @@ namespace RetailPointBackend.Controllers
         public string BankName { get; set; } = string.Empty;
     }
 }
+

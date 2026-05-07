@@ -1,12 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace RetailPointBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class StoreSwitchController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,8 +23,10 @@ namespace RetailPointBackend.Controllers
         [HttpGet("my-stores")]
         public async Task<ActionResult<IEnumerable<object>>> GetMyStores()
         {
-            // Lấy thông tin user từ token (tạm thời từ header)
-            var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
+            // Lấy username từ JWT claim
+            var username = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized("Không tìm thấy thông tin xác thực");
             
             var staff = await _context.Staffs
                 .Include(s => s.Role)
@@ -71,7 +76,9 @@ namespace RetailPointBackend.Controllers
         [HttpPost("set-current")]
         public async Task<IActionResult> SetCurrentStore([FromBody] SetCurrentStoreDto request)
         {
-            var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
+            var username = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized("Không tìm thấy thông tin xác thực");
             
             var staff = await _context.Staffs
                 .Include(s => s.Role)
@@ -149,7 +156,9 @@ namespace RetailPointBackend.Controllers
         [HttpGet("current-info")]
         public async Task<ActionResult<object>> GetCurrentStoreInfo()
         {
-            var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
+            var username = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized();
             var currentStoreId = HttpContext.Session.GetInt32("CurrentStoreId");
             
             // Nếu chưa có store được set, lấy store đầu tiên mà user có quyền

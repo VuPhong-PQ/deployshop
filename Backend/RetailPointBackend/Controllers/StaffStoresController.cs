@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class StaffStoresController : ControllerBase
@@ -29,7 +31,7 @@ namespace RetailPointBackend.Controllers
                 return NotFound("Staff not found");
             }
 
-            // Admin có thể truy cập tất cả stores
+            // Admin cÃ³ thá»ƒ truy cáº­p táº¥t cáº£ stores
             if (staff.Role.RoleName == "Admin")
             {
                 return await _context.Stores
@@ -38,7 +40,7 @@ namespace RetailPointBackend.Controllers
                     .ToListAsync();
             }
 
-            // Nhân viên thường chỉ được truy cập stores được phân quyền
+            // NhÃ¢n viÃªn thÆ°á»ng chá»‰ Ä‘Æ°á»£c truy cáº­p stores Ä‘Æ°á»£c phÃ¢n quyá»n
             var assignedStores = await _context.StaffStores
                 .Where(ss => ss.StaffId == staffId)
                 .Include(ss => ss.Store)
@@ -50,12 +52,12 @@ namespace RetailPointBackend.Controllers
             return assignedStores;
         }
 
-        // GET: api/StaffStores/my-stores - Lấy stores mà user hiện tại có quyền truy cập
+        // GET: api/StaffStores/my-stores - Láº¥y stores mÃ  user hiá»‡n táº¡i cÃ³ quyá»n truy cáº­p
         [HttpGet("my-stores")]
         public async Task<ActionResult<IEnumerable<object>>> GetMyStores()
         {
-            // Lấy thông tin user từ token (giả sử có middleware xử lý)
-            // Tạm thời lấy từ header hoặc session, sau này có thể lấy từ JWT token
+            // Láº¥y thÃ´ng tin user tá»« token (giáº£ sá»­ cÃ³ middleware xá»­ lÃ½)
+            // Táº¡m thá»i láº¥y tá»« header hoáº·c session, sau nÃ y cÃ³ thá»ƒ láº¥y tá»« JWT token
             var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
             
             var staff = await _context.Staffs
@@ -64,10 +66,10 @@ namespace RetailPointBackend.Controllers
                 
             if (staff == null)
             {
-                return Unauthorized("Không tìm thấy thông tin nhân viên");
+                return Unauthorized("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin nhÃ¢n viÃªn");
             }
 
-            // Nếu là Admin thì có quyền truy cập tất cả stores
+            // Náº¿u lÃ  Admin thÃ¬ cÃ³ quyá»n truy cáº­p táº¥t cáº£ stores
             if (staff.Role.RoleName == "Admin")
             {
                 var allStores = await _context.Stores
@@ -85,7 +87,7 @@ namespace RetailPointBackend.Controllers
                 return Ok(allStores);
             }
 
-            // Lấy stores được assign cho staff này
+            // Láº¥y stores Ä‘Æ°á»£c assign cho staff nÃ y
             var assignedStores = await _context.StaffStores
                 .Where(ss => ss.StaffId == staff.StaffId)
                 .Include(ss => ss.Store)
@@ -104,7 +106,7 @@ namespace RetailPointBackend.Controllers
             return Ok(assignedStores);
         }
 
-        // POST: api/StaffStores/set-current-store - Đặt cửa hàng hiện tại cho session
+        // POST: api/StaffStores/set-current-store - Äáº·t cá»­a hÃ ng hiá»‡n táº¡i cho session
         [HttpPost("set-current-store")]
         public async Task<IActionResult> SetCurrentStore([FromBody] SetCurrentStoreDto request)
         {
@@ -116,17 +118,17 @@ namespace RetailPointBackend.Controllers
                 
             if (staff == null)
             {
-                return Unauthorized("Không tìm thấy thông tin nhân viên");
+                return Unauthorized("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin nhÃ¢n viÃªn");
             }
 
-            // Kiểm tra xem store có tồn tại và active không
+            // Kiá»ƒm tra xem store cÃ³ tá»“n táº¡i vÃ  active khÃ´ng
             var store = await _context.Stores.FindAsync(request.StoreId);
             if (store == null || !store.IsActive)
             {
-                return BadRequest("Cửa hàng không tồn tại hoặc không hoạt động");
+                return BadRequest("Cá»­a hÃ ng khÃ´ng tá»“n táº¡i hoáº·c khÃ´ng hoáº¡t Ä‘á»™ng");
             }
 
-            // Kiểm tra quyền truy cập store
+            // Kiá»ƒm tra quyá»n truy cáº­p store
             var hasAccess = false;
             if (staff.Role.RoleName == "Admin")
             {
@@ -140,20 +142,20 @@ namespace RetailPointBackend.Controllers
 
             if (!hasAccess)
             {
-                return StatusCode(403, "Bạn không có quyền truy cập cửa hàng này");
+                return StatusCode(403, "Báº¡n khÃ´ng cÃ³ quyá»n truy cáº­p cá»­a hÃ ng nÃ y");
             }
 
-            // Lưu store hiện tại vào session hoặc return để frontend lưu
+            // LÆ°u store hiá»‡n táº¡i vÃ o session hoáº·c return Ä‘á»ƒ frontend lÆ°u
             HttpContext.Session.SetInt32("CurrentStoreId", request.StoreId);
             
             return Ok(new { 
-                message = "Đã chuyển đổi cửa hàng thành công",
+                message = "ÄÃ£ chuyá»ƒn Ä‘á»•i cá»­a hÃ ng thÃ nh cÃ´ng",
                 storeId = request.StoreId,
                 storeName = store.Name
             });
         }
 
-        // GET: api/StaffStores/current-store - Lấy thông tin cửa hàng hiện tại
+        // GET: api/StaffStores/current-store - Láº¥y thÃ´ng tin cá»­a hÃ ng hiá»‡n táº¡i
         [HttpGet("current-store")]
         public async Task<ActionResult<object>> GetCurrentStore()
         {
@@ -161,7 +163,7 @@ namespace RetailPointBackend.Controllers
             
             if (currentStoreId == null)
             {
-                // Nếu chưa set, lấy store đầu tiên mà user có quyền
+                // Náº¿u chÆ°a set, láº¥y store Ä‘áº§u tiÃªn mÃ  user cÃ³ quyá»n
                 var myStoresResult = await GetMyStores();
                 if (myStoresResult.Result is OkObjectResult okResult)
                 {
@@ -181,7 +183,7 @@ namespace RetailPointBackend.Controllers
 
             if (currentStoreId == null)
             {
-                return Ok(new { message = "Chưa có cửa hàng nào được chọn" });
+                return Ok(new { message = "ChÆ°a cÃ³ cá»­a hÃ ng nÃ o Ä‘Æ°á»£c chá»n" });
             }
 
             var store = await _context.Stores
@@ -198,7 +200,7 @@ namespace RetailPointBackend.Controllers
 
             if (store == null)
             {
-                return NotFound("Cửa hàng hiện tại không tồn tại");
+                return NotFound("Cá»­a hÃ ng hiá»‡n táº¡i khÃ´ng tá»“n táº¡i");
             }
 
             return Ok(store);
@@ -208,19 +210,19 @@ namespace RetailPointBackend.Controllers
         [HttpGet("{staffId}/available-stores")]
         public async Task<ActionResult<IEnumerable<Store>>> GetAvailableStores(int staffId)
         {
-            // Lấy tất cả stores đang hoạt động
+            // Láº¥y táº¥t cáº£ stores Ä‘ang hoáº¡t Ä‘á»™ng
             var allStores = await _context.Stores
                 .Where(s => s.IsActive)
                 .OrderBy(s => s.Name)
                 .ToListAsync();
 
-            // Lấy stores đã được assign cho staff này
+            // Láº¥y stores Ä‘Ã£ Ä‘Æ°á»£c assign cho staff nÃ y
             var assignedStoreIds = await _context.StaffStores
                 .Where(ss => ss.StaffId == staffId)
                 .Select(ss => ss.StoreId)
                 .ToListAsync();
 
-            // Trả về stores chưa được assign
+            // Tráº£ vá» stores chÆ°a Ä‘Æ°á»£c assign
             var availableStores = allStores
                 .Where(s => !assignedStoreIds.Contains(s.StoreId))
                 .ToList();
@@ -237,7 +239,7 @@ namespace RetailPointBackend.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Kiểm tra staff tồn tại
+            // Kiá»ƒm tra staff tá»“n táº¡i
             var staff = await _context.Staffs
                 .Include(s => s.Role)
                 .FirstOrDefaultAsync(s => s.StaffId == request.StaffId);
@@ -247,13 +249,13 @@ namespace RetailPointBackend.Controllers
                 return NotFound("Staff not found");
             }
 
-            // Admin không cần assign stores (có quyền truy cập tất cả)
+            // Admin khÃ´ng cáº§n assign stores (cÃ³ quyá»n truy cáº­p táº¥t cáº£)
             if (staff.Role.RoleName == "Admin")
             {
-                return BadRequest("Admin không cần phân quyền cửa hàng");
+                return BadRequest("Admin khÃ´ng cáº§n phÃ¢n quyá»n cá»­a hÃ ng");
             }
 
-            // Kiểm tra store tồn tại và đang hoạt động
+            // Kiá»ƒm tra store tá»“n táº¡i vÃ  Ä‘ang hoáº¡t Ä‘á»™ng
             var store = await _context.Stores
                 .FirstOrDefaultAsync(s => s.StoreId == request.StoreId && s.IsActive);
 
@@ -262,16 +264,16 @@ namespace RetailPointBackend.Controllers
                 return NotFound("Store not found or inactive");
             }
 
-            // Kiểm tra đã được assign chưa
+            // Kiá»ƒm tra Ä‘Ã£ Ä‘Æ°á»£c assign chÆ°a
             var existingAssignment = await _context.StaffStores
                 .FirstOrDefaultAsync(ss => ss.StaffId == request.StaffId && ss.StoreId == request.StoreId);
 
             if (existingAssignment != null)
             {
-                return BadRequest("Staff đã được phân quyền vào cửa hàng này");
+                return BadRequest("Staff Ä‘Ã£ Ä‘Æ°á»£c phÃ¢n quyá»n vÃ o cá»­a hÃ ng nÃ y");
             }
 
-            // Tạo assignment mới
+            // Táº¡o assignment má»›i
             var staffStore = new StaffStore
             {
                 StaffId = request.StaffId,
@@ -281,7 +283,7 @@ namespace RetailPointBackend.Controllers
             _context.StaffStores.Add(staffStore);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Phân quyền cửa hàng thành công" });
+            return Ok(new { message = "PhÃ¢n quyá»n cá»­a hÃ ng thÃ nh cÃ´ng" });
         }
 
         // DELETE: api/StaffStores/unassign
@@ -299,7 +301,7 @@ namespace RetailPointBackend.Controllers
             _context.StaffStores.Remove(staffStore);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Đã hủy phân quyền cửa hàng" });
+            return Ok(new { message = "ÄÃ£ há»§y phÃ¢n quyá»n cá»­a hÃ ng" });
         }
 
         // GET: api/StaffStores/staff-assignments
@@ -319,7 +321,7 @@ namespace RetailPointBackend.Controllers
                     RoleName = s.Role.RoleName,
                     IsAdmin = s.Role.RoleName == "Admin",
                     AssignedStores = s.Role.RoleName == "Admin" 
-                        ? new List<object>() // Admin không cần hiển thị stores cụ thể
+                        ? new List<object>() // Admin khÃ´ng cáº§n hiá»ƒn thá»‹ stores cá»¥ thá»ƒ
                         : s.StaffStores.Where(ss => ss.Store.IsActive)
                             .Select(ss => new
                             {

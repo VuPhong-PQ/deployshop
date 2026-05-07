@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ interface LoginResponse {
   roleName: string;
   permissions: string[];
   lastLogin?: string;
+  token: string;
 }
 
 export default function Login() {
@@ -47,7 +48,8 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginRequest): Promise<LoginResponse> => {
       try {
-        const response = await fetch("http://101.53.9.76:5273/api/staff/login", {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await fetch(`${base}/api/staff/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -70,8 +72,8 @@ export default function Login() {
       }
     },
     onSuccess: async (data) => {
-      // Sử dụng context để lưu thông tin đăng nhập
-      login(data);
+      // Lưu user + JWT token vào sessionStorage
+      login(data, data.token);
       
       toast({
         title: "Đăng nhập thành công",
@@ -83,11 +85,12 @@ export default function Login() {
       
       // Check số lượng stores được assign để quyết định redirect
       try {
-        const response = await fetch('http://101.53.9.76:5273/api/storeswitch/my-stores', {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await fetch(`${base}/api/storeswitch/my-stores`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Username': data.username
+            'Authorization': `Bearer ${data.token}`
           },
           credentials: 'include'
         });
@@ -104,11 +107,12 @@ export default function Login() {
             const store = stores[0];
             
             // Set current store trước khi redirect
-            await fetch('http://101.53.9.76:5273/api/storeswitch/set-current', {
+            const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+            await fetch(`${base}/api/storeswitch/set-current`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Username': data.username
+                'Authorization': `Bearer ${data.token}`
               },
               credentials: 'include',
               body: JSON.stringify({ storeId: store.storeId })
@@ -270,7 +274,6 @@ export default function Login() {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-400">Vui lòng liên hệ Admin: <span className="font-medium">Vũ Phong</span></p>
                 <p className="text-xs text-gray-400">ĐT: <span className="font-medium">0907 999 841</span></p>
-                <p className="text-xs text-gray-400">Email: <span className="font-medium">vuphongpq@gmail.com</span></p>
                 <p className="text-xs text-gray-400 mt-1">Xin cảm ơn</p>
               </div>
             </div>

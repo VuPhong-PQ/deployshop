@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using OfficeOpenXml;
@@ -15,6 +16,7 @@ namespace RetailPointBackend.Controllers
         public int? NewStock { get; set; }
     }
 
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class InventoryController : ControllerBase
@@ -74,7 +76,7 @@ namespace RetailPointBackend.Controllers
                         StaffId = t.StaffId,
                         StaffName = t.Staff.FullName,
                         Type = t.Type == TransactionType.IN ? "IN" : "OUT",
-                        TypeName = t.Type == TransactionType.IN ? "Nhập kho" : "Xuất kho",
+                        TypeName = t.Type == TransactionType.IN ? "Nháº­p kho" : "Xuáº¥t kho",
                         Quantity = t.Quantity,
                         UnitPrice = t.UnitPrice,
                         TotalValue = t.TotalValue,
@@ -105,7 +107,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting inventory transactions: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi lấy lịch sử xuất nhập kho", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y lá»‹ch sá»­ xuáº¥t nháº­p kho", error = ex.Message });
             }
         }
 
@@ -150,7 +152,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting inventory summary: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi lấy tổng hợp kho", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y tá»•ng há»£p kho", error = ex.Message });
             }
         }
 
@@ -171,7 +173,7 @@ namespace RetailPointBackend.Controllers
                 var product = await _context.Products.FindAsync(dto.ProductId);
                 if (product == null)
                 {
-                    return NotFound(new { message = "Sản phẩm không tồn tại" });
+                    return NotFound(new { message = "Sáº£n pháº©m khÃ´ng tá»“n táº¡i" });
                 }
 
                 // Get current user (for now, use a default staff ID - you should get this from authentication)
@@ -216,7 +218,7 @@ namespace RetailPointBackend.Controllers
                     StaffId = transaction.StaffId,
                     StaffName = "Admin", // TODO: Get from staff entity
                     Type = "IN",
-                    TypeName = "Nhập kho",
+                    TypeName = "Nháº­p kho",
                     Quantity = transaction.Quantity,
                     UnitPrice = transaction.UnitPrice,
                     TotalValue = transaction.TotalValue,
@@ -236,7 +238,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error creating inbound transaction: {ex.Message}");
-                return StatusCode(500, new { message = "Không thể tạo giao dịch nhập kho", error = ex.Message });
+                return StatusCode(500, new { message = "KhÃ´ng thá»ƒ táº¡o giao dá»‹ch nháº­p kho", error = ex.Message });
             }
         }
 
@@ -257,12 +259,12 @@ namespace RetailPointBackend.Controllers
                 var product = await _context.Products.FindAsync(dto.ProductId);
                 if (product == null)
                 {
-                    return NotFound(new { message = "Sản phẩm không tồn tại" });
+                    return NotFound(new { message = "Sáº£n pháº©m khÃ´ng tá»“n táº¡i" });
                 }
 
                 if (product.StockQuantity < dto.Quantity)
                 {
-                    return BadRequest(new { message = $"Không đủ hàng tồn kho. Hiện có: {product.StockQuantity}, yêu cầu: {dto.Quantity}" });
+                    return BadRequest(new { message = $"KhÃ´ng Ä‘á»§ hÃ ng tá»“n kho. Hiá»‡n cÃ³: {product.StockQuantity}, yÃªu cáº§u: {dto.Quantity}" });
                 }
 
                 // Get current user (for now, use a default staff ID)
@@ -306,7 +308,7 @@ namespace RetailPointBackend.Controllers
                     StaffId = transaction.StaffId,
                     StaffName = "Admin", // TODO: Get from staff entity
                     Type = "OUT",
-                    TypeName = "Xuất kho",
+                    TypeName = "Xuáº¥t kho",
                     Quantity = transaction.Quantity,
                     UnitPrice = transaction.UnitPrice,
                     TotalValue = transaction.TotalValue,
@@ -325,7 +327,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error creating outbound transaction: {ex.Message}");
-                return StatusCode(500, new { message = "Không thể tạo giao dịch xuất kho", error = ex.Message });
+                return StatusCode(500, new { message = "KhÃ´ng thá»ƒ táº¡o giao dá»‹ch xuáº¥t kho", error = ex.Message });
             }
         }
 
@@ -349,7 +351,7 @@ namespace RetailPointBackend.Controllers
                         StaffId = t.StaffId,
                         StaffName = t.Staff.FullName,
                         Type = t.Type == TransactionType.IN ? "IN" : "OUT",
-                        TypeName = t.Type == TransactionType.IN ? "Nhập kho" : "Xuất kho",
+                        TypeName = t.Type == TransactionType.IN ? "Nháº­p kho" : "Xuáº¥t kho",
                         Quantity = t.Quantity,
                         UnitPrice = t.UnitPrice,
                         TotalValue = t.TotalValue,
@@ -368,7 +370,7 @@ namespace RetailPointBackend.Controllers
 
                 if (transaction == null)
                 {
-                    return NotFound(new { message = "Giao dịch không tồn tại" });
+                    return NotFound(new { message = "Giao dá»‹ch khÃ´ng tá»“n táº¡i" });
                 }
 
                 return Ok(transaction);
@@ -376,7 +378,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting transaction {id}: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi lấy thông tin giao dịch", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y thÃ´ng tin giao dá»‹ch", error = ex.Message });
             }
         }
 
@@ -401,17 +403,17 @@ namespace RetailPointBackend.Controllers
                 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
                 using var package = new ExcelPackage();
                 
-                // Tạo worksheet cho template
-                var worksheet = package.Workbook.Worksheets.Add("Template Tồn Kho");
+                // Táº¡o worksheet cho template
+                var worksheet = package.Workbook.Worksheets.Add("Template Tá»“n Kho");
                 
-                // Thêm header
-                worksheet.Cells[1, 1].Value = "ID Sản Phẩm";
-                worksheet.Cells[1, 2].Value = "Tên Sản Phẩm";
+                // ThÃªm header
+                worksheet.Cells[1, 1].Value = "ID Sáº£n Pháº©m";
+                worksheet.Cells[1, 2].Value = "TÃªn Sáº£n Pháº©m";
                 worksheet.Cells[1, 3].Value = "SKU";
-                worksheet.Cells[1, 4].Value = "Tồn Kho Hiện Tại";
-                worksheet.Cells[1, 5].Value = "Tồn Kho Mới";
-                worksheet.Cells[1, 6].Value = "Lý Do Thay Đổi";
-                worksheet.Cells[1, 7].Value = "Giá";
+                worksheet.Cells[1, 4].Value = "Tá»“n Kho Hiá»‡n Táº¡i";
+                worksheet.Cells[1, 5].Value = "Tá»“n Kho Má»›i";
+                worksheet.Cells[1, 6].Value = "LÃ½ Do Thay Äá»•i";
+                worksheet.Cells[1, 7].Value = "GiÃ¡";
                 
                 // Format header
                 using (var range = worksheet.Cells[1, 1, 1, 7])
@@ -421,7 +423,7 @@ namespace RetailPointBackend.Controllers
                     range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
                 }
                 
-                // Thêm dữ liệu sản phẩm
+                // ThÃªm dá»¯ liá»‡u sáº£n pháº©m
                 for (int i = 0; i < products.Count; i++)
                 {
                     int row = i + 2;
@@ -431,25 +433,25 @@ namespace RetailPointBackend.Controllers
                     worksheet.Cells[row, 2].Value = product.Name;
                     worksheet.Cells[row, 3].Value = product.SKU ?? "";
                     worksheet.Cells[row, 4].Value = product.StockQuantity;
-                    worksheet.Cells[row, 5].Value = ""; // Để trống cho người dùng nhập
-                    worksheet.Cells[row, 6].Value = ""; // Để trống cho người dùng nhập lý do
+                    worksheet.Cells[row, 5].Value = ""; // Äá»ƒ trá»‘ng cho ngÆ°á»i dÃ¹ng nháº­p
+                    worksheet.Cells[row, 6].Value = ""; // Äá»ƒ trá»‘ng cho ngÆ°á»i dÃ¹ng nháº­p lÃ½ do
                     worksheet.Cells[row, 7].Value = product.Price;
                 }
                 
                 // Auto-fit columns
                 worksheet.Cells.AutoFitColumns();
                 
-                // Tạo worksheet hướng dẫn
-                var instructionWs = package.Workbook.Worksheets.Add("Hướng Dẫn");
-                instructionWs.Cells[1, 1].Value = "HƯỚNG DẪN SỬ DỤNG TEMPLATE TỒNG KHO";
+                // Táº¡o worksheet hÆ°á»›ng dáº«n
+                var instructionWs = package.Workbook.Worksheets.Add("HÆ°á»›ng Dáº«n");
+                instructionWs.Cells[1, 1].Value = "HÆ¯á»šNG DáºªN Sá»¬ Dá»¤NG TEMPLATE Tá»’NG KHO";
                 instructionWs.Cells[1, 1].Style.Font.Bold = true;
                 instructionWs.Cells[1, 1].Style.Font.Size = 14;
                 
-                instructionWs.Cells[3, 1].Value = "1. Chỉ được thay đổi cột 'Tồn Kho Mới' và 'Lý Do Thay Đổi'";
-                instructionWs.Cells[4, 1].Value = "2. Không được thay đổi ID Sản Phẩm, Tên, SKU, hoặc Tồn Kho Hiện Tại";
-                instructionWs.Cells[5, 1].Value = "3. Lý do thay đổi là bắt buộc khi cập nhật tồn kho";
-                instructionWs.Cells[6, 1].Value = "4. Nếu trùng ID hoặc tên sản phẩm, hệ thống sẽ bỏ qua";
-                instructionWs.Cells[7, 1].Value = "5. Chỉ nhập số nguyên dương cho cột 'Tồn Kho Mới'";
+                instructionWs.Cells[3, 1].Value = "1. Chá»‰ Ä‘Æ°á»£c thay Ä‘á»•i cá»™t 'Tá»“n Kho Má»›i' vÃ  'LÃ½ Do Thay Äá»•i'";
+                instructionWs.Cells[4, 1].Value = "2. KhÃ´ng Ä‘Æ°á»£c thay Ä‘á»•i ID Sáº£n Pháº©m, TÃªn, SKU, hoáº·c Tá»“n Kho Hiá»‡n Táº¡i";
+                instructionWs.Cells[5, 1].Value = "3. LÃ½ do thay Ä‘á»•i lÃ  báº¯t buá»™c khi cáº­p nháº­t tá»“n kho";
+                instructionWs.Cells[6, 1].Value = "4. Náº¿u trÃ¹ng ID hoáº·c tÃªn sáº£n pháº©m, há»‡ thá»‘ng sáº½ bá» qua";
+                instructionWs.Cells[7, 1].Value = "5. Chá»‰ nháº­p sá»‘ nguyÃªn dÆ°Æ¡ng cho cá»™t 'Tá»“n Kho Má»›i'";
                 
                 instructionWs.Cells.AutoFitColumns();
                 
@@ -463,7 +465,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error exporting template: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi xuất template", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi xuáº¥t template", error = ex.Message });
             }
         }
 
@@ -473,12 +475,12 @@ namespace RetailPointBackend.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { message = "Vui lòng chọn file Excel" });
+                return BadRequest(new { message = "Vui lÃ²ng chá»n file Excel" });
             }
 
             if (!file.FileName.EndsWith(".xlsx") && !file.FileName.EndsWith(".xls"))
             {
-                return BadRequest(new { message = "Chỉ chấp nhận file Excel (.xlsx, .xls)" });
+                return BadRequest(new { message = "Chá»‰ cháº¥p nháº­n file Excel (.xlsx, .xls)" });
             }
 
             try
@@ -495,16 +497,16 @@ namespace RetailPointBackend.Controllers
                 
                 if (worksheet == null)
                 {
-                    return BadRequest(new { message = "File Excel không có dữ liệu" });
+                    return BadRequest(new { message = "File Excel khÃ´ng cÃ³ dá»¯ liá»‡u" });
                 }
 
                 var rowCount = worksheet.Dimension?.Rows ?? 0;
                 if (rowCount < 2)
                 {
-                    return BadRequest(new { message = "File Excel không có dữ liệu để import" });
+                    return BadRequest(new { message = "File Excel khÃ´ng cÃ³ dá»¯ liá»‡u Ä‘á»ƒ import" });
                 }
 
-                // Lấy danh sách sản phẩm hiện có
+                // Láº¥y danh sÃ¡ch sáº£n pháº©m hiá»‡n cÃ³
                 var existingProducts = await _context.Products.ToListAsync();
                 var existingProductIds = existingProducts.Select(p => p.ProductId).ToHashSet();
                 var existingProductNames = existingProducts
@@ -524,39 +526,39 @@ namespace RetailPointBackend.Controllers
                         {
                             Row = row,
                             ProductName = productName ?? "",
-                            Status = "Thành công"
+                            Status = "ThÃ nh cÃ´ng"
                         };
 
-                        // Validate dữ liệu
+                        // Validate dá»¯ liá»‡u
                         if (string.IsNullOrEmpty(productIdCell) && string.IsNullOrEmpty(productName))
                         {
-                            result.Status = "Bỏ qua - Thiếu thông tin sản phẩm";
+                            result.Status = "Bá» qua - Thiáº¿u thÃ´ng tin sáº£n pháº©m";
                             results.Add(result);
                             continue;
                         }
 
                         if (string.IsNullOrEmpty(newStockCell))
                         {
-                            result.Status = "Bỏ qua - Không có tồn kho mới";
+                            result.Status = "Bá» qua - KhÃ´ng cÃ³ tá»“n kho má»›i";
                             results.Add(result);
                             continue;
                         }
 
                         if (string.IsNullOrEmpty(reason))
                         {
-                            result.Status = "Lỗi - Thiếu lý do thay đổi";
+                            result.Status = "Lá»—i - Thiáº¿u lÃ½ do thay Ä‘á»•i";
                             results.Add(result);
                             continue;
                         }
 
                         if (!int.TryParse(newStockCell, out int newStock) || newStock < 0)
                         {
-                            result.Status = "Lỗi - Tồn kho mới không hợp lệ";
+                            result.Status = "Lá»—i - Tá»“n kho má»›i khÃ´ng há»£p lá»‡";
                             results.Add(result);
                             continue;
                         }
 
-                        // Tìm sản phẩm
+                        // TÃ¬m sáº£n pháº©m
                         Product? product = null;
                         
                         if (int.TryParse(productIdCell, out int productId))
@@ -571,20 +573,20 @@ namespace RetailPointBackend.Controllers
 
                         if (product == null)
                         {
-                            result.Status = "Lỗi - Không tìm thấy sản phẩm";
+                            result.Status = "Lá»—i - KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m";
                             results.Add(result);
                             continue;
                         }
 
-                        // Kiểm tra trùng lặp trong batch hiện tại
+                        // Kiá»ƒm tra trÃ¹ng láº·p trong batch hiá»‡n táº¡i
                         if (transactions.Any(t => t.ProductId == product.ProductId))
                         {
-                            result.Status = "Bỏ qua - Sản phẩm đã được cập nhật trong batch này";
+                            result.Status = "Bá» qua - Sáº£n pháº©m Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t trong batch nÃ y";
                             results.Add(result);
                             continue;
                         }
 
-                        // Tạo transaction
+                        // Táº¡o transaction
                         var oldStock = product.StockQuantity;
                         var quantityChange = newStock - oldStock;
                         
@@ -614,7 +616,7 @@ namespace RetailPointBackend.Controllers
                         }
                         else
                         {
-                            result.Status = "Bỏ qua - Không có thay đổi";
+                            result.Status = "Bá» qua - KhÃ´ng cÃ³ thay Ä‘á»•i";
                         }
 
                         results.Add(result);
@@ -624,13 +626,13 @@ namespace RetailPointBackend.Controllers
                         results.Add(new ImportResult
                         {
                             Row = row,
-                            Status = $"Lỗi - {ex.Message}",
+                            Status = $"Lá»—i - {ex.Message}",
                             ProductName = worksheet.Cells[row, 2].Value?.ToString() ?? ""
                         });
                     }
                 }
 
-                // Lưu vào database
+                // LÆ°u vÃ o database
                 if (transactions.Any())
                 {
                     _context.InventoryTransactions.AddRange(transactions);
@@ -640,9 +642,9 @@ namespace RetailPointBackend.Controllers
                 var summary = new
                 {
                     TotalRows = rowCount - 1,
-                    Successful = results.Count(r => r.Status == "Thành công"),
-                    Skipped = results.Count(r => r.Status.StartsWith("Bỏ qua")),
-                    Errors = results.Count(r => r.Status.StartsWith("Lỗi")),
+                    Successful = results.Count(r => r.Status == "ThÃ nh cÃ´ng"),
+                    Skipped = results.Count(r => r.Status.StartsWith("Bá» qua")),
+                    Errors = results.Count(r => r.Status.StartsWith("Lá»—i")),
                     Details = results
                 };
 
@@ -651,7 +653,7 @@ namespace RetailPointBackend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error importing inventory: {ex.Message}");
-                return StatusCode(500, new { message = "Lỗi khi import dữ liệu", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi import dá»¯ liá»‡u", error = ex.Message });
             }
         }
     }

@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useQuery } from '@tanstack/react-query';
 
 export interface Discount {
@@ -40,7 +41,8 @@ export const useAvailableDiscounts = () => {
   return useQuery({
     queryKey: ['discounts', 'available'],
     queryFn: async (): Promise<Discount[]> => {
-      const response = await fetch('http://101.53.9.76:5273/api/discounts?status=active');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/discounts?status=active`);
       if (!response.ok) {
         throw new Error('Failed to fetch available discounts');
       }
@@ -53,7 +55,8 @@ export const useAvailableDiscounts = () => {
 // Hook để tính toán giảm giá
 export const useDiscountCalculation = () => {
   const calculateDiscount = async (request: DiscountCalculationRequest): Promise<DiscountCalculationResponse> => {
-    const response = await fetch('http://101.53.9.76:5273/api/order-discounts/calculate', {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/order-discounts/calculate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +77,8 @@ export const useDiscountCalculation = () => {
 // Hook để áp dụng giảm giá cho đơn hàng
 export const useApplyDiscount = () => {
   const applyDiscount = async (orderId: number, discountId: number): Promise<void> => {
-    const response = await fetch(`http://101.53.9.76:5273/api/orders/${orderId}/discounts/apply`, {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const response = await authFetch(`${base}/api/orders/${orderId}/discounts/apply`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

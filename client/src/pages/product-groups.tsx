@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -82,10 +83,6 @@ export default function ProductGroups() {
   const products = (productsResponse as any)?.Products || (productsResponse as any)?.products || [];
   
   // Debug logs
-  console.log('Product Groups - productsResponse:', productsResponse);
-  console.log('Product Groups - products:', products);
-  console.log('Product Groups - products length:', products?.length);
-
   // Form
   const form = useForm<ProductGroupFormData>({
     resolver: zodResolver(productGroupFormSchema),
@@ -227,7 +224,8 @@ export default function ProductGroups() {
   // Export template mutation
   const exportTemplateMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('http://101.53.9.76:5273/api/productgroups/export-template');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const response = await authFetch(`${base}/api/productgroups/export-template`);
       if (!response.ok) {
         throw new Error('Failed to export template');
       }
@@ -261,7 +259,8 @@ export default function ProductGroups() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      const response = await fetch('http://101.53.9.76:5273/api/productgroups/import-excel', {
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const response = await authFetch(`${base}/api/productgroups/import-excel`, {
         method: 'POST',
         body: formData,
       });
@@ -348,7 +347,6 @@ export default function ProductGroups() {
 
   const getProductCount = (groupId: string | number) => {
     if (!Array.isArray(products)) {
-      console.log('getProductCount - products is not array:', products);
       return 0;
     }
     
@@ -362,9 +360,6 @@ export default function ProductGroups() {
                      productGroupId === groupIdStr;
       return matches;
     });
-    
-    console.log(`getProductCount - groupId: ${groupId}, found: ${matchedProducts.length} products`);
-    
     return matchedProducts.length;
   };
 
@@ -759,3 +754,5 @@ export default function ProductGroups() {
     </AppLayout>
   );
 }
+
+

@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
@@ -6,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 namespace RetailPointBackend.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class PermissionController : ControllerBase
     {
@@ -70,7 +72,7 @@ namespace RetailPointBackend.Controllers
             // Check if permission name already exists
             if (await _context.Permissions.AnyAsync(p => p.PermissionName == createPermissionDto.PermissionName))
             {
-                return BadRequest("Tên permission đã tồn tại");
+                return BadRequest("TÃªn permission Ä‘Ã£ tá»“n táº¡i");
             }
 
             var permission = new Permission
@@ -115,7 +117,7 @@ namespace RetailPointBackend.Controllers
                 updatePermissionDto.PermissionName != permission.PermissionName &&
                 await _context.Permissions.AnyAsync(p => p.PermissionName == updatePermissionDto.PermissionName && p.PermissionId != id))
             {
-                return BadRequest("Tên permission đã tồn tại");
+                return BadRequest("TÃªn permission Ä‘Ã£ tá»“n táº¡i");
             }
 
             // Update fields
@@ -160,7 +162,7 @@ namespace RetailPointBackend.Controllers
             // Check if permission is being used by any role
             if (await _context.RolePermissions.AnyAsync(rp => rp.PermissionId == id))
             {
-                return BadRequest("Không thể xóa permission đang được sử dụng bởi role");
+                return BadRequest("KhÃ´ng thá»ƒ xÃ³a permission Ä‘ang Ä‘Æ°á»£c sá»­ dá»¥ng bá»Ÿi role");
             }
 
             _context.Permissions.Remove(permission);

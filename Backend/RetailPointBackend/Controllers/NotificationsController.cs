@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.Text.Json;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class NotificationsController : ControllerBase
@@ -146,7 +148,7 @@ namespace RetailPointBackend.Controllers
                     type = "order",
                     path = "/orders",
                     orderId = notification.OrderId,
-                    title = "Chi tiết đơn hàng",
+                    title = "Chi tiáº¿t Ä‘Æ¡n hÃ ng",
                     data = new
                     {
                         orderId = notification.OrderId
@@ -158,7 +160,7 @@ namespace RetailPointBackend.Controllers
                     type = "order",
                     path = "/orders",
                     orderId = notification.OrderId,
-                    title = "Chi tiết thanh toán",
+                    title = "Chi tiáº¿t thanh toÃ¡n",
                     data = new
                     {
                         orderId = notification.OrderId
@@ -168,7 +170,7 @@ namespace RetailPointBackend.Controllers
                 {
                     type = "general",
                     path = "/",
-                    title = "Trang chủ",
+                    title = "Trang chá»§",
                     data = new { }
                 }
             };
@@ -208,11 +210,11 @@ namespace RetailPointBackend.Controllers
                 type = "product",
                 path = "/inventory",
                 productId = productId,
-                title = "Chi tiết sản phẩm",
+                title = "Chi tiáº¿t sáº£n pháº©m",
                 data = new
                 {
                     productId = productId,
-                    searchTerm = productName ?? "Sản phẩm"
+                    searchTerm = productName ?? "Sáº£n pháº©m"
                 }
             };
         }
@@ -278,7 +280,7 @@ namespace RetailPointBackend.Controllers
                     var firstProduct = productsElement[0].GetString();
                     if (!string.IsNullOrEmpty(firstProduct))
                     {
-                        // Extract product name from "Dép nam (còn 2)" format
+                        // Extract product name from "DÃ©p nam (cÃ²n 2)" format
                         var nameMatch = System.Text.RegularExpressions.Regex.Match(firstProduct, @"^(.+?)\s*\(");
                         return nameMatch.Success ? nameMatch.Groups[1].Value.Trim() : firstProduct;
                     }

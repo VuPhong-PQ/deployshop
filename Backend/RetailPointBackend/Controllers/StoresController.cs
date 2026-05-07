@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class StoresController : ControllerBase
@@ -111,7 +113,7 @@ namespace RetailPointBackend.Controllers
             var hasStaff = await _context.Staffs.AnyAsync(s => s.StoreId == id && s.IsActive);
             if (hasStaff)
             {
-                return BadRequest("Không thể xóa cửa hàng có nhân viên đang hoạt động");
+                return BadRequest("KhÃ´ng thá»ƒ xÃ³a cá»­a hÃ ng cÃ³ nhÃ¢n viÃªn Ä‘ang hoáº¡t Ä‘á»™ng");
             }
 
             store.IsActive = false;
@@ -163,7 +165,7 @@ namespace RetailPointBackend.Controllers
             store.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Cửa hàng đã được kích hoạt" });
+            return Ok(new { message = "Cá»­a hÃ ng Ä‘Ã£ Ä‘Æ°á»£c kÃ­ch hoáº¡t" });
         }
 
         // POST: api/Stores/{id}/deactivate
@@ -180,14 +182,14 @@ namespace RetailPointBackend.Controllers
             var hasActiveStaff = await _context.Staffs.AnyAsync(s => s.StoreId == id && s.IsActive);
             if (hasActiveStaff)
             {
-                return BadRequest("Không thể vô hiệu hóa cửa hàng có nhân viên đang hoạt động");
+                return BadRequest("KhÃ´ng thá»ƒ vÃ´ hiá»‡u hÃ³a cá»­a hÃ ng cÃ³ nhÃ¢n viÃªn Ä‘ang hoáº¡t Ä‘á»™ng");
             }
 
             store.IsActive = false;
             store.UpdatedAt = DateTime.Now;
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Cửa hàng đã được vô hiệu hóa" });
+            return Ok(new { message = "Cá»­a hÃ ng Ä‘Ã£ Ä‘Æ°á»£c vÃ´ hiá»‡u hÃ³a" });
         }
 
         // GET: api/Stores/stats

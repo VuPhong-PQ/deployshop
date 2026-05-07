@@ -1,4 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class EInvoiceController : ControllerBase
@@ -95,7 +97,7 @@ namespace RetailPointBackend.Controllers
                 }
             }
 
-            // Trả về DTO để tránh circular reference
+            // Tráº£ vá» DTO Ä‘á»ƒ trÃ¡nh circular reference
             var result = new
             {
                 eInvoiceId = eInvoice.EInvoiceId,
@@ -150,7 +152,7 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Lấy thông tin đơn hàng
+                // Láº¥y thÃ´ng tin Ä‘Æ¡n hÃ ng
                 var order = await _context.Orders
                     .Include(o => o.Items)
                         .ThenInclude(oi => oi.Product)
@@ -160,30 +162,30 @@ namespace RetailPointBackend.Controllers
 
                 if (order == null)
                 {
-                    return NotFound("Không tìm thấy đơn hàng");
+                    return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
                 }
 
                 Console.WriteLine($"Found order: {order.OrderId}, Items count: {order.Items?.Count ?? 0}");
                 
                 if (order.Items == null || !order.Items.Any())
                 {
-                    return BadRequest("Đơn hàng không có sản phẩm nào");
+                    return BadRequest("ÄÆ¡n hÃ ng khÃ´ng cÃ³ sáº£n pháº©m nÃ o");
                 }
 
-                // Kiểm tra đã có hóa đơn điện tử chưa
+                // Kiá»ƒm tra Ä‘Ã£ cÃ³ hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­ chÆ°a
                 var existingInvoice = await _context.EInvoices
                     .FirstOrDefaultAsync(e => e.OrderId == request.OrderId);
 
                 if (existingInvoice != null)
                 {
-                    return BadRequest("Đơn hàng này đã có hóa đơn điện tử");
+                    return BadRequest("ÄÆ¡n hÃ ng nÃ y Ä‘Ã£ cÃ³ hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­");
                 }
 
-                // Lấy cấu hình hóa đơn điện tử
+                // Láº¥y cáº¥u hÃ¬nh hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­
                 var config = await _context.EInvoiceConfigs.FirstOrDefaultAsync();
                 if (config == null)
                 {
-                    // Tạo cấu hình mặc định cho testing
+                    // Táº¡o cáº¥u hÃ¬nh máº·c Ä‘á»‹nh cho testing
                     config = new EInvoiceConfig
                     {
                         IsEnabled = true,
@@ -192,8 +194,8 @@ namespace RetailPointBackend.Controllers
                         Username = "admin",
                         Password = "123456",
                         CompanyTaxCode = "0123456789",
-                        CompanyName = "Công ty TNHH ABC",
-                        CompanyAddress = "Hà Nội",
+                        CompanyName = "CÃ´ng ty TNHH ABC",
+                        CompanyAddress = "HÃ  Ná»™i",
                         CompanyPhone = "0123456789",
                         CompanyEmail = "admin@company.com",
                         DefaultTemplate = "1/E-HOA_DON",
@@ -205,13 +207,13 @@ namespace RetailPointBackend.Controllers
                 
                 if (!config.IsEnabled)
                 {
-                    return BadRequest("Hóa đơn điện tử đã bị tắt. Vui lòng vào cấu hình để bật lại.");
+                    return BadRequest("HÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­ Ä‘Ã£ bá»‹ táº¯t. Vui lÃ²ng vÃ o cáº¥u hÃ¬nh Ä‘á»ƒ báº­t láº¡i.");
                 }
 
-                // Tạo số hóa đơn mới
+                // Táº¡o sá»‘ hÃ³a Ä‘Æ¡n má»›i
                 var invoiceNumber = await GenerateInvoiceNumber();
 
-                // Tạo hóa đơn điện tử
+                // Táº¡o hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­
                 var eInvoice = new EInvoice
                 {
                     InvoiceNumber = invoiceNumber,
@@ -219,7 +221,7 @@ namespace RetailPointBackend.Controllers
                     InvoiceSymbol = config.DefaultSymbol,
                     IssueDate = DateTime.Now,
                     
-                    // Thông tin người bán (từ cấu hình)
+                    // ThÃ´ng tin ngÆ°á»i bÃ¡n (tá»« cáº¥u hÃ¬nh)
                     SellerTaxCode = config.CompanyTaxCode ?? "",
                     SellerName = config.CompanyName ?? "",
                     SellerAddress = config.CompanyAddress,
@@ -228,20 +230,20 @@ namespace RetailPointBackend.Controllers
                     SellerBankAccount = config.CompanyBankAccount,
                     SellerBankName = config.CompanyBankName,
                     
-                    // Thông tin người mua
+                    // ThÃ´ng tin ngÆ°á»i mua
                     BuyerTaxCode = request.BuyerTaxCode,
                     BuyerName = request.BuyerName ?? order.CustomerName ?? order.Customer?.HoTen,
                     BuyerAddress = request.BuyerAddress ?? order.Customer?.DiaChi,
                     BuyerPhone = request.BuyerPhone ?? order.Customer?.SoDienThoai,
                     BuyerEmail = request.BuyerEmail ?? order.Customer?.Email,
                     
-                    // Thông tin tiền
+                    // ThÃ´ng tin tiá»n
                     SubTotal = order.SubTotal,
                     TaxAmount = order.TaxAmount,
                     TotalAmount = order.TotalAmount,
                     DiscountAmount = order.DiscountAmount,
                     
-                    // Thông tin khác
+                    // ThÃ´ng tin khÃ¡c
                     PaymentMethod = order.PaymentMethod,
                     Notes = request.Notes,
                     OrderId = order.OrderId,
@@ -252,7 +254,7 @@ namespace RetailPointBackend.Controllers
                 _context.EInvoices.Add(eInvoice);
                 await _context.SaveChangesAsync();
 
-                // Tạo chi tiết hóa đơn
+                // Táº¡o chi tiáº¿t hÃ³a Ä‘Æ¡n
                 var lineNumber = 1;
                 foreach (var orderItem in order.Items)
                 {
@@ -264,8 +266,8 @@ namespace RetailPointBackend.Controllers
                         EInvoiceId = eInvoice.EInvoiceId,
                         LineNumber = lineNumber++,
                         ItemCode = orderItem.Product?.Barcode ?? orderItem.ProductId.ToString(),
-                        ItemName = orderItem.Product?.Name ?? orderItem.ProductName ?? "Sản phẩm",
-                        Unit = orderItem.Product?.Unit ?? "Cái",
+                        ItemName = orderItem.Product?.Name ?? orderItem.ProductName ?? "Sáº£n pháº©m",
+                        Unit = orderItem.Product?.Unit ?? "CÃ¡i",
                         Quantity = orderItem.Quantity,
                         UnitPrice = orderItem.Price,
                         LineTotal = orderItem.Quantity * orderItem.Price,
@@ -282,18 +284,18 @@ namespace RetailPointBackend.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Trả về thông tin cơ bản của hóa đơn vừa tạo
+                // Tráº£ vá» thÃ´ng tin cÆ¡ báº£n cá»§a hÃ³a Ä‘Æ¡n vá»«a táº¡o
                 return Ok(new { 
                     success = true,
                     eInvoiceId = eInvoice.EInvoiceId,
                     invoiceNumber = eInvoice.InvoiceNumber,
                     status = eInvoice.Status,
-                    message = "Hóa đơn điện tử đã được tạo thành công"
+                    message = "HÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­ Ä‘Ã£ Ä‘Æ°á»£c táº¡o thÃ nh cÃ´ng"
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi tạo hóa đơn điện tử: {ex.Message}");
+                return StatusCode(500, $"Lá»—i táº¡o hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­: {ex.Message}");
             }
         }
 
@@ -314,17 +316,17 @@ namespace RetailPointBackend.Controllers
 
                 if (eInvoice.Status != "draft")
                 {
-                    return BadRequest("Chỉ có thể phát hành hóa đơn ở trạng thái nháp");
+                    return BadRequest("Chá»‰ cÃ³ thá»ƒ phÃ¡t hÃ nh hÃ³a Ä‘Æ¡n á»Ÿ tráº¡ng thÃ¡i nhÃ¡p");
                 }
 
-                // Lấy cấu hình
+                // Láº¥y cáº¥u hÃ¬nh
                 var config = await _context.EInvoiceConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.IsEnabled)
                 {
-                    return BadRequest("Chưa cấu hình hóa đơn điện tử");
+                    return BadRequest("ChÆ°a cáº¥u hÃ¬nh hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­");
                 }
 
-                // Gọi API VNPT để phát hành hóa đơn
+                // Gá»i API VNPT Ä‘á»ƒ phÃ¡t hÃ nh hÃ³a Ä‘Æ¡n
                 var apiResponse = await _eInvoiceService.IssueInvoiceAsync(eInvoice, config);
                 
                 if (apiResponse.Success)
@@ -349,7 +351,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi phát hành hóa đơn: {ex.Message}");
+                return StatusCode(500, $"Lá»—i phÃ¡t hÃ nh hÃ³a Ä‘Æ¡n: {ex.Message}");
             }
         }
 
@@ -369,17 +371,17 @@ namespace RetailPointBackend.Controllers
 
                 if (eInvoice.Status != "issued")
                 {
-                    return BadRequest("Chỉ có thể hủy hóa đơn đã phát hành");
+                    return BadRequest("Chá»‰ cÃ³ thá»ƒ há»§y hÃ³a Ä‘Æ¡n Ä‘Ã£ phÃ¡t hÃ nh");
                 }
 
-                // Lấy cấu hình
+                // Láº¥y cáº¥u hÃ¬nh
                 var config = await _context.EInvoiceConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.IsEnabled)
                 {
-                    return BadRequest("Chưa cấu hình hóa đơn điện tử");
+                    return BadRequest("ChÆ°a cáº¥u hÃ¬nh hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­");
                 }
 
-                // Gọi API VNPT để hủy hóa đơn
+                // Gá»i API VNPT Ä‘á»ƒ há»§y hÃ³a Ä‘Æ¡n
                 var apiResponse = await _eInvoiceService.CancelInvoiceAsync(eInvoice, config, request.Reason);
                 
                 if (apiResponse.Success)
@@ -402,7 +404,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi hủy hóa đơn: {ex.Message}");
+                return StatusCode(500, $"Lá»—i há»§y hÃ³a Ä‘Æ¡n: {ex.Message}");
             }
         }
 
@@ -413,7 +415,7 @@ namespace RetailPointBackend.Controllers
             var config = await _context.EInvoiceConfigs.FirstOrDefaultAsync();
             if (config == null)
             {
-                // Tạo cấu hình mặc định
+                // Táº¡o cáº¥u hÃ¬nh máº·c Ä‘á»‹nh
                 config = new EInvoiceConfig
                 {
                     IsEnabled = false,
@@ -440,7 +442,7 @@ namespace RetailPointBackend.Controllers
                     _context.EInvoiceConfigs.Add(config);
                 }
 
-                // Cập nhật các trường
+                // Cáº­p nháº­t cÃ¡c trÆ°á»ng
                 config.IsEnabled = request.IsEnabled;
                 config.Provider = request.Provider;
                 config.ApiUrl = request.ApiUrl;
@@ -471,7 +473,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Lỗi cập nhật cấu hình: {ex.Message}");
+                return StatusCode(500, $"Lá»—i cáº­p nháº­t cáº¥u hÃ¬nh: {ex.Message}");
             }
         }
 
@@ -483,7 +485,7 @@ namespace RetailPointBackend.Controllers
             var count = await _context.EInvoices
                 .CountAsync(e => e.CreatedAt.Date == today);
 
-            return $"HĐ{today:yyyyMMdd}{(count + 1):D4}";
+            return $"HÄ{today:yyyyMMdd}{(count + 1):D4}";
         }
 
         private string GenerateAuthCode()
@@ -550,7 +552,7 @@ namespace RetailPointBackend.Controllers
                 var config = await _context.EInvoiceConfigs.FirstOrDefaultAsync();
                 if (config == null || !config.IsEnabled)
                 {
-                    return Ok(new { success = false, message = "Chưa cấu hình hóa đơn điện tử" });
+                    return Ok(new { success = false, message = "ChÆ°a cáº¥u hÃ¬nh hÃ³a Ä‘Æ¡n Ä‘iá»‡n tá»­" });
                 }
 
                 // Create test invoice
@@ -580,8 +582,8 @@ namespace RetailPointBackend.Controllers
                         {
                             LineNumber = 1,
                             ItemCode = "TEST001",
-                            ItemName = "Sản phẩm test",
-                            Unit = "Cái",
+                            ItemName = "Sáº£n pháº©m test",
+                            Unit = "CÃ¡i",
                             Quantity = 1,
                             UnitPrice = 100000,
                             LineTotal = 100000,
@@ -598,7 +600,7 @@ namespace RetailPointBackend.Controllers
                 return Ok(new 
                 { 
                     success = apiResponse.Success, 
-                    message = apiResponse.Success ? "Tạo hóa đơn test thành công" : apiResponse.ErrorMessage,
+                    message = apiResponse.Success ? "Táº¡o hÃ³a Ä‘Æ¡n test thÃ nh cÃ´ng" : apiResponse.ErrorMessage,
                     data = apiResponse.Success ? new 
                     {
                         transactionId = apiResponse.TransactionUuid,
@@ -615,7 +617,7 @@ namespace RetailPointBackend.Controllers
 
         #endregion
 
-        #region PortalService APIs - Tra cứu, Download, Chuyển đổi, Báo cáo
+        #region PortalService APIs - Tra cá»©u, Download, Chuyá»ƒn Ä‘á»•i, BÃ¡o cÃ¡o
 
         // POST: api/EInvoice/portal/download-inv
         [HttpPost("portal/download-inv")]
@@ -837,7 +839,7 @@ namespace RetailPointBackend.Controllers
 
         #endregion
 
-        #region MTT (Máy tính tiền) APIs
+        #region MTT (MÃ¡y tÃ­nh tiá»n) APIs
 
         // POST: api/EInvoice/mtt/import-and-publish
         [HttpPost("mtt/import-and-publish")]

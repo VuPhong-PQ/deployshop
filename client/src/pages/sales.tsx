@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -15,6 +16,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode, Smartphone, AlertTriangle, FileText, Send, Printer, Tag, Camera, ChevronLeft, ChevronRight, Clock, DollarSign, Euro, ChevronDown } from "lucide-react";
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
 import { useAuth } from "@/contexts/auth-context";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
@@ -475,10 +478,10 @@ export default function Sales() {
           params.append('storeId', currentStore.storeId.toString());
         }
         
-        const url = `http://101.53.9.76:5273/api/products?${params.toString()}`;
+  const url = `${API_BASE}/api/products?${params.toString()}`;
   // PRODUCTS QUERY - starting fetch (debug log removed)
         
-        const response = await fetch(url);
+        const response = await authFetch(url);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -2307,7 +2310,7 @@ export default function Sales() {
                                       <img
                                         src={
                                           product.imageUrl && product.imageUrl !== ""
-                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
+                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `${API_BASE}${product.imageUrl}`)
                                             : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
                                         }
                                         alt={product.name || 'Sản phẩm'}
@@ -2417,7 +2420,7 @@ export default function Sales() {
                                       <img
                                         src={
                                           product.imageUrl && product.imageUrl !== ""
-                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `http://101.53.9.76:5273${product.imageUrl}`)
+                                            ? (product.imageUrl.startsWith("http") ? product.imageUrl : `${API_BASE}${product.imageUrl}`)
                                             : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&h=150&fit=crop"
                                         }
                                         alt={product.name || 'Sản phẩm'}
@@ -3687,3 +3690,4 @@ export default function Sales() {
     </AppLayout>
   );
 }
+

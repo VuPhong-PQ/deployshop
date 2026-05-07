@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,8 +29,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { dataManagementApi, type DatabaseInfo, type BackupResult, type BackupFile, type BackupHistoryItem } from '@/lib/data-management-api';
 
-// API Base URL for backup settings
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://101.53.9.76:5273';
+// API Base URL for backup settings (prefers VITE_API_BASE_URL)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
 const BACKUP_SETTINGS_API = `${API_BASE_URL}/api/BackupSettings`;
 
 const DataManagement: React.FC = () => {
@@ -125,13 +126,16 @@ const DataManagement: React.FC = () => {
   // Load backup settings
   const loadBackupSettings = async () => {
     try {
-      const response = await fetch(`${BACKUP_SETTINGS_API}`);
+      const response = await authFetch(`${BACKUP_SETTINGS_API}`);
       if (response.ok) {
         const settings = await response.json();
-        // Convert TimeSpan to HH:mm format
-        const hours = Math.floor(settings.backupTime.totalSeconds / 3600);
-        const minutes = Math.floor((settings.backupTime.totalSeconds % 3600) / 60);
-        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        // Convert TimeSpan to HH:mm format, fallback nếu không có dữ liệu hợp lệ
+        let timeString = '13:00';
+        if (settings.backupTime && typeof settings.backupTime.totalSeconds === 'number' && !isNaN(settings.backupTime.totalSeconds)) {
+          const hours = Math.floor(settings.backupTime.totalSeconds / 3600);
+          const minutes = Math.floor((settings.backupTime.totalSeconds % 3600) / 60);
+          timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
         
         setBackupSettings({
           backupTime: timeString,
@@ -148,7 +152,7 @@ const DataManagement: React.FC = () => {
   const handleUpdateBackupSettings = async () => {
     setIsUpdatingSettings(true);
     try {
-      const response = await fetch(`${BACKUP_SETTINGS_API}`, {
+      const response = await authFetch(`${BACKUP_SETTINGS_API}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +184,7 @@ const DataManagement: React.FC = () => {
   const handleTestBackup = async () => {
     setIsTestingBackup(true);
     try {
-      const response = await fetch(`${BACKUP_SETTINGS_API}/test`, {
+      const response = await authFetch(`${BACKUP_SETTINGS_API}/test`, {
         method: 'POST'
       });
 

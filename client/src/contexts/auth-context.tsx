@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+﻿import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 interface User {
   staffId: number;
@@ -29,7 +29,7 @@ interface AuthContextType {
   currentStore: Store | null;
   availableStores: Store[];
   isLoading: boolean;
-  login: (userData: User) => void;
+  login: (userData: User, token: string) => void;
   logout: () => void;
   switchStore: (storeId: number) => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -48,12 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
   useEffect(() => {
-    // Kiểm tra localStorage khi component mount
-    const savedUser = localStorage.getItem("user");
-    const savedAuth = localStorage.getItem("isAuthenticated");
-    const savedStore = localStorage.getItem("currentStore");
-    
-    console.log("🔄 AuthProvider loading from localStorage:", { savedUser: !!savedUser, savedAuth, savedStore: !!savedStore });
+    // Kiểm tra sessionStorage khi component mount
+    const savedUser = sessionStorage.getItem("user");
+    const savedAuth = sessionStorage.getItem("isAuthenticated");
+    const savedStore = sessionStorage.getItem("currentStore");
 
     if (savedUser && savedAuth === "true") {
       try {
@@ -64,28 +62,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (savedStore) {
           const storeData = JSON.parse(savedStore);
           setCurrentStore(storeData);
-          console.log("🏪 Loaded store from localStorage:", storeData.name);
         }
       } catch (error) {
-        console.error("Error parsing saved user data:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("isAuthenticated");
-        localStorage.removeItem("currentStore");
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("isAuthenticated");
+        sessionStorage.removeItem("currentStore");
+        sessionStorage.removeItem("authToken");
       }
     }
     
-    setIsLoading(false); // Mark loading as complete
+    setIsLoading(false);
   }, []);
 
   const loadAvailableStores = useCallback(async (): Promise<void> => {
     if (!user) return;
     
     try {
-      const response = await fetch('http://101.53.9.76:5273/api/storeswitch/my-stores', {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const token = sessionStorage.getItem("authToken");
+  const response = await fetch(`${base}/api/storeswitch/my-stores`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Username': user.username
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         credentials: 'include'
       });
@@ -103,11 +102,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      const response = await fetch('http://101.53.9.76:5273/api/storeswitch/current', {
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const token = sessionStorage.getItem("authToken");
+  const response = await fetch(`${base}/api/storeswitch/current`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Username': user.username
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         credentials: 'include'
       });
@@ -119,12 +120,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const store = availableStores.find(s => s.storeId === data.storeId);
           if (store) {
             setCurrentStore(store);
-            localStorage.setItem("currentStore", JSON.stringify(store));
+            sessionStorage.setItem("currentStore", JSON.stringify(store));
           }
         }
       }
     } catch (error) {
-      console.error("Error loading current store:", error);
+      // silent error
     }
   }, [user?.username, availableStores]);
 
@@ -142,11 +143,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, user, availableStores, currentStore, loadCurrentStore]);
 
-  const login = (userData: User) => {
+  const login = (userData: User, token: string) => {
     setUser(userData);
     setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("isAuthenticated", "true");
+    sessionStorage.setItem("user", JSON.stringify(userData));
+    sessionStorage.setItem("isAuthenticated", "true");
+    sessionStorage.setItem("authToken", token);
   };
 
   const logout = () => {
@@ -154,10 +156,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setCurrentStore(null);
     setAvailableStores([]);
-    localStorage.removeItem("user");
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("currentStore");
-    localStorage.removeItem("intendedRoute"); // Clear intended route on logout
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("isAuthenticated");
+    sessionStorage.removeItem("currentStore");
+    sessionStorage.removeItem("authToken");
+    localStorage.removeItem("intendedRoute");
   };
 
   const hasPermission = (permission: string): boolean => {
@@ -169,7 +172,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      const response = await fetch(`http://101.53.9.76:5273/api/Staff/refresh-permissions/${user.staffId}`);
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const token = sessionStorage.getItem("authToken");
+      const response = await fetch(`${base}/api/Staff/refresh-permissions/${user.staffId}`, {
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+      });
       if (response.ok) {
         const userData = await response.json();
         const updatedUser: User = {
@@ -186,10 +193,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         
         setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
       }
-    } catch (error) {
-      console.error("Error refreshing permissions:", error);
+    } catch {
+      // silent error
     }
   };
 
@@ -197,12 +204,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      // Call backend to set current store
-      const response = await fetch('http://101.53.9.76:5273/api/storeswitch/set-current', {
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const token = sessionStorage.getItem("authToken");
+      const response = await fetch(`${base}/api/storeswitch/set-current`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Username': user.username
+          'Authorization': token ? `Bearer ${token}` : ''
         },
         body: JSON.stringify({ storeId }),
         credentials: 'include'
@@ -214,14 +222,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setCurrentStore(selectedStore);
           const updatedUser = { ...user, storeId, storeName: selectedStore.name };
           setUser(updatedUser);
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-          localStorage.setItem("currentStore", JSON.stringify(selectedStore));
+          sessionStorage.setItem("user", JSON.stringify(updatedUser));
+          sessionStorage.setItem("currentStore", JSON.stringify(selectedStore));
         }
       } else {
         throw new Error('Failed to switch store');
       }
     } catch (error) {
-      console.error("Error switching store:", error);
       throw error;
     }
   };

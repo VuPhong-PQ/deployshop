@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/orders")]
     public class OrderDiscountController : ControllerBase
@@ -30,12 +32,12 @@ namespace RetailPointBackend.Controllers
                     .FirstOrDefaultAsync(o => o.OrderId == id);
 
                 if (order == null)
-                    return NotFound("Không tìm thấy đơn hàng");
+                    return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
 
                 var orderDiscount = await _discountService.ApplyDiscountToOrderAsync(
                     id, request.DiscountId, order.Items.ToList(), order.SubTotal, request.StaffId);
 
-                // Cập nhật tổng discount amount của order
+                // Cáº­p nháº­t tá»•ng discount amount cá»§a order
                 var totalDiscounts = await _context.OrderDiscounts
                     .Where(od => od.OrderId == id)
                     .SumAsync(od => od.DiscountAmount);
@@ -45,7 +47,7 @@ namespace RetailPointBackend.Controllers
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Áp dụng giảm giá thành công", orderDiscount });
+                return Ok(new { message = "Ãp dá»¥ng giáº£m giÃ¡ thÃ nh cÃ´ng", orderDiscount });
             }
             catch (Exception ex)
             {
@@ -62,7 +64,7 @@ namespace RetailPointBackend.Controllers
                 var orderDiscount = await _discountService.ApplyDiscountToOrderItemAsync(
                     id, itemId, request.DiscountId, request.StaffId);
 
-                // Cập nhật order total
+                // Cáº­p nháº­t order total
                 var order = await _context.Orders.FindAsync(id);
                 if (order != null)
                 {
@@ -77,7 +79,7 @@ namespace RetailPointBackend.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                return Ok(new { message = "Áp dụng giảm giá cho sản phẩm thành công", orderDiscount });
+                return Ok(new { message = "Ãp dá»¥ng giáº£m giÃ¡ cho sáº£n pháº©m thÃ nh cÃ´ng", orderDiscount });
             }
             catch (Exception ex)
             {
@@ -93,7 +95,7 @@ namespace RetailPointBackend.Controllers
             {
                 await _discountService.RemoveDiscountFromOrderAsync(id, discountId);
 
-                // Cập nhật order total
+                // Cáº­p nháº­t order total
                 var order = await _context.Orders.FindAsync(id);
                 if (order != null)
                 {
@@ -142,7 +144,7 @@ namespace RetailPointBackend.Controllers
                     .FirstOrDefaultAsync(o => o.OrderId == id);
 
                 if (order == null)
-                    return NotFound("Không tìm thấy đơn hàng");
+                    return NotFound("KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng");
 
                 var canApply = await _discountService.CanApplyDiscountAsync(request.DiscountId, order.Items.ToList(), order.SubTotal);
                 
@@ -152,7 +154,7 @@ namespace RetailPointBackend.Controllers
                     {
                         CanApply = false,
                         DiscountAmount = 0,
-                        Message = "Không thể áp dụng giảm giá này"
+                        Message = "KhÃ´ng thá»ƒ Ã¡p dá»¥ng giáº£m giÃ¡ nÃ y"
                     });
                 }
 

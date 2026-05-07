@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 
 namespace RetailPointBackend.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class SimpleBackupController : ControllerBase
     {
@@ -33,7 +35,7 @@ namespace RetailPointBackend.Controllers
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     _logger.LogError("Connection string is null or empty");
-                    return BadRequest(new { message = "Connection string không được cấu hình" });
+                    return BadRequest(new { message = "Connection string khÃ´ng Ä‘Æ°á»£c cáº¥u hÃ¬nh" });
                 }
                 
                 var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
@@ -41,15 +43,15 @@ namespace RetailPointBackend.Controllers
                 
                 _logger.LogInformation($"Database name: {databaseName}");
 
-                // Tạo tên file backup với timestamp
+                // Táº¡o tÃªn file backup vá»›i timestamp
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var backupFileName = $"{databaseName}_simple_backup_{timestamp}.bak";
                 
-                // Lưu tạm vào temp folder
+                // LÆ°u táº¡m vÃ o temp folder
                 var tempBackupPath = Path.Combine(Path.GetTempPath(), backupFileName);
                 _logger.LogInformation($"Temp backup path: {tempBackupPath}");
 
-                // Câu lệnh backup SQL
+                // CÃ¢u lá»‡nh backup SQL
                 var backupQuery = $@"
                     BACKUP DATABASE [{databaseName}] 
                     TO DISK = '{tempBackupPath}' 
@@ -62,29 +64,29 @@ namespace RetailPointBackend.Controllers
                     await connection.OpenAsync();
                     using (var command = new SqlCommand(backupQuery, connection))
                     {
-                        command.CommandTimeout = 300; // 5 phút timeout
+                        command.CommandTimeout = 300; // 5 phÃºt timeout
                         await command.ExecuteNonQueryAsync();
                     }
                 }
                 _logger.LogInformation("Backup command completed");
 
-                // Kiểm tra file có tồn tại không
+                // Kiá»ƒm tra file cÃ³ tá»“n táº¡i khÃ´ng
                 if (!System.IO.File.Exists(tempBackupPath))
                 {
                     _logger.LogError($"Backup file not found at: {tempBackupPath}");
-                    return StatusCode(500, new { message = "File backup không được tạo" });
+                    return StatusCode(500, new { message = "File backup khÃ´ng Ä‘Æ°á»£c táº¡o" });
                 }
 
-                // Lấy thông tin file backup
+                // Láº¥y thÃ´ng tin file backup
                 var fileInfo = new FileInfo(tempBackupPath);
                 var fileSizeMB = Math.Round(fileInfo.Length / (1024.0 * 1024.0), 2);
                 _logger.LogInformation($"Backup file size: {fileSizeMB} MB");
 
-                // Đọc file để download
+                // Äá»c file Ä‘á»ƒ download
                 var fileBytes = await System.IO.File.ReadAllBytesAsync(tempBackupPath);
                 _logger.LogInformation($"File read successfully, {fileBytes.Length} bytes");
                 
-                // Xóa file tạm sau khi đọc
+                // XÃ³a file táº¡m sau khi Ä‘á»c
                 try
                 {
                     System.IO.File.Delete(tempBackupPath);
@@ -92,18 +94,18 @@ namespace RetailPointBackend.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Không thể xóa file tạm: {TempPath}", tempBackupPath);
+                    _logger.LogWarning(ex, "KhÃ´ng thá»ƒ xÃ³a file táº¡m: {TempPath}", tempBackupPath);
                 }
 
-                // Thiết lập Content-Disposition header cho download
+                // Thiáº¿t láº­p Content-Disposition header cho download
                 Response.Headers["Content-Disposition"] = $"attachment; filename=\"{backupFileName}\"";
                 
                 return File(fileBytes, "application/octet-stream", backupFileName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi backup và download database");
-                return StatusCode(500, new { message = "Lỗi khi backup và download database", error = ex.Message, details = ex.ToString() });
+                _logger.LogError(ex, "Lá»—i khi backup vÃ  download database");
+                return StatusCode(500, new { message = "Lá»—i khi backup vÃ  download database", error = ex.Message, details = ex.ToString() });
             }
         }
     }

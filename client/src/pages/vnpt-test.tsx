@@ -1,3 +1,4 @@
+﻿import { authFetch } from "@/lib/authFetch";
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -12,7 +13,7 @@ export default function VNPTTestPage() {
   const { toast } = useToast();
   
   const [testConfig, setTestConfig] = useState({
-    apiUrl: "http://your-vnpt-server.com:8080", // URL của VNPT server
+    apiUrl: "http://your-vnpt-server.com:8080", // URL cá»§a VNPT server
     username: "",
     password: "",
     companyTaxCode: "",
@@ -23,14 +24,14 @@ export default function VNPTTestPage() {
   });
 
   const [testInvoice, setTestInvoice] = useState({
-    buyerName: "Khách hàng test",
+    buyerName: "KhÃ¡ch hÃ ng test",
     buyerTaxCode: "",
-    buyerAddress: "Hà Nội",
+    buyerAddress: "HÃ  Ná»™i",
     buyerPhone: "0123456789",
     buyerEmail: "test@example.com",
     items: [
       {
-        itemName: "Sản phẩm test",
+        itemName: "Sáº£n pháº©m test",
         quantity: 1,
         unitPrice: 100000,
         taxRate: "10%"
@@ -49,12 +50,12 @@ export default function VNPTTestPage() {
   <key>INV001</key>
   <Invoice>
     <CusCode>KH001</CusCode>
-    <CusName>Khách hàng test MTT</CusName>
-    <CusAddress>Hà Nội</CusAddress>
+    <CusName>KhÃ¡ch hÃ ng test MTT</CusName>
+    <CusAddress>HÃ  Ná»™i</CusAddress>
     <Products>
       <Product>
-        <ProdName>Sản phẩm MTT</ProdName>
-        <ProdUnit>Cái</ProdUnit>
+        <ProdName>Sáº£n pháº©m MTT</ProdName>
+        <ProdUnit>CÃ¡i</ProdUnit>
         <ProdQuantity>1</ProdQuantity>
         <ProdPrice>100000</ProdPrice>
         <Amount>100000</Amount>
@@ -68,7 +69,7 @@ export default function VNPTTestPage() {
   // Test authentication
   const testAuthMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/EInvoice/test-auth', {
+      const response = await authFetch('/api/EInvoice/test-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testConfig)
@@ -78,7 +79,7 @@ export default function VNPTTestPage() {
     onSuccess: (data) => {
       toast({
         title: "Test Authentication",
-        description: data.success ? "Đăng nhập VNPT thành công!" : `Lỗi: ${data.message}`,
+        description: data.success ? "ÄÄƒng nháº­p VNPT thÃ nh cÃ´ng!" : `Lá»—i: ${data.message}`,
         variant: data.success ? "default" : "destructive"
       });
     }
@@ -109,7 +110,7 @@ export default function VNPTTestPage() {
       });
 
       // Then create test order and invoice
-      const response = await fetch('/api/EInvoice/test-create', {
+      const response = await authFetch('/api/EInvoice/test-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testInvoice)
@@ -119,7 +120,7 @@ export default function VNPTTestPage() {
     onSuccess: (data) => {
       toast({
         title: "Test Create Invoice",
-        description: data.success ? "Tạo hóa đơn test thành công!" : `Lỗi: ${data.message}`,
+        description: data.success ? "Táº¡o hÃ³a Ä‘Æ¡n test thÃ nh cÃ´ng!" : `Lá»—i: ${data.message}`,
         variant: data.success ? "default" : "destructive"
       });
     }
@@ -128,7 +129,7 @@ export default function VNPTTestPage() {
   // MTT Import and Publish
   const mttImportPublishMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/EInvoice/mtt/import-and-publish', {
+      const response = await authFetch('/api/EInvoice/mtt/import-and-publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,7 +148,7 @@ export default function VNPTTestPage() {
     onSuccess: (data) => {
       toast({
         title: "MTT Import and Publish",
-        description: data.success ? "Import và publish MTT thành công!" : `Lỗi: ${data.message}`,
+        description: data.success ? "Import vÃ  publish MTT thÃ nh cÃ´ng!" : `Lá»—i: ${data.message}`,
         variant: data.success ? "default" : "destructive"
       });
     }
@@ -156,7 +157,7 @@ export default function VNPTTestPage() {
   // MTT Import by Pattern
   const mttImportPatternMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/EInvoice/mtt/import-by-pattern', {
+      const response = await authFetch('/api/EInvoice/mtt/import-by-pattern', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -175,7 +176,7 @@ export default function VNPTTestPage() {
     onSuccess: (data) => {
       toast({
         title: "MTT Import by Pattern",
-        description: data.success ? "Import theo pattern MTT thành công!" : `Lỗi: ${data.message}`,
+        description: data.success ? "Import theo pattern MTT thÃ nh cÃ´ng!" : `Lá»—i: ${data.message}`,
         variant: data.success ? "default" : "destructive"
       });
     }
@@ -184,7 +185,7 @@ export default function VNPTTestPage() {
   // MTT Send
   const mttSendMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/EInvoice/mtt/send', {
+      const response = await authFetch('/api/EInvoice/mtt/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -202,7 +203,7 @@ export default function VNPTTestPage() {
     onSuccess: (data) => {
       toast({
         title: "MTT Send",
-        description: data.success ? "Gửi hóa đơn MTT thành công!" : `Lỗi: ${data.message}`,
+        description: data.success ? "Gá»­i hÃ³a Ä‘Æ¡n MTT thÃ nh cÃ´ng!" : `Lá»—i: ${data.message}`,
         variant: data.success ? "default" : "destructive"
       });
     }
@@ -215,7 +216,7 @@ export default function VNPTTestPage() {
           <TestTube className="w-8 h-8 text-blue-600" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Test VNPT API</h1>
-            <p className="text-gray-600">Kiểm tra kết nối và tạo hóa đơn thử nghiệm với VNPT</p>
+            <p className="text-gray-600">Kiá»ƒm tra káº¿t ná»‘i vÃ  táº¡o hÃ³a Ä‘Æ¡n thá»­ nghiá»‡m vá»›i VNPT</p>
           </div>
         </div>
 
@@ -224,7 +225,7 @@ export default function VNPTTestPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              Cấu hình VNPT
+              Cáº¥u hÃ¬nh VNPT
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -247,7 +248,7 @@ export default function VNPTTestPage() {
                 <Input
                   value={testConfig.username}
                   onChange={(e) => setTestConfig(prev => ({ ...prev, username: e.target.value }))}
-                  placeholder="Tài khoản VNPT"
+                  placeholder="TÃ i khoáº£n VNPT"
                 />
               </div>
             </div>
@@ -261,13 +262,13 @@ export default function VNPTTestPage() {
                   type="password"
                   value={testConfig.password}
                   onChange={(e) => setTestConfig(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder="Mật khẩu VNPT"
+                  placeholder="Máº­t kháº©u VNPT"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã số thuế công ty *
+                  MÃ£ sá»‘ thuáº¿ cÃ´ng ty *
                 </label>
                 <Input
                   value={testConfig.companyTaxCode}
@@ -279,30 +280,30 @@ export default function VNPTTestPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên công ty *
+                TÃªn cÃ´ng ty *
               </label>
               <Input
                 value={testConfig.companyName}
                 onChange={(e) => setTestConfig(prev => ({ ...prev, companyName: e.target.value }))}
-                placeholder="Tên công ty đầy đủ"
+                placeholder="TÃªn cÃ´ng ty Ä‘áº§y Ä‘á»§"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa chỉ công ty
+                  Äá»‹a chá»‰ cÃ´ng ty
                 </label>
                 <Input
                   value={testConfig.companyAddress}
                   onChange={(e) => setTestConfig(prev => ({ ...prev, companyAddress: e.target.value }))}
-                  placeholder="Địa chỉ công ty"
+                  placeholder="Äá»‹a chá»‰ cÃ´ng ty"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Số điện thoại
+                  Sá»‘ Ä‘iá»‡n thoáº¡i
                 </label>
                 <Input
                   value={testConfig.companyPhone}
@@ -319,7 +320,7 @@ export default function VNPTTestPage() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 <Send className="w-4 h-4 mr-2" />
-                {testAuthMutation.isPending ? "Đang test..." : "Test Authentication"}
+                {testAuthMutation.isPending ? "Äang test..." : "Test Authentication"}
               </Button>
             </div>
           </CardContent>
@@ -330,30 +331,30 @@ export default function VNPTTestPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Hóa đơn thử nghiệm
+              HÃ³a Ä‘Æ¡n thá»­ nghiá»‡m
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tên khách hàng
+                  TÃªn khÃ¡ch hÃ ng
                 </label>
                 <Input
                   value={testInvoice.buyerName}
                   onChange={(e) => setTestInvoice(prev => ({ ...prev, buyerName: e.target.value }))}
-                  placeholder="Tên khách hàng"
+                  placeholder="TÃªn khÃ¡ch hÃ ng"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mã số thuế khách hàng
+                  MÃ£ sá»‘ thuáº¿ khÃ¡ch hÃ ng
                 </label>
                 <Input
                   value={testInvoice.buyerTaxCode}
                   onChange={(e) => setTestInvoice(prev => ({ ...prev, buyerTaxCode: e.target.value }))}
-                  placeholder="MST khách hàng (tùy chọn)"
+                  placeholder="MST khÃ¡ch hÃ ng (tÃ¹y chá»n)"
                 />
               </div>
             </div>
@@ -361,18 +362,18 @@ export default function VNPTTestPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa chỉ
+                  Äá»‹a chá»‰
                 </label>
                 <Input
                   value={testInvoice.buyerAddress}
                   onChange={(e) => setTestInvoice(prev => ({ ...prev, buyerAddress: e.target.value }))}
-                  placeholder="Địa chỉ khách hàng"
+                  placeholder="Äá»‹a chá»‰ khÃ¡ch hÃ ng"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Số điện thoại
+                  Sá»‘ Ä‘iá»‡n thoáº¡i
                 </label>
                 <Input
                   value={testInvoice.buyerPhone}
@@ -389,7 +390,7 @@ export default function VNPTTestPage() {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {testCreateMutation.isPending ? "Đang tạo..." : "Tạo hóa đơn test"}
+                {testCreateMutation.isPending ? "Äang táº¡o..." : "Táº¡o hÃ³a Ä‘Æ¡n test"}
               </Button>
             </div>
           </CardContent>
@@ -400,7 +401,7 @@ export default function VNPTTestPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              Test MTT APIs (Máy tính tiền)
+              Test MTT APIs (MÃ¡y tÃ­nh tiá»n)
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -412,7 +413,7 @@ export default function VNPTTestPage() {
                 <Input
                   value={mttData.account}
                   onChange={(e) => setMttData(prev => ({ ...prev, account: e.target.value }))}
-                  placeholder="Tài khoản MTT (để trống = dùng username)"
+                  placeholder="TÃ i khoáº£n MTT (Ä‘á»ƒ trá»‘ng = dÃ¹ng username)"
                 />
               </div>
 
@@ -424,7 +425,7 @@ export default function VNPTTestPage() {
                   type="password"
                   value={mttData.acPass}
                   onChange={(e) => setMttData(prev => ({ ...prev, acPass: e.target.value }))}
-                  placeholder="Mật khẩu MTT (để trống = dùng password)"
+                  placeholder="Máº­t kháº©u MTT (Ä‘á»ƒ trá»‘ng = dÃ¹ng password)"
                 />
               </div>
             </div>
@@ -475,7 +476,7 @@ export default function VNPTTestPage() {
                 <Input
                   value={mttData.fkey}
                   onChange={(e) => setMttData(prev => ({ ...prev, fkey: e.target.value }))}
-                  placeholder="Khóa hóa đơn cho Send API"
+                  placeholder="KhÃ³a hÃ³a Ä‘Æ¡n cho Send API"
                 />
               </div>
             </div>
@@ -488,7 +489,7 @@ export default function VNPTTestPage() {
                 className="w-full h-32 p-3 border border-gray-300 rounded-md resize-none font-mono text-sm"
                 value={mttData.xmlData}
                 onChange={(e) => setMttData(prev => ({ ...prev, xmlData: e.target.value }))}
-                placeholder="XML data cho hóa đơn MTT"
+                placeholder="XML data cho hÃ³a Ä‘Æ¡n MTT"
               />
             </div>
 
@@ -499,7 +500,7 @@ export default function VNPTTestPage() {
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 <Send className="w-4 h-4 mr-2" />
-                {mttImportPublishMutation.isPending ? "Đang import..." : "Import & Publish MTT"}
+                {mttImportPublishMutation.isPending ? "Äang import..." : "Import & Publish MTT"}
               </Button>
 
               <Button 
@@ -508,7 +509,7 @@ export default function VNPTTestPage() {
                 className="bg-indigo-600 hover:bg-indigo-700"
               >
                 <FileText className="w-4 h-4 mr-2" />
-                {mttImportPatternMutation.isPending ? "Đang import..." : "Import by Pattern MTT"}
+                {mttImportPatternMutation.isPending ? "Äang import..." : "Import by Pattern MTT"}
               </Button>
 
               <Button 
@@ -517,7 +518,7 @@ export default function VNPTTestPage() {
                 className="bg-pink-600 hover:bg-pink-700"
               >
                 <Send className="w-4 h-4 mr-2" />
-                {mttSendMutation.isPending ? "Đang gửi..." : "Send MTT"}
+                {mttSendMutation.isPending ? "Äang gá»­i..." : "Send MTT"}
               </Button>
             </div>
           </CardContent>
@@ -526,22 +527,22 @@ export default function VNPTTestPage() {
         {/* Instructions */}
         <Card>
           <CardHeader>
-            <CardTitle>Hướng dẫn test</CardTitle>
+            <CardTitle>HÆ°á»›ng dáº«n test</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-gray-600">
-              <p><strong>Test cơ bản:</strong></p>
-              <p>1. Điền đầy đủ thông tin cấu hình VNPT (URL, username, password, mã số thuế)</p>
-              <p>2. Click "Test Authentication" để kiểm tra kết nối</p>
-              <p>3. Nếu authentication thành công, điền thông tin khách hàng test</p>
-              <p>4. Click "Tạo hóa đơn test" để tạo hóa đơn thử nghiệm</p>
+              <p><strong>Test cÆ¡ báº£n:</strong></p>
+              <p>1. Äiá»n Ä‘áº§y Ä‘á»§ thÃ´ng tin cáº¥u hÃ¬nh VNPT (URL, username, password, mÃ£ sá»‘ thuáº¿)</p>
+              <p>2. Click "Test Authentication" Ä‘á»ƒ kiá»ƒm tra káº¿t ná»‘i</p>
+              <p>3. Náº¿u authentication thÃ nh cÃ´ng, Ä‘iá»n thÃ´ng tin khÃ¡ch hÃ ng test</p>
+              <p>4. Click "Táº¡o hÃ³a Ä‘Æ¡n test" Ä‘á»ƒ táº¡o hÃ³a Ä‘Æ¡n thá»­ nghiá»‡m</p>
               
               <p className="mt-4"><strong>Test MTT APIs:</strong></p>
-              <p>5. Điền thông tin MTT (account, pattern, serial, XML data)</p>
-              <p>6. Click "Import & Publish MTT" để test import và publish từ máy tính tiền</p>
-              <p>7. Click "Import by Pattern MTT" để test import theo pattern</p>
-              <p>8. Điền Fkey và click "Send MTT" để test gửi hóa đơn</p>
-              <p>9. Kiểm tra kết quả trong toast notification</p>
+              <p>5. Äiá»n thÃ´ng tin MTT (account, pattern, serial, XML data)</p>
+              <p>6. Click "Import & Publish MTT" Ä‘á»ƒ test import vÃ  publish tá»« mÃ¡y tÃ­nh tiá»n</p>
+              <p>7. Click "Import by Pattern MTT" Ä‘á»ƒ test import theo pattern</p>
+              <p>8. Äiá»n Fkey vÃ  click "Send MTT" Ä‘á»ƒ test gá»­i hÃ³a Ä‘Æ¡n</p>
+              <p>9. Kiá»ƒm tra káº¿t quáº£ trong toast notification</p>
             </div>
           </CardContent>
         </Card>

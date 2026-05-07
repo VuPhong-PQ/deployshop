@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RetailPointBackend.Models;
 
 namespace RetailPointBackend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class AdminController : ControllerBase
@@ -14,7 +16,7 @@ namespace RetailPointBackend.Controllers
             _context = context;
         }
 
-        // API để kiểm tra và sửa trạng thái đơn hàng
+        // API Ä‘á»ƒ kiá»ƒm tra vÃ  sá»­a tráº¡ng thÃ¡i Ä‘Æ¡n hÃ ng
         [HttpGet("check-orders/{orderIds}")]
         public IActionResult CheckOrdersStatus(string orderIds)
         {
@@ -39,11 +41,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi kiểm tra đơn hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi kiá»ƒm tra Ä‘Æ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // API để cập nhật trạng thái đơn hàng
+        // API Ä‘á»ƒ cáº­p nháº­t tráº¡ng thÃ¡i Ä‘Æ¡n hÃ ng
         [HttpPut("fix-order-status/{orderId}")]
         public IActionResult FixOrderStatus(int orderId, [FromForm] string paymentStatus, [FromForm] string status)
         {
@@ -52,7 +54,7 @@ namespace RetailPointBackend.Controllers
                 var order = _context.Orders.FirstOrDefault(o => o.OrderId == orderId);
                 if (order == null)
                 {
-                    return NotFound(new { message = "Không tìm thấy đơn hàng" });
+                    return NotFound(new { message = "KhÃ´ng tÃ¬m tháº¥y Ä‘Æ¡n hÃ ng" });
                 }
 
                 var oldPaymentStatus = order.PaymentStatus;
@@ -65,7 +67,7 @@ namespace RetailPointBackend.Controllers
 
                 return Ok(new
                 {
-                    message = "Đã cập nhật trạng thái đơn hàng thành công",
+                    message = "ÄÃ£ cáº­p nháº­t tráº¡ng thÃ¡i Ä‘Æ¡n hÃ ng thÃ nh cÃ´ng",
                     orderId = orderId,
                     changes = new
                     {
@@ -76,11 +78,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi cập nhật đơn hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi cáº­p nháº­t Ä‘Æ¡n hÃ ng", error = ex.Message });
             }
         }
 
-        // API để lấy thống kê tổng quan
+        // API Ä‘á»ƒ láº¥y thá»‘ng kÃª tá»•ng quan
         [HttpGet("overview")]
         public IActionResult GetOverview()
         {
@@ -109,11 +111,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi lấy thống kê", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi láº¥y thá»‘ng kÃª", error = ex.Message });
             }
         }
 
-        // API để kiểm tra gaps trong order sequence
+        // API Ä‘á»ƒ kiá»ƒm tra gaps trong order sequence
         [HttpGet("check-sequence-gaps")]
         public IActionResult CheckSequenceGaps()
         {
@@ -144,7 +146,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi kiểm tra sequence", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»—i khi kiá»ƒm tra sequence", error = ex.Message });
             }
         }
     }

@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
+using System.Security.Claims;
 
 namespace RetailPointBackend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -191,8 +194,8 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Lấy thông tin user từ header
-                var username = HttpContext.Request.Headers["Username"].FirstOrDefault() ?? "admin";
+                // Lấy thông tin user từ JWT claim
+                var username = User.FindFirstValue(ClaimTypes.Name) ?? "admin";
                 
                 var staff = await _context.Staffs
                     .Include(s => s.Role)
