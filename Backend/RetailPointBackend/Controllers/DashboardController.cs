@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
@@ -30,55 +30,55 @@ namespace RetailPointBackend.Controllers
                 var thisMonth = new DateTime(today.Year, today.Month, 1);
                 var lastMonth = thisMonth.AddMonths(-1);
 
-                // Base query for orders - xử lý trường hợp StoreId có thể null
+                // Base query for orders - xá»­ lÃ½ trÆ°á»ng há»£p StoreId cÃ³ thá» null
                 var ordersQuery = _context.Orders.AsQueryable();
                 if (!string.IsNullOrEmpty(storeId))
                 {
                     ordersQuery = ordersQuery.Where(o => o.StoreId == storeId);
                 }
 
-                // Tính toán doanh thu hôm nay
+                // TÃ­nh toÃ¡n doanh thu hÃ´m nay
                 var todayOrders = ordersQuery
                     .Where(o => o.CreatedAt.Date == today && o.PaymentStatus == "paid" && o.Status != "cancelled")
                     .ToList();
                 var todayRevenue = todayOrders.Sum(o => o.TotalAmount);
 
-                // Tính toán doanh thu hôm qua để so sánh
+                // TÃ­nh toÃ¡n doanh thu hÃ´m qua Äá» so sÃ¡nh
                 var yesterdayOrders = ordersQuery
                     .Where(o => o.CreatedAt.Date == yesterday && o.PaymentStatus == "paid" && o.Status != "cancelled")
                     .ToList();
                 var yesterdayRevenue = yesterdayOrders.Sum(o => o.TotalAmount);
 
-                // Tính % tăng trưởng doanh thu
+                // TÃ­nh % tÄng trÆ°á»ng doanh thu
                 var revenueGrowth = yesterdayRevenue > 0 
                     ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100).ToString("F1") + "%"
                     : "N/A";
 
-                // Tính tổng số đơn hàng (all time)
+                // TÃ­nh tá»ng sá» ÄÆ¡n hÃ ng (all time)
                 var totalOrders = _context.Orders.Count();
 
-                // Tính số đơn hàng hôm nay vs hôm qua
+                // TÃ­nh sá» ÄÆ¡n hÃ ng hÃ´m nay vs hÃ´m qua
                 var todayOrdersCount = todayOrders.Count;
                 var yesterdayOrdersCount = yesterdayOrders.Count;
                 var ordersGrowth = yesterdayOrdersCount > 0
                     ? ((double)(todayOrdersCount - yesterdayOrdersCount) / yesterdayOrdersCount * 100).ToString("F1") + "%"
                     : "N/A";
 
-                // Tính số khách hàng mới hôm nay (giả sử customers có CreatedAt field)
+                // TÃ­nh sá» khÃ¡ch hÃ ng má»i hÃ´m nay (giáº£ sá»­ customers cÃ³ CreatedAt field)
                 var newCustomersToday = _context.Customers.Count(); // Simplified for now
 
-                // Tính số sản phẩm sắp hết hàng
+                // TÃ­nh sá» sáº£n pháº©m sáº¯p háº¿t hÃ ng
                 var lowStockItems = _context.Products
                     .Where(p => p.StockQuantity <= p.MinStockLevel)
                     .Count();
 
-                // Tính doanh thu tháng này
+                // TÃ­nh doanh thu thÃ¡ng nÃ y
                 var thisMonthOrders = _context.Orders
                     .Where(o => o.CreatedAt >= thisMonth && o.PaymentStatus == "paid" && o.Status != "cancelled")
                     .ToList();
                 var thisMonthRevenue = thisMonthOrders.Sum(o => o.TotalAmount);
 
-                // Tính doanh thu tháng trước
+                // TÃ­nh doanh thu thÃ¡ng trÆ°á»c
                 var lastMonthOrders = _context.Orders
                     .Where(o => o.CreatedAt >= lastMonth && o.CreatedAt < thisMonth && o.PaymentStatus == "paid" && o.Status != "cancelled")
                     .ToList();
@@ -88,10 +88,10 @@ namespace RetailPointBackend.Controllers
                     ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).ToString("F1") + "%"
                     : "N/A";
 
-                // Tính tổng số khách hàng
+                // TÃ­nh tá»ng sá» khÃ¡ch hÃ ng
                 var totalCustomers = _context.Customers.Count();
 
-                // Lấy danh sách sản phẩm sắp hết hàng
+                // Láº¥y danh sÃ¡ch sáº£n pháº©m sáº¯p háº¿t hÃ ng
                 var lowStockProductsList = _context.Products
                     .Where(p => p.StockQuantity <= 10)
                     .OrderBy(p => p.StockQuantity)
@@ -102,7 +102,7 @@ namespace RetailPointBackend.Controllers
                         name = p.Name,
                         stockQuantity = p.StockQuantity,
                         price = p.Price,
-                        category = p.CategoryId != null ? p.CategoryId.ToString() : "Chưa phân loại"
+                        category = p.CategoryId != null ? p.CategoryId.ToString() : "ChÆ°a phÃ¢n loáº¡i"
                     })
                     .ToList();
 
@@ -113,14 +113,14 @@ namespace RetailPointBackend.Controllers
                     monthRevenue = thisMonthRevenue.ToString("N0") + "₫", 
                     monthGrowth = monthGrowth.StartsWith("-") ? monthGrowth : "+" + monthGrowth,
                     ordersCount = totalOrders,
-                    todayOrders = todayOrdersCount, // Thêm đơn hàng hôm nay
+                    todayOrders = todayOrdersCount, // ThÃªm ÄÆ¡n hÃ ng hÃ´m nay
                     ordersGrowth = ordersGrowth.StartsWith("-") ? ordersGrowth : "+" + ordersGrowth,
                     newCustomers = newCustomersToday,
-                    totalCustomers = totalCustomers, // Thêm tổng khách hàng
+                    totalCustomers = totalCustomers, // ThÃªm tá»ng khÃ¡ch hÃ ng
                     customersGrowth = "+0%", // Simplified
                     lowStockItems = lowStockItems,
                     lowStockProductsList = lowStockProductsList,
-                    // Thêm thống kê chi tiết về trạng thái đơn hàng
+                    // ThÃªm thá»ng kÃª chi tiáº¿t vá» tráº¡ng thÃ¡i ÄÆ¡n hÃ ng
                     ordersByStatus = new
                     {
                         total = totalOrders,
@@ -137,7 +137,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải thống kê dashboard", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»i khi táº£i thá»ng kÃª dashboard", error = ex.Message });
             }
         }
 
@@ -150,17 +150,17 @@ namespace RetailPointBackend.Controllers
                     .Include(o => o.Customer)
                     .OrderByDescending(o => o.CreatedAt)
                     .Take(5)
-                    .ToList() // Đưa về memory trước để tránh lỗi expression tree
+                    .ToList() // ÄÆ°a vá» memory trÆ°á»c Äá» trÃ¡nh lá»i expression tree
                     .Select(o => new
                     {
                         id = o.OrderId,
                         orderNumber = "#" + o.OrderId,
-                        customer = o.CustomerName ?? o.Customer?.HoTen ?? "Khách lẻ",
+                        customer = o.CustomerName ?? o.Customer?.HoTen ?? "KhÃ¡ch láº»",
                         total = o.TotalAmount.ToString("N0") + "₫",
-                        status = o.PaymentStatus == "paid" && o.Status == "completed" ? "Hoàn thành"
-                               : o.PaymentStatus == "pending" ? "Chờ thanh toán"
-                               : o.Status == "pending" ? "Đang xử lý"
-                               : "Khác",
+                        status = o.PaymentStatus == "paid" && o.Status == "completed" ? "HoÃ n thÃ nh"
+                               : o.PaymentStatus == "pending" ? "Chá» thanh toÃ¡n"
+                               : o.Status == "pending" ? "Äang xá»­ lÃ½"
+                               : "KhÃ¡c",
                         time = GetTimeAgo(o.CreatedAt)
                     })
                     .ToList();
@@ -169,7 +169,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải đơn hàng gần đây", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»i khi táº£i ÄÆ¡n hÃ ng gáº§n ÄÃ¢y", error = ex.Message });
             }
         }
 
@@ -178,13 +178,13 @@ namespace RetailPointBackend.Controllers
             var timeSpan = DateTime.Now - createdAt;
             
             if (timeSpan.TotalMinutes < 1)
-                return "Vừa xong";
+                return "Vá»«a xong";
             if (timeSpan.TotalMinutes < 60)
-                return $"{(int)timeSpan.TotalMinutes} phút trước";
+                return $"{(int)timeSpan.TotalMinutes} phÃºt trÆ°á»c";
             if (timeSpan.TotalHours < 24)
-                return $"{(int)timeSpan.TotalHours} giờ trước";
+                return $"{(int)timeSpan.TotalHours} giá» trÆ°á»c";
             if (timeSpan.TotalDays < 30)
-                return $"{(int)timeSpan.TotalDays} ngày trước";
+                return $"{(int)timeSpan.TotalDays} ngÃ y trÆ°á»c";
             
             return createdAt.ToString("dd/MM/yyyy");
         }
@@ -194,7 +194,7 @@ namespace RetailPointBackend.Controllers
         {
             try
             {
-                // Lấy thông tin user từ JWT claim
+                // Láº¥y thÃ´ng tin user tá»« JWT claim
                 var username = User.FindFirstValue(ClaimTypes.Name) ?? "admin";
                 
                 var staff = await _context.Staffs
@@ -203,15 +203,15 @@ namespace RetailPointBackend.Controllers
                     
                 if (staff == null)
                 {
-                    return Unauthorized("Không tìm thấy thông tin nhân viên");
+                    return Unauthorized("KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin nhÃ¢n viÃªn");
                 }
 
-                // Nếu là Admin thì có quyền truy cập tất cả stores
+                // Náº¿u lÃ  Admin thÃ¬ cÃ³ quyá»n truy cáº­p táº¥t cáº£ stores
                 IQueryable<Store> storesQuery = _context.Stores.Where(s => s.IsActive);
                 
                 if (staff.Role.RoleName != "Admin")
                 {
-                    // Lọc chỉ stores được assign cho staff này
+                    // Lá»c chá» stores ÄÆ°á»£c assign cho staff nÃ y
                     var assignedStoreIds = await _context.StaffStores
                         .Where(ss => ss.StaffId == staff.StaffId)
                         .Select(ss => ss.StoreId)
@@ -220,7 +220,7 @@ namespace RetailPointBackend.Controllers
                     storesQuery = storesQuery.Where(s => assignedStoreIds.Contains(s.StoreId));
                 }
 
-                // Lấy thông tin các cửa hàng được phép truy cập và thống kê
+                // Láº¥y thÃ´ng tin cÃ¡c cá»­a hÃ ng ÄÆ°á»£c phÃ©p truy cáº­p vÃ  thá»ng kÃª
                 var stores = await storesQuery
                     .Select(s => new
                     {
@@ -228,7 +228,7 @@ namespace RetailPointBackend.Controllers
                         name = s.Name,
                         address = s.Address,
                         isActive = s.IsActive,
-                        // Thống kê doanh thu theo cửa hàng - convert int StoreId to string for comparison
+                        // Thá»ng kÃª doanh thu theo cá»­a hÃ ng - convert int StoreId to string for comparison
                         totalRevenue = _context.Orders
                             .Where(o => o.StoreId == s.StoreId.ToString() && o.PaymentStatus == "paid" && o.Status != "cancelled")
                             .Sum(o => (decimal?)o.TotalAmount) ?? 0,
@@ -244,7 +244,7 @@ namespace RetailPointBackend.Controllers
                     })
                     .ToListAsync();
 
-                // Nếu không có cửa hàng nào, tạo dữ liệu mặc định
+                // Náº¿u khÃ´ng cÃ³ cá»­a hÃ ng nÃ o, táº¡o dá»¯ liá»u máº·c Äá»nh
                 if (!stores.Any())
                 {
                     return Ok(new List<object>
@@ -252,8 +252,8 @@ namespace RetailPointBackend.Controllers
                         new
                         {
                             id = 1,
-                            name = "Cửa hàng chính",
-                            address = "Chưa cập nhật địa chỉ",
+                            name = "Cá»­a hÃ ng chÃ­nh",
+                            address = "ChÆ°a cáº­p nháº­t Äá»a chá»",
                             isActive = true,
                             totalRevenue = 0,
                             totalOrders = 0,
@@ -266,7 +266,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tải thông tin cửa hàng", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»i khi táº£i thÃ´ng tin cá»­a hÃ ng", error = ex.Message });
             }
         }
 
@@ -284,7 +284,7 @@ namespace RetailPointBackend.Controllers
                         name = p.Name,
                         stockQuantity = p.StockQuantity,
                         price = p.Price,
-                        category = p.CategoryId != null ? p.CategoryId.ToString() : "Chưa phân loại"
+                        category = p.CategoryId != null ? p.CategoryId.ToString() : "ChÆ°a phÃ¢n loáº¡i"
                     })
                     .OrderBy(p => p.stockQuantity)
                     .Take(20)

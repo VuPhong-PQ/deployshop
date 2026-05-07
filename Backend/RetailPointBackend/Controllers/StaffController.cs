@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
@@ -91,14 +91,14 @@ namespace RetailPointBackend.Controllers
             // Check if username already exists
             if (await _context.Staffs.AnyAsync(s => s.Username == createStaffDto.Username))
             {
-                return BadRequest("Username đã tồn tại");
+                return BadRequest("Username ÄÃ£ tá»n táº¡i");
             }
 
             // Check if role exists
             var role = await _context.Roles.FindAsync(createStaffDto.RoleId);
             if (role == null)
             {
-                return BadRequest("Role không tồn tại");
+                return BadRequest("Role khÃ´ng tá»n táº¡i");
             }
 
             var staff = new Staff
@@ -154,7 +154,7 @@ namespace RetailPointBackend.Controllers
                 updateStaffDto.Username != staff.Username &&
                 await _context.Staffs.AnyAsync(s => s.Username == updateStaffDto.Username && s.StaffId != id))
             {
-                return BadRequest("Username đã tồn tại");
+                return BadRequest("Username ÄÃ£ tá»n táº¡i");
             }
 
             // Check if role exists
@@ -163,7 +163,7 @@ namespace RetailPointBackend.Controllers
                 var role = await _context.Roles.FindAsync(updateStaffDto.RoleId.Value);
                 if (role == null)
                 {
-                    return BadRequest("Role không tồn tại");
+                    return BadRequest("Role khÃ´ng tá»n táº¡i");
                 }
                 staff.RoleId = updateStaffDto.RoleId.Value;
             }
@@ -228,7 +228,7 @@ namespace RetailPointBackend.Controllers
                 // Soft delete if staff has related records to maintain data integrity
                 staff.IsActive = false;
                 await _context.SaveChangesAsync();
-                return Ok(new { message = "Nhân viên đã được đánh dấu không hoạt động do có dữ liệu liên quan", softDelete = true });
+                return Ok(new { message = "NhÃ¢n viÃªn ÄÃ£ ÄÆ°á»£c ÄÃ¡nh dáº¥u khÃ´ng hoáº¡t Äá»ng do cÃ³ dá»¯ liá»u liÃªn quan", softDelete = true });
             }
             else
             {
@@ -259,13 +259,13 @@ namespace RetailPointBackend.Controllers
             // Guard: staff must exist
             if (staff == null)
             {
-                return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng");
+                return Unauthorized("TÃªn ÄÄng nháº­p hoáº·c máº­t kháº©u khÃ´ng ÄÃºng");
             }
 
             // Guard: password hash must be present
             if (string.IsNullOrEmpty(staff.PasswordHash) || !BCrypt.Net.BCrypt.Verify(loginDto.Password, staff.PasswordHash))
             {
-                return Unauthorized("Tên đăng nhập hoặc mật khẩu không đúng");
+                return Unauthorized("TÃªn ÄÄng nháº­p hoáº·c máº­t kháº©u khÃ´ng ÄÃºng");
             }
 
             // Update last login
@@ -300,7 +300,7 @@ namespace RetailPointBackend.Controllers
         [HttpGet("refresh-permissions/{staffId}")]
         public async Task<ActionResult<object>> RefreshPermissions(int staffId)
         {
-            // Kiểm tra người dùng chỉ có thể refresh của chính mình (trừ Admin)
+            // Kiá»m tra ngÆ°á»i dÃ¹ng chá» cÃ³ thá» refresh cá»§a chÃ­nh mÃ¬nh (trá»« Admin)
             var currentStaffId = User.FindFirstValue("staffId");
             var currentRole = User.FindFirstValue("roleName");
             if (currentStaffId != null && currentRole != "Admin" && currentStaffId != staffId.ToString())
@@ -315,7 +315,7 @@ namespace RetailPointBackend.Controllers
 
             if (staff == null)
             {
-                return NotFound("Nhân viên không tồn tại hoặc không hoạt động");
+                return NotFound("NhÃ¢n viÃªn khÃ´ng tá»n táº¡i hoáº·c khÃ´ng hoáº¡t Äá»ng");
             }
 
             var permissions = staff.Role.RolePermissions

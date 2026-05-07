@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
 using RetailPointBackend.Services;
@@ -256,7 +256,7 @@ namespace RetailPointBackend.Controllers
                 // Order 1: 10% discount on total
                 var order1 = new Order
                 {
-                    CustomerName = "Khách hàng test 1",
+                    CustomerName = "KhÃ¡ch hÃ ng test 1",
                     PaymentMethod = "cash",
                     PaymentStatus = "paid",
                     Status = "completed",
@@ -271,7 +271,7 @@ namespace RetailPointBackend.Controllers
                 // Order 2: Fixed amount discount
                 var order2 = new Order
                 {
-                    CustomerName = "Khách hàng test 2",
+                    CustomerName = "KhÃ¡ch hÃ ng test 2",
                     PaymentMethod = "card",
                     PaymentStatus = "paid",
                     Status = "completed",
@@ -286,7 +286,7 @@ namespace RetailPointBackend.Controllers
                 // Order 3: No discount
                 var order3 = new Order
                 {
-                    CustomerName = "Khách hàng test 3",
+                    CustomerName = "KhÃ¡ch hÃ ng test 3",
                     PaymentMethod = "cash",
                     PaymentStatus = "paid",
                     Status = "completed", 
@@ -306,7 +306,7 @@ namespace RetailPointBackend.Controllers
                 var orderItem1_1 = new OrderItem
                 {
                     OrderId = order1.OrderId,
-                    ProductName = "Sản phẩm A",
+                    ProductName = "Sáº£n pháº©m A",
                     Price = 300000,
                     Quantity = 1,
                     TotalPrice = 300000,
@@ -317,7 +317,7 @@ namespace RetailPointBackend.Controllers
                 var orderItem1_2 = new OrderItem
                 {
                     OrderId = order1.OrderId,
-                    ProductName = "Sản phẩm B",
+                    ProductName = "Sáº£n pháº©m B",
                     Price = 200000,
                     Quantity = 1,
                     TotalPrice = 200000,
@@ -328,7 +328,7 @@ namespace RetailPointBackend.Controllers
                 var orderItem2_1 = new OrderItem
                 {
                     OrderId = order2.OrderId,
-                    ProductName = "Sản phẩm C",
+                    ProductName = "Sáº£n pháº©m C",
                     Price = 800000,
                     Quantity = 1,
                     TotalPrice = 800000,
@@ -339,7 +339,7 @@ namespace RetailPointBackend.Controllers
                 var orderItem3_1 = new OrderItem
                 {
                     OrderId = order3.OrderId,
-                    ProductName = "Sản phẩm D",
+                    ProductName = "Sáº£n pháº©m D",
                     Price = 300000,
                     Quantity = 1,
                     TotalPrice = 300000,
@@ -358,7 +358,7 @@ namespace RetailPointBackend.Controllers
                 // Create OrderDiscounts for orders with discounts (first need to create Discount entities)
                 var discount1 = new Discount
                 {
-                    Name = "Giảm giá 10% tổng bill",
+                    Name = "Giáº£m giÃ¡ 10% tá»ng bill",
                     Type = DiscountType.PercentageTotal,
                     Value = 10,
                     IsActive = true,
@@ -368,7 +368,7 @@ namespace RetailPointBackend.Controllers
 
                 var discount2 = new Discount
                 {
-                    Name = "Giảm giá 100k cho tổng bill",
+                    Name = "Giáº£m giÃ¡ 100k cho tá»ng bill",
                     Type = DiscountType.FixedAmountTotal,
                     Value = 100000,
                     IsActive = true,
@@ -386,7 +386,7 @@ namespace RetailPointBackend.Controllers
                     DiscountType = DiscountType.PercentageTotal,
                     DiscountValue = 10,
                     DiscountAmount = 50000,
-                    DiscountName = "Giảm giá 10% tổng bill",
+                    DiscountName = "Giáº£m giÃ¡ 10% tá»ng bill",
                     AppliedBy = adminStaffId,
                     AppliedAt = order1.CreatedAt
                 };
@@ -398,7 +398,7 @@ namespace RetailPointBackend.Controllers
                     DiscountType = DiscountType.FixedAmountTotal,
                     DiscountValue = 100000,
                     DiscountAmount = 100000,
-                    DiscountName = "Giảm giá 100k cho tổng bill",
+                    DiscountName = "Giáº£m giÃ¡ 100k cho tá»ng bill",
                     AppliedBy = adminStaffId,
                     AppliedAt = order2.CreatedAt
                 };
@@ -408,7 +408,7 @@ namespace RetailPointBackend.Controllers
 
                 return Ok(new
                 {
-                    message = "Đã tạo dữ liệu test thành công",
+                    message = "ÄÃ£ táº¡o dá»¯ liá»u test thÃ nh cÃ´ng",
                     ordersCreated = orders.Count,
                     orderItemsCreated = orderItems.Count,
                     discountsCreated = 2,
@@ -418,7 +418,7 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi khi tạo dữ liệu test", error = ex.Message });
+                return StatusCode(500, new { message = "Lá»i khi táº¡o dá»¯ liá»u test", error = ex.Message });
             }
         }
     }

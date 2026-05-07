@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace RetailPointBackend.Controllers
 {
@@ -6,13 +6,13 @@ namespace RetailPointBackend.Controllers
     [Route("api/[controller]")]
     public class TestQRController : ControllerBase
     {
-        // Test endpoint để tạo QR code đơn giản
+        // Test endpoint Äá» táº¡o QR code ÄÆ¡n giáº£n
         [HttpPost("generate")]
         public IActionResult GenerateTestQR([FromBody] TestQRRequest request)
         {
             try
             {
-                // Sử dụng API VietQR Image trực tiếp
+                // Sá»­ dá»¥ng API VietQR Image trá»±c tiáº¿p
                 var bankCode = "970436"; // Vietcombank
                 var accountNumber = "0091000232791";
                 var template = "3bYrdPX";
@@ -38,11 +38,11 @@ namespace RetailPointBackend.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = "Lỗi tạo QR", error = ex.Message });
+                return BadRequest(new { message = "Lá»i táº¡o QR", error = ex.Message });
             }
         }
 
-        // Test endpoint đơn giản
+        // Test endpoint ÄÆ¡n giáº£n
         [HttpGet("simple")]
         public IActionResult GetSimpleQR()
         {
@@ -51,7 +51,7 @@ namespace RetailPointBackend.Controllers
             return Ok(new
             {
                 qrImageUrl = qrImageUrl,
-                message = "QR code test thành công"
+                message = "QR code test thÃ nh cÃ´ng"
             });
         }
     }

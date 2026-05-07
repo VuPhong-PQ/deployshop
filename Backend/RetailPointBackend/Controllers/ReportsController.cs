@@ -86,11 +86,11 @@ namespace RetailPointBackend.Controllers
 
                 var response = new
                 {
-                    totalRevenue = totalRevenue.ToString("N0") + "â‚«",
+                    totalRevenue = totalRevenue.ToString("N0") + "₫",
                     totalOrders = totalOrders,
                     totalCustomers = totalCustomers,
                     totalProductsSold = totalProductsSold,
-                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "â‚«",
+                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "₫",
                     totalDiscountUsage = totalDiscountUsage,
                     discountRate = totalRevenue > 0 ? Math.Round((totalDiscountAmount / (totalRevenue + totalDiscountAmount)) * 100, 2) : 0
                 };
@@ -157,8 +157,8 @@ namespace RetailPointBackend.Controllers
                 {
                     name = p.name,
                     totalSold = p.totalSold,
-                    revenue = p.revenue.ToString("N0") + "â‚«",
-                    profit = p.profit.ToString("N0") + "â‚«"
+                    revenue = p.revenue.ToString("N0") + "₫",
+                    profit = p.profit.ToString("N0") + "₫"
                 }).ToList();
 
                 // TÃ­nh tá»•ng sáº£n pháº©m bÃ¡n ra (loáº¡i trá»« Ä‘Æ¡n hÃ ng Ä‘Ã£ há»§y)
@@ -290,7 +290,7 @@ namespace RetailPointBackend.Controllers
                 {
                     name = c.name,
                     orders = c.orders,
-                    totalSpent = c.totalSpent.ToString("N0") + "â‚«"
+                    totalSpent = c.totalSpent.ToString("N0") + "₫"
                 }).ToList();
 
                 var response = new
@@ -447,12 +447,12 @@ namespace RetailPointBackend.Controllers
                     {
                         name = p.name,
                         totalSold = p.totalSold,
-                        revenue = p.revenue.ToString("N0") + "â‚«",
-                        profit = p.profit.ToString("N0") + "â‚«",
-                        profitPerUnit = p.profitPerUnit.ToString("N0") + "â‚«",
+                        revenue = p.revenue.ToString("N0") + "₫",
+                        profit = p.profit.ToString("N0") + "₫",
+                        profitPerUnit = p.profitPerUnit.ToString("N0") + "₫",
                         margin = p.margin,
-                        costPrice = p.costPrice.ToString("N0") + "â‚«",
-                        sellPrice = p.sellPrice.ToString("N0") + "â‚«"
+                        costPrice = p.costPrice.ToString("N0") + "₫",
+                        sellPrice = p.sellPrice.ToString("N0") + "₫"
                     })
                     .ToList();
 
@@ -496,7 +496,7 @@ namespace RetailPointBackend.Controllers
                     monthlyTrend.Add(new
                     {
                         month = monthStart.ToString("MM/yyyy"),
-                        profit = monthProfit.ToString("N0") + "â‚«",
+                        profit = monthProfit.ToString("N0") + "₫",
                         margin = monthProfitMargin.ToString("F1") + "%"
                     });
                 }
@@ -504,26 +504,26 @@ namespace RetailPointBackend.Controllers
                 var response = new
                 {
                     // Doanh thu vÃ  thuáº¿
-                    totalRevenueIncludingTax = totalRevenueIncludingTax.ToString("N0") + "â‚«",
-                    totalRevenueExcludingTax = totalRevenueExcludingTax.ToString("N0") + "â‚«",
-                    totalTax = totalTax.ToString("N0") + "â‚«",
+                    totalRevenueIncludingTax = totalRevenueIncludingTax.ToString("N0") + "₫",
+                    totalRevenueExcludingTax = totalRevenueExcludingTax.ToString("N0") + "₫",
+                    totalTax = totalTax.ToString("N0") + "₫",
                     vatRate = taxConfig.EnableVAT ? taxConfig.VATRate.ToString("F1") + "%" : "0%",
                     
                     // Lá»£i nhuáº­n Ä‘Æ¡n giáº£n
-                    costOfGoodsSold = costOfGoodsSold.ToString("N0") + "â‚«",
-                    profitBeforeTax = profitBeforeTax.ToString("N0") + "â‚«",
-                    profitAfterTax = profitAfterTax.ToString("N0") + "â‚«",
+                    costOfGoodsSold = costOfGoodsSold.ToString("N0") + "₫",
+                    profitBeforeTax = profitBeforeTax.ToString("N0") + "₫",
+                    profitAfterTax = profitAfterTax.ToString("N0") + "₫",
                     profitMargin = profitMargin.ToString("F1") + "%",
-                    totalLoss = totalLoss.ToString("N0") + "â‚«",
+                    totalLoss = totalLoss.ToString("N0") + "₫",
                     
                     // ThÃ´ng tin giáº£m giÃ¡
-                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "â‚«",
-                    actualProfit = actualProfit.ToString("N0") + "â‚«",
+                    totalDiscountAmount = totalDiscountAmount.ToString("N0") + "₫",
+                    actualProfit = actualProfit.ToString("N0") + "₫",
                     actualProfitMargin = actualProfitMargin.ToString("F1") + "%",
                     discountImpact = totalRevenue > 0 ? (totalDiscountAmount / totalRevenue * 100).ToString("F1") + "%" : "0%",
                     
                     // Giá»¯ láº¡i cho tÆ°Æ¡ng thÃ­ch
-                    totalProfit = profitAfterTax.ToString("N0") + "â‚«",
+                    totalProfit = profitAfterTax.ToString("N0") + "₫",
                     profitableProducts = profitableProducts,
                     topProfitableProducts = profitableProducts, // Alias cho frontend
                     monthlyTrend = monthlyTrend

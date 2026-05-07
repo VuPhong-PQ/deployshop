@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Bell, Plus, User, LogOut, ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -80,14 +80,14 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user.fullName}</p>
                       <p className="text-xs text-gray-500">{user.email || user.username}</p>
-                      <p className="text-xs text-gray-500">Vai trÃ²: {user.roleName}</p>
+                      <p className="text-xs text-gray-500">Vai trò: {user.roleName}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
                   {/* Store info in mobile menu */}
                   <div className="p-2">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Cá»­a hÃ ng hiá»‡n táº¡i:</p>
+                    <p className="text-xs font-medium text-gray-700 mb-2">Cửa hàng hiện tại:</p>
                     <StoreSwitcher onStoreChange={(store) => {
                     }} />
                   </div>
@@ -96,7 +96,7 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
                   {/* Quick Sale */}
                   <DropdownMenuItem onClick={() => navigate('/sales')}>
                     <Plus className="h-4 w-4 mr-2" />
-                    BÃ¡n hÃ ng nhanh
+                    Bán hàng nhanh
                   </DropdownMenuItem>
                   
                   {/* Debug */}
@@ -109,7 +109,7 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="h-4 w-4 mr-2" />
-                    ÄÄƒng xuáº¥t
+                    Đăng xuất
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -123,15 +123,15 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
             <span data-testid="current-date">
               {currentTime.toLocaleDateString('vi-VN')}
             </span>
-            <span>â€¢</span>
+            <span>&middot;</span>
             <span data-testid="current-time">
               {currentTime.toLocaleTimeString('vi-VN')}
             </span>
             {isWebSocketConnected && (
               <>
-                <span>â€¢</span>
+                <span>&middot;</span>
                 <span className="text-green-600" data-testid="ws-status">
-                  â— Live
+                  &#9679; Live
                 </span>
               </>
             )}
@@ -156,15 +156,15 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
               <span data-testid="current-date">
                 {currentTime.toLocaleDateString('vi-VN')}
               </span>
-              <span className="hidden md:inline">â€¢</span>
+              <span className="hidden md:inline">&middot;</span>
               <span data-testid="current-time" className="hidden md:inline">
                 {currentTime.toLocaleTimeString('vi-VN')}
               </span>
               {isWebSocketConnected && (
                 <>
-                  <span className="hidden lg:inline">â€¢</span>
+                  <span className="hidden lg:inline">&middot;</span>
                   <span className="text-green-600 hidden lg:inline" data-testid="ws-status">
-                    â— Live
+                    &#9679; Live
                   </span>
                 </>
               )}
@@ -202,7 +202,7 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
               onClick={() => navigate('/sales')}
             >
               <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden md:inline">BÃ¡n hÃ ng nhanh</span>
+              <span className="hidden md:inline">Bán hàng nhanh</span>
             </Button>
 
             {/* User Menu */}
@@ -222,12 +222,12 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium">{user.fullName}</p>
                       <p className="text-xs text-gray-500">{user.email || user.username}</p>
-                      <p className="text-xs text-gray-500">Vai trÃ²: {user.roleName}</p>
+                      <p className="text-xs text-gray-500">Vai trò: {user.roleName}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="p-2">
-                    <p className="text-xs font-medium text-gray-700 mb-2">Cá»­a hÃ ng hiá»‡n táº¡i:</p>
+                    <p className="text-xs font-medium text-gray-700 mb-2">Cửa hàng hiện tại:</p>
                     <StoreSwitcher onStoreChange={(store) => {
                     }} />
                   </div>
@@ -239,7 +239,7 @@ export function Header({ title, onToggleNotifications, isWebSocketConnected }: H
                   <DropdownMenuSeparator className="block lg:hidden" />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="h-4 w-4 mr-2" />
-                    ÄÄƒng xuáº¥t
+                    Đăng xuất
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
