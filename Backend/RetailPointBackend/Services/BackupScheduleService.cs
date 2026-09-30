@@ -46,8 +46,13 @@ namespace RetailPointBackend.Services
                 var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                 var backupFileName = $"RetailPoint_auto_backup_{timestamp}.bak";
                 
+                // Lấy đường dẫn backup từ Cài đặt (nếu có)
+                var settings = await _context.BackupSettings.FirstOrDefaultAsync();
+                var backupDir = !string.IsNullOrWhiteSpace(settings?.BackupPath) 
+                    ? settings.BackupPath 
+                    : @"C:\Users\ito1\OneDrive\backudatapm\pwshop";
+                
                 // Tạo thư mục backup nếu chưa tồn tại
-                var backupDir = Path.Combine(Directory.GetCurrentDirectory(), "Backups", "Auto");
                 Directory.CreateDirectory(backupDir);
                 
                 var backupPath = Path.Combine(backupDir, backupFileName);
@@ -56,7 +61,7 @@ namespace RetailPointBackend.Services
                 var backupQuery = $@"
                     BACKUP DATABASE [{databaseName}] 
                     TO DISK = '{backupPath}' 
-                    WITH FORMAT, INIT, COMPRESSION";
+                    WITH FORMAT, INIT";
 
                 using (var connection = new SqlConnection(connectionString))
                 {

@@ -699,7 +699,7 @@ export default function Inventory() {
                                     src={
                                       product.imageUrl
                                         ? product.imageUrl.startsWith("/uploads")
-                                          ? `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273')}${product.imageUrl}`
+                                          ? `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273')}${product.imageUrl}`
                                           : product.imageUrl
                                         : "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=40&h=40&fit=crop"
                                     }

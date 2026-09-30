@@ -56,7 +56,7 @@ export default function Dashboard() {
   const { data: storesResponse } = useQuery({
     queryKey: ["/api/dashboard/metrics/stores", user?.username],
     queryFn: async () => {
-      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
       const response = await authFetch(`${base}/api/dashboard/metrics/stores`, {
         method: 'GET',
         headers: {

@@ -50,7 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
 
 const staffFormSchema = z.object({
   fullName: z.string().min(1, "Họ tên là bắt buộc"),

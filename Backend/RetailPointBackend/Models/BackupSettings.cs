@@ -12,6 +12,9 @@ namespace RetailPointBackend.Models
         
         public bool IsEnabled { get; set; } = true;
         
+        [MaxLength(500)]
+        public string? BackupPath { get; set; } = @"C:\Users\ito1\OneDrive\backudatapm\pwshop";
+        
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

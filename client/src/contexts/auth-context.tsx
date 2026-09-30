@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const token = sessionStorage.getItem("authToken");
   const response = await fetch(`${base}/api/storeswitch/my-stores`, {
         method: 'GET',
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const token = sessionStorage.getItem("authToken");
   const response = await fetch(`${base}/api/storeswitch/current`, {
         method: 'GET',
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
       const token = sessionStorage.getItem("authToken");
       const response = await fetch(`${base}/api/Staff/refresh-permissions/${user.staffId}`, {
         headers: { 'Authorization': token ? `Bearer ${token}` : '' }
@@ -204,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return;
     
     try {
-      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
       const token = sessionStorage.getItem("authToken");
       const response = await fetch(`${base}/api/storeswitch/set-current`, {
         method: 'POST',

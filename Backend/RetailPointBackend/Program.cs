@@ -14,26 +14,25 @@ var builder = WebApplication.CreateBuilder(args);
 // self-host scenarios (not under IIS) we keep the explicit binding.
 if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_IIS_PHYSICAL_PATH")))
 {
-    builder.WebHost.UseUrls("http://localhost:5273");
+    builder.WebHost.UseUrls("http://0.0.0.0:5273");
+
 }
 
 // Cấu hình encoding UTF-8
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-// Thêm cấu hình CORS - chỉ cho phép các origin hợp lệ
-var allowedOrigins = builder.Configuration["AllowedOrigins"]?.Split(',') 
-    ?? new[] { "http://101.53.9.76", "http://localhost:5173" };
-
+// Thêm cấu hình CORS - cho phép tất cả origin hợp lệ (bao gồm 101.53.9.75, localhost, v.v.)
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
 });
+
 
 // Add sessions support
 builder.Services.AddDistributedMemoryCache();

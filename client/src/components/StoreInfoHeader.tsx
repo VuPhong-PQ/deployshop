@@ -29,7 +29,7 @@ const StoreInfoHeader: React.FC = () => {
 
   const fetchCurrentStoreInfo = async () => {
     try {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/storeswitch/current-info`, {
         method: 'GET',
         headers: {

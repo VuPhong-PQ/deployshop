@@ -17,7 +17,7 @@ import { Search, Plus, Minus, Trash2, ShoppingCart, CreditCard, Banknote, QrCode
 import { cn, normalizeSearchText } from "@/lib/utils";
 import type { Product, Customer } from "@/types/backend-types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
 import { useCartDiscount, useApplyDiscount, type Discount, type DiscountCalculationResponse } from "@/hooks/useDiscount";
 import { useAuth } from "@/contexts/auth-context";
 import { BarcodeScanner } from "@/components/BarcodeScanner";

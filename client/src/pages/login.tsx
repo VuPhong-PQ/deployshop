@@ -48,7 +48,7 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginRequest): Promise<LoginResponse> => {
       try {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await fetch(`${base}/api/staff/login`, {
           method: "POST",
           headers: {
@@ -85,7 +85,7 @@ export default function Login() {
       
       // Check số lượng stores được assign để quyết định redirect
       try {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await fetch(`${base}/api/storeswitch/my-stores`, {
           method: 'GET',
           headers: {
@@ -107,7 +107,7 @@ export default function Login() {
             const store = stores[0];
             
             // Set current store trước khi redirect
-            const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+            const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
             await fetch(`${base}/api/storeswitch/set-current`, {
               method: 'POST',
               headers: {

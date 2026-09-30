@@ -1,9 +1,20 @@
-﻿
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||"http://localhost:5273");
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||"http://101.53.9.75:5273");
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 
 async function throwIfResNotOk(res: Response) {
+  if (res.status === 401) {
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("isAuthenticated");
+    sessionStorage.removeItem("currentStore");
+    sessionStorage.removeItem("authToken");
+    
+    if (!window.location.pathname.includes('/login')) {
+      const loginPath = window.location.pathname.startsWith('/shop') ? '/shop/login' : '/login';
+      window.location.href = loginPath;
+    }
+  }
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);

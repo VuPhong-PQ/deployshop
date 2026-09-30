@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using RetailPointBackend.Models;
@@ -35,10 +35,16 @@ namespace RetailPointBackend.Controllers
                     {
                         BackupTime = new TimeSpan(13, 0, 0), // 1:00 PM
                         IsEnabled = true,
+                        BackupPath = @"C:\Users\ito1\OneDrive\backudatapm\pwshop",
                         Notes = "Default backup settings"
                     };
                     
                     _context.BackupSettings.Add(settings);
+                    await _context.SaveChangesAsync();
+                }
+                else if (string.IsNullOrWhiteSpace(settings.BackupPath))
+                {
+                    settings.BackupPath = @"C:\Users\ito1\OneDrive\backudatapm\pwshop";
                     await _context.SaveChangesAsync();
                 }
 
@@ -73,6 +79,9 @@ namespace RetailPointBackend.Controllers
 
                 settings.BackupTime = backupTime;
                 settings.IsEnabled = request.IsEnabled;
+                settings.BackupPath = !string.IsNullOrWhiteSpace(request.BackupPath) 
+                    ? request.BackupPath 
+                    : @"C:\Users\ito1\OneDrive\backudatapm\pwshop";
                 settings.Notes = request.Notes;
                 settings.UpdatedAt = DateTime.UtcNow;
 
@@ -109,6 +118,7 @@ namespace RetailPointBackend.Controllers
     {
         public string BackupTime { get; set; } = "13:00";
         public bool IsEnabled { get; set; } = true;
+        public string? BackupPath { get; set; } = @"C:\Users\ito1\OneDrive\backudatapm\pwshop";
         public string? Notes { get; set; }
     }
 }

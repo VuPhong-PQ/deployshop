@@ -224,7 +224,7 @@ export default function ProductGroups() {
   // Export template mutation
   const exportTemplateMutation = useMutation({
     mutationFn: async () => {
-      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
       const response = await authFetch(`${base}/api/productgroups/export-template`);
       if (!response.ok) {
         throw new Error('Failed to export template');
@@ -259,7 +259,7 @@ export default function ProductGroups() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+      const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
       const response = await authFetch(`${base}/api/productgroups/import-excel`, {
         method: 'POST',
         body: formData,

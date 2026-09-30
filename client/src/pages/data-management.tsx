@@ -1,4 +1,4 @@
-﻿import { authFetch } from "@/lib/authFetch";
+import { authFetch } from "@/lib/authFetch";
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { dataManagementApi, type DatabaseInfo, type BackupResult, type BackupFile, type BackupHistoryItem } from '@/lib/data-management-api';
 
 // API Base URL for backup settings (prefers VITE_API_BASE_URL)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
 const BACKUP_SETTINGS_API = `${API_BASE_URL}/api/BackupSettings`;
 
 const DataManagement: React.FC = () => {
@@ -53,6 +53,7 @@ const DataManagement: React.FC = () => {
   const [backupSettings, setBackupSettings] = useState({
     backupTime: '13:00',
     isEnabled: true,
+    backupPath: 'C:\\Users\\ito1\\OneDrive\\backudatapm\\pwshop',
     notes: ''
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
@@ -140,6 +141,7 @@ const DataManagement: React.FC = () => {
         setBackupSettings({
           backupTime: timeString,
           isEnabled: settings.isEnabled,
+          backupPath: settings.backupPath || 'C:\\Users\\ito1\\OneDrive\\backudatapm\\pwshop',
           notes: settings.notes || ''
         });
       }
@@ -523,7 +525,7 @@ const DataManagement: React.FC = () => {
                   disabled={isLoading}
                 />
                 <p className="text-sm text-gray-600">
-                  Mặc định: C:\temp\RetailPoint_backup_[timestamp].bak
+                  Mặc định: C:\Users\ito1\OneDrive\backudatapm\pwshop\RetailPoint_backup_[timestamp].bak
                 </p>
               </div>
             )}
@@ -727,6 +729,119 @@ const DataManagement: React.FC = () => {
         </Card>
       </div>
 
+      {/* Backup Settings Section */}
+      <div className="mt-6">
+        <Card className="border-2 border-blue-100 shadow-sm">
+          <CardHeader className="bg-blue-50/50">
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Clock className="h-5 w-5 text-blue-600" />
+              Cài Đặt Backup Tự Động Hàng Ngày
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="backup-time" className="font-semibold">Thời gian backup hàng ngày</Label>
+                <Input
+                  id="backup-time"
+                  type="time"
+                  value={backupSettings.backupTime}
+                  onChange={(e) => setBackupSettings({
+                    ...backupSettings,
+                    backupTime: e.target.value
+                  })}
+                  className="bg-white"
+                />
+                <p className="text-xs text-gray-500">
+                  Hệ thống sẽ tự động backup dữ liệu vào thời gian này mỗi ngày
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="font-semibold">Trạng thái tự động</Label>
+                <div className="flex items-center space-x-2 pt-2">
+                  <input
+                    type="checkbox"
+                    id="backup-enabled"
+                    checked={backupSettings.isEnabled}
+                    onChange={(e) => setBackupSettings({
+                      ...backupSettings,
+                      isEnabled: e.target.checked
+                    })}
+                    className="h-5 w-5 rounded accent-blue-600 cursor-pointer"
+                  />
+                  <Label htmlFor="backup-enabled" className="cursor-pointer font-medium text-base">
+                    {backupSettings.isEnabled ? '🟢 Đang bật tự động' : '🔴 Đang tắt tự động'}
+                  </Label>
+                </div>
+              </div>
+
+              <div className="space-y-2 col-span-1 md:col-span-2">
+                <Label htmlFor="backup-path" className="font-semibold">Thư mục lưu backup tự động</Label>
+                <Input
+                  id="backup-path"
+                  type="text"
+                  placeholder="C:\Users\ito1\OneDrive\backudatapm\pwshop"
+                  value={backupSettings.backupPath}
+                  onChange={(e) => setBackupSettings({
+                    ...backupSettings,
+                    backupPath: e.target.value
+                  })}
+                  className="font-mono text-sm bg-white"
+                />
+                <p className="text-xs text-gray-500">
+                  Thư mục lưu trữ file backup tự động hàng ngày (Mặc định: C:\Users\ito1\OneDrive\backudatapm\pwshop)
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="backup-notes">Ghi chú (tùy chọn)</Label>
+              <Textarea
+                id="backup-notes"
+                placeholder="Nhập ghi chú về cài đặt backup..."
+                value={backupSettings.notes}
+                onChange={(e) => setBackupSettings({
+                  ...backupSettings,
+                  notes: e.target.value
+                })}
+                rows={2}
+                className="bg-white"
+              />
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={handleUpdateBackupSettings}
+                disabled={isUpdatingSettings}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                {isUpdatingSettings && <Loader2 className="h-4 w-4 animate-spin" />}
+                Lưu cài đặt
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={handleTestBackup}
+                disabled={isTestingBackup}
+                className="flex items-center gap-2 border-blue-300 hover:bg-blue-50 text-blue-700"
+              >
+                {isTestingBackup && <Loader2 className="h-4 w-4 animate-spin" />}
+                Chạy thử backup
+              </Button>
+            </div>
+            
+            <Alert className="bg-blue-50/50 border-blue-200">
+              <Shield className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 text-xs">
+                Backup tự động sẽ chạy vào đúng thời gian đã cài đặt mỗi ngày. 
+                Bạn có thể bật/tắt tính năng này bằng cách tích chọn "Trạng thái tự động".
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Backup History Section */}
       <div className="mt-6">
         <Card>
@@ -799,99 +914,6 @@ const DataManagement: React.FC = () => {
                 <p>Chưa có lịch sử backup nào</p>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Backup Settings Section */}
-      <div className="mt-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-600" />
-              Cài Đặt Backup Tự Động
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="backup-time">Thời gian backup hàng ngày</Label>
-                <Input
-                  id="backup-time"
-                  type="time"
-                  value={backupSettings.backupTime}
-                  onChange={(e) => setBackupSettings({
-                    ...backupSettings,
-                    backupTime: e.target.value
-                  })}
-                />
-                <p className="text-xs text-gray-500">
-                  Hệ thống sẽ tự động backup dữ liệu vào thời gian này mỗi ngày
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Trạng thái</Label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="backup-enabled"
-                    checked={backupSettings.isEnabled}
-                    onChange={(e) => setBackupSettings({
-                      ...backupSettings,
-                      isEnabled: e.target.checked
-                    })}
-                    className="rounded"
-                  />
-                  <Label htmlFor="backup-enabled">
-                    {backupSettings.isEnabled ? 'Đang bật' : 'Đang tắt'}
-                  </Label>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="backup-notes">Ghi chú (tùy chọn)</Label>
-              <Textarea
-                id="backup-notes"
-                placeholder="Nhập ghi chú về cài đặt backup..."
-                value={backupSettings.notes}
-                onChange={(e) => setBackupSettings({
-                  ...backupSettings,
-                  notes: e.target.value
-                })}
-                rows={2}
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleUpdateBackupSettings}
-                disabled={isUpdatingSettings}
-                className="flex items-center gap-2"
-              >
-                {isUpdatingSettings && <Loader2 className="h-4 w-4 animate-spin" />}
-                Lưu cài đặt
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={handleTestBackup}
-                disabled={isTestingBackup}
-                className="flex items-center gap-2"
-              >
-                {isTestingBackup && <Loader2 className="h-4 w-4 animate-spin" />}
-                Chạy thử backup
-              </Button>
-            </div>
-            
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                Backup tự động sẽ chạy vào thời gian đã cài đặt mỗi ngày. 
-                Bạn có thể tắt tính năng này bằng cách bỏ chọn "Đang bật".
-              </AlertDescription>
-            </Alert>
           </CardContent>
         </Card>
       </div>

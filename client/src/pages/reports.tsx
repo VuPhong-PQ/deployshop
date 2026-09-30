@@ -133,7 +133,7 @@ export default function Reports() {
     queryKey: ["/api/storeswitch/my-stores"],
     queryFn: async () => {
       try {
-        const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+        const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
         const res = await authFetch(`${base}/api/storeswitch/my-stores`, {
           headers: {
             "Username": "admin" // Tạm thời hardcode, sau này sẽ lấy từ auth context
@@ -157,7 +157,7 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/reports/sales-summary?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch sales summary');
@@ -173,7 +173,7 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/reports/product-performance?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch product performance');
@@ -189,7 +189,7 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/reports/customer-analytics?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch customer analytics');
@@ -205,7 +205,7 @@ export default function Reports() {
     queryFn: async () => {
       const apiStart = parseToISO(dateRange.startDate);
       const apiEndExclusive = addDays(parseToISO(dateRange.endDate), 1);
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/reports/profit-analysis?startDate=${apiStart}&endDate=${apiEndExclusive}${storeParam}`);
       if (!response.ok) {
         throw new Error('Failed to fetch profit analysis');
@@ -219,7 +219,7 @@ export default function Reports() {
   const { data: discountReports, isLoading: discountLoading } = useQuery<DiscountSummaryReport>({
     queryKey: ['/api/discount-reports/summary', dateRange.startDate, dateRange.endDate],
     queryFn: async (): Promise<DiscountSummaryReport> => {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   let url = `${base}/api/discount-reports/summary`;
       if (dateRange.startDate && dateRange.endDate) {
         const apiStart = parseToISO(dateRange.startDate);
@@ -240,7 +240,7 @@ export default function Reports() {
     const { data: discountOrders, isLoading: discountOrdersLoading } = useQuery<any>({
     queryKey: ['/api/discount-reports/orders', dateRange.startDate, dateRange.endDate],
     queryFn: async (): Promise<any> => {
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   let url = `${base}/api/discount-reports/orders`;
       if (dateRange.startDate && dateRange.endDate) {
         const apiStart = parseToISO(dateRange.startDate);
@@ -263,7 +263,7 @@ export default function Reports() {
     queryKey: ['/api/orders', selectedOrderId, 'detail'],
     queryFn: async () => {
       if (!selectedOrderId) return null;
-  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+  const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
   const response = await authFetch(`${base}/api/orders/${selectedOrderId}`);
       if (!response.ok) {
         console.error('Failed to fetch order detail:', response.status, response.statusText);

@@ -56,7 +56,7 @@ export function getProductImageUrl(imageUrl?: string | null) {
   if (typeof imageUrl !== 'string') return placeholder;
   if (!imageUrl) return placeholder;
   if (imageUrl.startsWith('/')) {
-    const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://localhost:5273');
+    const base = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL||'http://101.53.9.75:5273');
     return `${base}${imageUrl}`;
   }
   return imageUrl;
